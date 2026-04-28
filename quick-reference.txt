@@ -64,12 +64,15 @@ python cra_cli.py repl --model llama3.2
 python cra_cli.py training-status
 python cra_cli.py exporter-status
 python cra_cli.py organisms --limit 10
+python cra_cli.py alliances
 python cra_cli.py config-set /simulation/max_frames 5000
 python cra_cli.py notepad --summary
 python cra_cli.py notepad-add observation "Run started #baseline"
 python cra_cli.py scientific-receipt --title "Baseline run receipt"
 python cra_cli.py compile-cocoon --top-n 5 --format cocoon
 python cra_cli.py compile-cocoon --top-n 5 --format package
+python cra_cli.py compile-cocoon --alliance-id <id1> --alliance-id <id2> --format cocoon
+python cra_cli.py compile-cocoon --alliance "Alliance Name" --alliance-id <id2> --format package
 python cra_cli.py cocoon-validate Children/cocoon_ensemble_<timestamp>.zip
 python cra_cli.py compile-learning --organism-id <id>
 
@@ -77,6 +80,7 @@ Cocoon + Champion Council
 -------------------------
 Fresh exports include:
 - connector-word curriculum in vocabulary.json
+- bake-time alliance composition with selected_alliances/alliance_ids; unallied organisms are excluded unless --include-unallied is set
 - game_contracts.json for Council adapters
 - curriculum/*.json and training_logs/schema.json for staged language coaching
 - native HTTP endpoints: /health, /act, /learn, /chat, /teach, /vocab, /curriculum, /training/logs, /curriculum/score, /snapshot, /save, /export, /capabilities

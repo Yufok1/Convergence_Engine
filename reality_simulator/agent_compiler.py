@@ -546,9 +546,233 @@ class AgentCompiler:
         
         return full_kw
 
+    def _normalize_alliance_selection(self, selected_alliances: Any) -> List[str]:
+        """Normalize CLI/API alliance selections into stable string tokens."""
+        if not selected_alliances:
+            return []
+
+        raw_items = []
+        if isinstance(selected_alliances, str):
+            raw_items = [selected_alliances]
+        elif isinstance(selected_alliances, dict):
+            for key in ('selected_alliances', 'alliance_ids', 'alliances', 'ids', 'names'):
+                value = selected_alliances.get(key)
+                if value:
+                    raw_items.extend(value if isinstance(value, list) else [value])
+        else:
+            try:
+                raw_items = list(selected_alliances)
+            except TypeError:
+                raw_items = [selected_alliances]
+
+        normalized = []
+        for item in raw_items:
+            if isinstance(item, dict):
+                item = item.get('alliance_id') or item.get('id') or item.get('name')
+            if item is None:
+                continue
+            for part in str(item).split(','):
+                token = part.strip()
+                if token:
+                    normalized.append(token)
+        return normalized
+
+    def _alliance_member_ids(self, alliance: Any) -> List[str]:
+        """Return alliance member ids from object-style or dict-style alliance records."""
+        if alliance is None:
+            return []
+        members = alliance.get('members', []) if isinstance(alliance, dict) else getattr(alliance, 'members', [])
+        if isinstance(members, dict):
+            members = list(members.keys())
+        elif isinstance(members, str):
+            members = [members]
+        elif members is None:
+            members = []
+        else:
+            try:
+                members = list(members)
+            except TypeError:
+                members = [members]
+        return [str(member) for member in members]
+
+    def _alliance_name(self, alliance_id: Any, alliance: Any = None) -> str:
+        """Return a stable alliance display name."""
+        fallback = f"Alliance_{alliance_id}"
+        if isinstance(alliance, dict):
+            return str(alliance.get('name') or alliance.get('alliance_name') or fallback)
+        return str(getattr(alliance, 'name', fallback) or fallback)
+
+    def _capsule_alliance_id(self, capsule: Any) -> Optional[str]:
+        """Best-effort capsule/live-organism alliance id lookup."""
+        for attr in ('alliance_id', 'alliance', 'alliance_uid'):
+            value = getattr(capsule, attr, None)
+            if value is not None and value != '':
+                if isinstance(value, dict):
+                    value = value.get('alliance_id') or value.get('id') or value.get('name')
+                return str(value) if value else None
+        return None
+
+    def _filter_capsules_by_selected_alliances(self,
+                                               capsules: List['OrganismCapsule'],
+                                               alliance_system: Any,
+                                               selected_alliances: Any,
+                                               include_unallied: bool = False) -> Tuple[List['OrganismCapsule'], Dict[str, Any]]:
+        """
+        Filter export candidates to selected alliances at bake/export time.
+
+        This intentionally happens before serialization so the resulting Cocoon
+        only contains the selected coalition, instead of hiding extra organisms
+        at runtime.
+        """
+        selection_values = self._normalize_alliance_selection(selected_alliances)
+        if not selection_values:
+            return capsules, {
+                'alliance_filter_active': False,
+                'selected_alliances': [],
+                'included_organisms': [self._get_organism_id(cap) for cap in capsules],
+                'excluded_organisms': [],
+                'unallied_organisms': [],
+                'include_unallied': bool(include_unallied),
+                'selection_values': [],
+                'selection_policy': 'all_candidates',
+                'runtime_endpoint_contract_version': 'cocoon-runtime-v2.1',
+            }
+
+        wanted_tokens = {token.lower() for token in selection_values}
+        candidate_ids = [self._get_organism_id(cap) for cap in capsules]
+        candidate_id_set = set(candidate_ids)
+        org_to_alliance: Dict[str, str] = {}
+        alliance_catalog: Dict[str, Dict[str, Any]] = {}
+
+        def ensure_alliance(alliance_id: Any, alliance: Any = None) -> Dict[str, Any]:
+            aid = str(alliance_id)
+            if aid not in alliance_catalog:
+                name = self._alliance_name(aid, alliance)
+                alliance_catalog[aid] = {
+                    'alliance_id': aid,
+                    'name': name,
+                    'members': [],
+                    'tokens': {aid.lower(), name.lower()},
+                }
+            return alliance_catalog[aid]
+
+        if alliance_system is not None and hasattr(alliance_system, 'alliances'):
+            try:
+                for alliance_id, alliance in getattr(alliance_system, 'alliances', {}).items():
+                    entry = ensure_alliance(alliance_id, alliance)
+                    for member_id in self._alliance_member_ids(alliance):
+                        if member_id not in entry['members']:
+                            entry['members'].append(member_id)
+                        if member_id in candidate_id_set:
+                            org_to_alliance[member_id] = entry['alliance_id']
+            except Exception as exc:
+                logger.warning(f"[COCOON] Could not inspect alliance catalog: {exc}")
+
+        if alliance_system is not None and hasattr(alliance_system, 'organism_to_alliance'):
+            try:
+                for org_id, alliance_id in getattr(alliance_system, 'organism_to_alliance', {}).items():
+                    org_str = str(org_id)
+                    if org_str not in candidate_id_set:
+                        continue
+                    entry = ensure_alliance(alliance_id)
+                    if org_str not in entry['members']:
+                        entry['members'].append(org_str)
+                    org_to_alliance[org_str] = entry['alliance_id']
+            except Exception as exc:
+                logger.warning(f"[COCOON] Could not inspect organism alliance mapping: {exc}")
+
+        for capsule, org_id in zip(capsules, candidate_ids):
+            alliance_id = self._capsule_alliance_id(capsule)
+            if not alliance_id:
+                continue
+            entry = ensure_alliance(alliance_id)
+            if org_id not in entry['members']:
+                entry['members'].append(org_id)
+            org_to_alliance.setdefault(org_id, entry['alliance_id'])
+
+        selected_ids = []
+        for alliance_id, entry in alliance_catalog.items():
+            if wanted_tokens.intersection(entry['tokens']):
+                selected_ids.append(alliance_id)
+
+        # Allow exact id selection even if the catalog came only from capsule attrs.
+        for alliance_id in sorted(set(org_to_alliance.values())):
+            if alliance_id.lower() in wanted_tokens and alliance_id not in selected_ids:
+                selected_ids.append(alliance_id)
+
+        available_alliances = [
+            {
+                'alliance_id': entry['alliance_id'],
+                'name': entry['name'],
+                'candidate_member_count': len([m for m in entry['members'] if m in candidate_id_set]),
+                'total_member_count': len(entry['members']),
+            }
+            for entry in alliance_catalog.values()
+        ]
+
+        if not selected_ids:
+            raise ValueError(
+                f"No alliances matched {selection_values}. "
+                f"Available alliances: {available_alliances[:20]}"
+            )
+
+        selected_id_set = set(selected_ids)
+        filtered_capsules = []
+        included_ids = []
+        excluded_ids = []
+        unallied_ids = []
+
+        for capsule, org_id in zip(capsules, candidate_ids):
+            alliance_id = org_to_alliance.get(org_id)
+            if alliance_id in selected_id_set:
+                filtered_capsules.append(capsule)
+                included_ids.append(org_id)
+            elif alliance_id is None:
+                unallied_ids.append(org_id)
+                if include_unallied:
+                    filtered_capsules.append(capsule)
+                    included_ids.append(org_id)
+                else:
+                    excluded_ids.append(org_id)
+            else:
+                excluded_ids.append(org_id)
+
+        if not filtered_capsules:
+            raise ValueError(
+                f"Alliance selection {selection_values} matched alliances but included no export candidates."
+            )
+
+        selected_export = []
+        for alliance_id in selected_ids:
+            entry = alliance_catalog.get(alliance_id, {
+                'alliance_id': alliance_id,
+                'name': f'Alliance_{alliance_id}',
+                'members': [],
+            })
+            selected_export.append({
+                'alliance_id': entry['alliance_id'],
+                'name': entry['name'],
+                'included_members': [m for m in entry['members'] if m in included_ids],
+                'candidate_member_count': len([m for m in entry['members'] if m in candidate_id_set]),
+            })
+
+        return filtered_capsules, {
+            'alliance_filter_active': True,
+            'selection_values': selection_values,
+            'selection_policy': 'selected_alliances_only',
+            'selected_alliances': selected_export,
+            'included_organisms': included_ids,
+            'excluded_organisms': excluded_ids,
+            'unallied_organisms': unallied_ids,
+            'include_unallied': bool(include_unallied),
+            'available_alliances': available_alliances,
+            'runtime_endpoint_contract_version': 'cocoon-runtime-v2.1',
+        }
+
     def _extract_alliance_data_for_cocoon(self, capsules: List['OrganismCapsule'], 
                                            alliance_system: Any,
-                                           organism_names: List[str]) -> Dict[str, Any]:
+                                           organism_names: List[str],
+                                           selection_metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         🤝 Extract FULL alliance social structure for cocoon export.
         
@@ -574,13 +798,44 @@ class AgentCompiler:
         alliance_data = {
             'version': '1.0',
             'source': 'emergent_social_structure',
+            'runtime_endpoint_contract_version': 'cocoon-runtime-v2.1',
             'alliances': {},              # alliance_id -> {members, trust, wars_won, ...}
             'organism_to_alliance': {},   # organism_id -> alliance_id
             'organism_trust': {},         # organism_id -> trust_score (0.0-1.0)
             'organism_reputation': {},    # organism_id -> OrganismReputation data
             'organism_stats': {},         # organism_id -> competition stats
             'social_graph': {},           # organism_id -> [connected_organism_ids]
+            'social_graph_present': False,
+            'social_graph_source': 'none',
+            'trust_source': 'none',
+            'alliance_count': 0,
+            'selected_alliances': [],
+            'included_organisms': list(organism_names),
+            'excluded_organisms': [],
+            'unallied_organisms': [],
+            'include_unallied': False,
+            'selection_policy': 'all_candidates',
+            'selection_values': [],
         }
+
+        if selection_metadata:
+            for key in (
+                'alliance_filter_active',
+                'selection_values',
+                'selection_policy',
+                'selected_alliances',
+                'included_organisms',
+                'excluded_organisms',
+                'unallied_organisms',
+                'include_unallied',
+                'source_artifact',
+                'source_run',
+                'source_generation',
+                'vocab_count',
+                'runtime_endpoint_contract_version',
+            ):
+                if key in selection_metadata:
+                    alliance_data[key] = selection_metadata[key]
         
         org_ids_set = set(organism_names)
         
@@ -627,8 +882,8 @@ class AgentCompiler:
             stats['alliance_reputation'] = float(alliance_rep)
             
             # Alliance ID from organism
-            alliance_id = getattr(capsule, 'alliance_id', None)
-            if alliance_id:
+            alliance_id = self._capsule_alliance_id(capsule)
+            if alliance_id is not None:
                 alliance_data['organism_to_alliance'][org_id] = str(alliance_id)
             
             if stats:
@@ -689,6 +944,7 @@ class AgentCompiler:
                             if hasattr(rep, 'get_trust_score'):
                                 # OrganismReputation object
                                 alliance_data['organism_trust'][str(org_id)] = rep.get_trust_score()
+                                alliance_data['trust_source'] = 'alliance_system.reputations'
                                 alliance_data['organism_reputation'][str(org_id)] = {
                                     'alliances_honored': getattr(rep, 'alliances_honored', 0),
                                     'alliances_betrayed': getattr(rep, 'alliances_betrayed', 0),
@@ -700,6 +956,7 @@ class AgentCompiler:
                             elif isinstance(rep, (int, float)):
                                 # Simple reputation score
                                 alliance_data['organism_trust'][str(org_id)] = float(rep)
+                                alliance_data['trust_source'] = 'alliance_system.reputations'
                 
                 # 4) Build social graph (who trusts whom)
                 if hasattr(alliance_system, 'organism_to_alliance'):
@@ -721,6 +978,7 @@ class AgentCompiler:
                             connected = [str(m) for m in members if str(m) != str(org_id) and str(m) in org_ids_set]
                             if connected:
                                 alliance_data['social_graph'][str(org_id)] = connected
+                                alliance_data['social_graph_source'] = 'alliance_system.organism_to_alliance'
                                 
             except Exception as e:
                 logger.warning(f"[COMPILER] Error extracting alliance data: {e}")
@@ -739,6 +997,7 @@ class AgentCompiler:
                     for org_id, rep in getattr(alliance_system, 'reputations', {}).items():
                         if str(org_id) in org_ids_set:
                             alliance_data['organism_trust'][str(org_id)] = float(rep)
+                            alliance_data['trust_source'] = 'alliance_system.reputations'
                     
                     # Extract alliances
                     for ally_id, ally_data in getattr(alliance_system, 'alliances', {}).items():
@@ -755,6 +1014,49 @@ class AgentCompiler:
                             }
             except Exception as e:
                 logger.warning(f"[COMPILER] Error extracting LiveAllianceSystem data: {e}")
+
+        # Derive runtime voting trust from per-organism alliance reputation when
+        # the live alliance system did not expose a trust map. This is the
+        # current bridge between earned capsule stats and CocoonAlliance voting.
+        if not alliance_data['organism_trust']:
+            derived_trust = {}
+            for org_id, stats in alliance_data['organism_stats'].items():
+                if str(org_id) not in org_ids_set or not isinstance(stats, dict):
+                    continue
+                if 'alliance_reputation' not in stats:
+                    continue
+                try:
+                    trust = float(stats['alliance_reputation'])
+                    derived_trust[str(org_id)] = max(0.0, min(1.0, trust))
+                except (TypeError, ValueError):
+                    continue
+            if derived_trust:
+                alliance_data['organism_trust'] = derived_trust
+                alliance_data['trust_source'] = 'organism_stats.alliance_reputation'
+            else:
+                alliance_data['trust_source'] = 'neutral_default'
+
+        # If the source has alliance membership but no explicit social graph,
+        # preserve same-alliance links so Council can distinguish absent data
+        # from an intentionally empty social surface.
+        if not alliance_data['social_graph'] and alliance_data['alliances']:
+            for alliance in alliance_data['alliances'].values():
+                members = [str(m) for m in alliance.get('members', []) if str(m) in org_ids_set]
+                for org_id in members:
+                    peers = [peer for peer in members if peer != org_id]
+                    if peers:
+                        alliance_data['social_graph'][org_id] = peers
+            if alliance_data['social_graph']:
+                alliance_data['social_graph_source'] = 'derived_from_alliance_membership'
+
+        if not alliance_data.get('unallied_organisms'):
+            mapped = set(alliance_data['organism_to_alliance'].keys())
+            alliance_data['unallied_organisms'] = [
+                str(org_id) for org_id in organism_names if str(org_id) not in mapped
+            ]
+
+        alliance_data['alliance_count'] = len(alliance_data['alliances'])
+        alliance_data['social_graph_present'] = bool(alliance_data['social_graph'])
         
         return alliance_data
 
@@ -2794,7 +3096,8 @@ class AgentCompiler:
             return None
     
     def _serialize_alliance_system(self, alliance_system: Any,
-                                   capsules: Optional[List['OrganismCapsule']] = None) -> Optional[Dict[str, Any]]:
+                                   capsules: Optional[List['OrganismCapsule']] = None,
+                                   selection_metadata: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         """
         🏛️ Serialize alliance system state.
         
@@ -2814,6 +3117,15 @@ class AgentCompiler:
             return None
         
         try:
+            if capsules:
+                organism_names = [self._get_organism_id(cap) for cap in capsules]
+                return self._extract_alliance_data_for_cocoon(
+                    capsules,
+                    alliance_system,
+                    organism_names,
+                    selection_metadata=selection_metadata,
+                )
+
             alliance_data = {
                 'version': '1.0',
                 'source_note': 'Alliance Warfare - social structures and reputation',
@@ -4265,7 +4577,8 @@ done
                                  knowledge_web: Any = None,
                                  context_memory: Any = None,
                                  causation_explorer: Any = None,
-                                 alliance_system: Any = None) -> BytesIO:
+                                 alliance_system: Any = None,
+                                 alliance_selection_metadata: Optional[Dict[str, Any]] = None) -> BytesIO:
         """Package ensemble components into a ZIP archive.
         
         Args:
@@ -4279,6 +4592,7 @@ done
             context_memory: ContextMemory for word embeddings and language anchors
             causation_explorer: CausationExplorer for event history
             alliance_system: AllianceWarfare for social context
+            alliance_selection_metadata: Optional selected-alliance composition receipt
         """
         archive_buffer = BytesIO()
         with zipfile.ZipFile(archive_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
@@ -4410,7 +4724,11 @@ done
             # 🏛️ ALLIANCE SYSTEM (Social Context)
             # ═══════════════════════════════════════════════════════════════
             if alliance_system is not None:
-                alliance_data = self._serialize_alliance_system(alliance_system, capsules)
+                alliance_data = self._serialize_alliance_system(
+                    alliance_system,
+                    capsules,
+                    selection_metadata=alliance_selection_metadata,
+                )
                 if alliance_data:
                     zf.writestr("alliance_system.json", json.dumps(alliance_data, indent=2))
                     logger.info(f"🏛️ Exported alliance system: {alliance_data.get('alliance_count', 0)} alliances")
@@ -5167,7 +5485,8 @@ if __name__ == '__main__':
                                      knowledge_web: Any = None,
                                      context_memory: Any = None,
                                      causation_explorer: Any = None,
-                                     alliance_system: Any = None) -> BytesIO:
+                                     alliance_system: Any = None,
+                                     alliance_selection_metadata: Optional[Dict[str, Any]] = None) -> BytesIO:
         """Compile multiple capsules into a single ensemble model archive.
         
         Args:
@@ -5364,7 +5683,13 @@ if __name__ == '__main__':
                 'onnxruntime': onnxruntime.__version__ if ONNX_AVAILABLE else 'not installed',
                 'numpy': np.__version__,
                 'python': sys.version.split(' ')[0]
-            }
+            },
+            'alliance_composition': alliance_selection_metadata or {
+                'alliance_filter_active': False,
+                'included_organisms': names,
+                'excluded_organisms': [],
+                'selection_policy': 'all_candidates',
+            },
         }
 
         # Runner
@@ -5374,7 +5699,8 @@ if __name__ == '__main__':
         return self._create_ensemble_archive(
             model_buffer, metadata, runner_script, capsules, vocabulary, conversation_history,
             knowledge_web=knowledge_web, context_memory=context_memory,
-            causation_explorer=causation_explorer, alliance_system=alliance_system
+            causation_explorer=causation_explorer, alliance_system=alliance_system,
+            alliance_selection_metadata=alliance_selection_metadata,
         )
 
     def compile_capsule_to_agent(self, 
@@ -5483,7 +5809,10 @@ if __name__ == '__main__':
                        conversation_history: List[Dict] = None,
                        attractor_landscape: Any = None,
                        shared_state: Dict[str, Any] = None,
-                       graph_image_base64: str = None) -> Tuple[str, Optional[bytes]]:
+                       graph_image_base64: str = None,
+                       selected_alliances: Any = None,
+                       include_unallied: bool = False,
+                       alliance_selection_metadata: Optional[Dict[str, Any]] = None) -> Tuple[str, Optional[bytes]]:
         """
         🦋 COCOON COMPILER - Single-file deployable agent
         Compiles organism(s) into a SINGLE self-contained Python file that can run solo or ensemble.
@@ -5503,6 +5832,32 @@ if __name__ == '__main__':
         Returns:
             (cocoon_source, model_bytes) - model_bytes is None for 'cocoon' format
         """
+        selection_metadata = alliance_selection_metadata
+        if selected_alliances:
+            original_count = len(capsules)
+            capsules, selection_metadata = self._filter_capsules_by_selected_alliances(
+                capsules=capsules,
+                alliance_system=alliance_system,
+                selected_alliances=selected_alliances,
+                include_unallied=include_unallied,
+            )
+            logger.info(
+                f"[COCOON] Alliance selection reduced candidates: "
+                f"{original_count} -> {len(capsules)} organism(s)"
+            )
+
+        if selection_metadata and shared_state:
+            if isinstance(shared_state, dict):
+                selection_metadata.setdefault(
+                    'source_generation',
+                    shared_state.get('generation') or shared_state.get('generation_count')
+                )
+                selection_metadata.setdefault(
+                    'source_run',
+                    shared_state.get('run_id') or shared_state.get('session_id') or shared_state.get('run_name')
+                )
+                selection_metadata.setdefault('source_artifact', shared_state.get('source_artifact'))
+
         logger.info(f"[COCOON] Compiling {len(capsules)} organism(s) into single-file cocoon...")
 
         is_ensemble = len(capsules) > 1
@@ -5557,6 +5912,8 @@ if __name__ == '__main__':
 
         # 2) Vocabulary - FULL BASE POOL + runtime learned
         vocab_data = self._build_full_vocabulary_export(vocabulary)
+        if selection_metadata is not None:
+            selection_metadata.setdefault('vocab_count', vocab_data.get('vocab_size', 0))
         logger.info(f"[COCOON] Vocabulary export: {vocab_data['vocab_size']:,} words ({vocab_data.get('base_pool_size', 0):,} base + runtime)")
         vocab_json = json.dumps(vocab_data, default=_json_default)
         vocab_bytes = zlib.compress(vocab_json.encode('utf-8'), level=9) if compress_data else vocab_json.encode('utf-8')
@@ -5682,7 +6039,12 @@ if __name__ == '__main__':
 
         # 8) Alliance System - preserve FULL social structure (CRITICAL for emergent behavior)
         # "Connections formed are causeways for rationality" - alliances ARE the social brain
-        alliance_data = self._extract_alliance_data_for_cocoon(capsules, alliance_system, organism_names)
+        alliance_data = self._extract_alliance_data_for_cocoon(
+            capsules,
+            alliance_system,
+            organism_names,
+            selection_metadata=selection_metadata,
+        )
         if alliance_data.get('alliances'):
             logger.info(f"[COCOON] 🤝 Alliance structure: {len(alliance_data['alliances'])} alliances, "
                        f"{len(alliance_data['organism_trust'])} trust records, "
@@ -5743,6 +6105,7 @@ if __name__ == '__main__':
                 'generated': datetime.datetime.now().isoformat(),
                 'template_size': f"{len(cocoon_source_shell):,} chars (code only)",
                 'num_organisms': len(capsules),
+                'alliance_composition': selection_metadata or alliance_data,
             },
             is_ensemble=is_ensemble,
             formation_fingerprint=formation_fingerprint,
@@ -5847,6 +6210,7 @@ if __name__ == '__main__':
                     'continued_learning': False,  # ONNX neural is inference-only
                     'symbolic_learning': True,    # But symbolic systems CAN grow
                     'format_version': '2.0',
+                    'alliance_composition': selection_metadata or alliance_data,
                 }
                 zf.writestr('metadata.json', json.dumps(metadata, indent=2))
                 
@@ -5939,6 +6303,7 @@ if __name__ == '__main__':
                     ],
                     'continued_learning': True,
                     'format_version': '2.0',
+                    'alliance_composition': selection_metadata or alliance_data,
                 }
                 zf.writestr('metadata.json', json.dumps(metadata, indent=2))
                 
@@ -6118,6 +6483,7 @@ if __name__ == '__main__':
                     'knowledge_web_relations': kw_data.get('relation_count', 0),
                     'council_contract': game_contracts,
                     'language_curriculum': self._build_cocoon_language_curriculum_manifest(language_curriculum),
+                    'alliance_composition': selection_metadata or alliance_data,
                     'generated': datetime.datetime.now().isoformat(),
                     'package_contents': [
                         'brain_ensemble.onnx' if export_results['onnx']['success'] else None,
@@ -6331,7 +6697,11 @@ esac
                 
                 # d) Alliance System (Social Context)
                 if alliance_system is not None:
-                    alliance_data = self._serialize_alliance_system(alliance_system, capsules)
+                    alliance_data = self._serialize_alliance_system(
+                        alliance_system,
+                        capsules,
+                        selection_metadata=selection_metadata,
+                    )
                     if alliance_data:
                         zf.writestr("alliance_system.json", json.dumps(alliance_data, indent=2))
                         logger.info(f"[PACKAGE] ✅ Alliance system: {alliance_data.get('alliance_count', 0)} alliances")

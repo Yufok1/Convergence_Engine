@@ -404,6 +404,25 @@ def parse_args() -> argparse.Namespace:
         help="Use top N organisms if no --organism-id values are provided.",
     )
     compile_cocoon_parser.add_argument(
+        "--alliance-id",
+        dest="alliance_ids",
+        action="append",
+        default=[],
+        help="Alliance id to include in a curated Cocoon. Repeat for 2-3 alliances.",
+    )
+    compile_cocoon_parser.add_argument(
+        "--alliance",
+        dest="alliance_names",
+        action="append",
+        default=[],
+        help="Alliance name or id to include in a curated Cocoon.",
+    )
+    compile_cocoon_parser.add_argument(
+        "--include-unallied",
+        action="store_true",
+        help="Include organisms with no alliance mapping. Default excludes them.",
+    )
+    compile_cocoon_parser.add_argument(
         "--format",
         default="cocoon",
         choices=["cocoon", "onnx", "torchscript", "package"],
@@ -1779,6 +1798,7 @@ def main() -> int:
             return 0
 
         if args.command == "compile-cocoon":
+            selected_alliances = list(args.alliance_ids or []) + list(args.alliance_names or [])
             payload = {
                 "organism_ids": args.organism_ids,
                 "top_n": args.top_n,
@@ -1787,6 +1807,10 @@ def main() -> int:
                 "compress": not args.no_compress,
                 "format": args.format,
             }
+            if selected_alliances:
+                payload["selected_alliances"] = selected_alliances
+            if args.include_unallied:
+                payload["include_unallied"] = True
             data = client.request_json("POST", "/api/capsules/compile-cocoon", payload=payload)
             saved_paths = save_downloads(client, data, args.outdir)
             if args.json:

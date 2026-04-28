@@ -7010,6 +7010,17 @@
                             <div id="formatDescription" class="export-description">
                                 <strong>Ultimate Package</strong> — ONNX + TorchScript + Cocoon + Bridge + Metadata
                             </div>
+
+                            <div class="export-row">
+                                <label class="export-label">Alliance Filter</label>
+                                <input type="text" id="agentExporterAllianceIds" class="export-select"
+                                    placeholder="Optional: alliance IDs/names, comma separated">
+                            </div>
+                            <div class="export-description">
+                                Curated Cocoon mode: enter 2-3 alliance IDs/names to bake only those alliance members.
+                                <button type="button" onclick="fillAllianceFilterFromSelectedOrganisms()" class="action-btn" style="margin-left: 8px;">Use selected organisms' alliances</button>
+                                <button type="button" onclick="clearAllianceFilter()" class="action-btn" style="margin-left: 4px;">Clear alliances</button>
+                            </div>
                             
                             <div class="export-options">
                                 <label class="export-checkbox">
@@ -7020,6 +7031,9 @@
                                 </label>
                                 <label class="export-checkbox">
                                     <input type="checkbox" id="agentExporterCompress" checked /> Compress
+                                </label>
+                                <label class="export-checkbox" title="Default excludes organisms that are not mapped to an alliance.">
+                                    <input type="checkbox" id="agentExporterIncludeUnallied" /> Include unallied
                                 </label>
                             </div>
                             
@@ -22103,6 +22117,38 @@
                     formatSelect.addEventListener('change', updateFormatDescription);
                 }
             });
+
+            function getAllianceFilterTokens() {
+                const input = document.getElementById('agentExporterAllianceIds');
+                if (!input || !input.value.trim()) return [];
+                return input.value
+                    .split(',')
+                    .map(v => v.trim())
+                    .filter(Boolean);
+            }
+
+            function fillAllianceFilterFromSelectedOrganisms() {
+                const selected = new Set(Array.from(selectedOrganismIds));
+                const allianceIds = [...new Set(
+                    allOrganisms
+                        .filter(org => selected.has(org.id) && org.alliance_id)
+                        .map(org => String(org.alliance_id))
+                )];
+                const input = document.getElementById('agentExporterAllianceIds');
+                if (input) input.value = allianceIds.join(', ');
+                updateCompileAgentStatus(
+                    allianceIds.length
+                        ? `Alliance filter set: ${allianceIds.length} alliance(s).`
+                        : 'No selected organisms have alliance IDs.',
+                    allianceIds.length ? '#0f0' : '#f90'
+                );
+            }
+
+            function clearAllianceFilter() {
+                const input = document.getElementById('agentExporterAllianceIds');
+                if (input) input.value = '';
+                updateCompileAgentStatus('Alliance filter cleared.', '#0ff');
+            }
             
             // UNIFIED COMPILE & EXPORT - One button to rule them all
             async function compileAndExport() {
@@ -22115,6 +22161,8 @@
                 const includeHttp = document.getElementById('agentExporterIncludeHttp')?.checked ?? true;
                 const compress = document.getElementById('agentExporterCompress')?.checked ?? true;
                 const format = document.getElementById('agentExporterFormat')?.value || 'package';
+                const selectedAlliances = getAllianceFilterTokens();
+                const includeUnallied = document.getElementById('agentExporterIncludeUnallied')?.checked ?? false;
 
                 const formatLabels = {
                     'package': '🎁 Ultimate Package',
@@ -22123,7 +22171,9 @@
                     'torchscript': '🔥 TorchScript', 
                     'statedict': '💾 State Dict'
                 };
-                const targetLabel = selected.length > 0 ? `${selected.length} selected organisms` : `top ${topN} organisms`;
+                const targetLabel = selectedAlliances.length > 0
+                    ? `${selectedAlliances.length} selected alliance(s)`
+                    : (selected.length > 0 ? `${selected.length} selected organisms` : `top ${topN} organisms`);
                 updateCompileAgentStatus(`⏳ Capturing graph & compiling ${formatLabels[format] || format}...`, '#ff0');
 
                 try {
@@ -22140,6 +22190,8 @@
                             include_http: includeHttp,
                             compress: compress,
                             format: format,
+                            selected_alliances: selectedAlliances,
+                            include_unallied: includeUnallied,
                             graph_image: graphImage
                         })
                     });
@@ -22296,9 +22348,13 @@
                 const compress = document.getElementById('agentExporterCompress')?.checked ?? true;
                 const formatSelect = document.getElementById('agentExporterFormat');
                 const format = formatSelect ? formatSelect.value : 'cocoon';
+                const selectedAlliances = getAllianceFilterTokens();
+                const includeUnallied = document.getElementById('agentExporterIncludeUnallied')?.checked ?? false;
 
                 const formatLabels = {'cocoon': '🦋 Cocoon', 'onnx': 'ONNX', 'torchscript': 'TorchScript', 'package': '📦 Package', 'statedict': 'StateDict'};
-                const targetLabel = selected.length > 0 ? `${selected.length} selected` : `top ${topN}`;
+                const targetLabel = selectedAlliances.length > 0
+                    ? `${selectedAlliances.length} alliance(s)`
+                    : (selected.length > 0 ? `${selected.length} selected` : `top ${topN}`);
                 updateCompileAgentStatus(`Capturing graph & compiling ${formatLabels[format] || format} (${targetLabel})...`, '#ff0');
 
                 try {
@@ -22315,6 +22371,8 @@
                             include_http: includeHttp,
                             compress: compress,
                             format: format,
+                            selected_alliances: selectedAlliances,
+                            include_unallied: includeUnallied,
                             graph_image: graphImage
                         })
                     });

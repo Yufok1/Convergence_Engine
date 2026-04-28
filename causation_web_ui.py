@@ -8960,6 +8960,18 @@ def compile_cocoon():
         export_format = data.get('format', 'cocoon')  # cocoon, onnx, torchscript, package
         training_config = data.get('training_config', {})
         graph_image_base64 = data.get('graph_image')  # HTML graph capture from client
+        selected_alliances = (
+            data.get('selected_alliances')
+            or data.get('alliance_ids')
+            or data.get('alliance_names')
+            or data.get('alliances')
+            or []
+        )
+        include_unallied = bool(data.get('include_unallied', False))
+        has_alliance_filter = bool(selected_alliances)
+        if has_alliance_filter and organism_ids:
+            logger.info("[COCOON] Alliance filter provided; ignoring organism_ids so whole alliances can be composed.")
+            organism_ids = []
         
         logger.info(f"[COCOON] Export format: {export_format}, graph_image: {'yes' if graph_image_base64 else 'no'}")
         
@@ -8981,12 +8993,16 @@ def compile_cocoon():
                     if oid in live_organisms:
                         organisms.append(live_organisms[oid])
             else:
-                # Get top N by fitness
+                # Alliance composition needs all candidates so the compiler can
+                # choose members by membership instead of accidentally exporting
+                # only the top-N organism from one alliance.
                 sorted_orgs = sorted(
                     live_organisms.values(),
                     key=lambda o: getattr(o, 'fitness', 0) or 0,
                     reverse=True
-                )[:top_n]
+                )
+                if not has_alliance_filter:
+                    sorted_orgs = sorted_orgs[:top_n]
                 organisms.extend(sorted_orgs)
         
         # 2. Try checkpoint manager if no live organisms found
@@ -9004,7 +9020,9 @@ def compile_cocoon():
                         all_capsules,
                         key=lambda c: c.get('fitness', 0) or 0,
                         reverse=True
-                    )[:top_n]
+                    )
+                    if not has_alliance_filter:
+                        sorted_caps = sorted_caps[:top_n]
                     for cap_info in sorted_caps:
                         cap = checkpoint_manager.load_capsule(cap_info['organism_id'])
                         if cap:
@@ -9032,7 +9050,9 @@ def compile_cocoon():
                     capsule_list,
                     key=lambda x: x[1].get('fitness', 0) or 0,
                     reverse=True
-                )[:top_n]
+                )
+                if not has_alliance_filter:
+                    sorted_caps = sorted_caps[:top_n]
                 
                 for capsule_id, info in sorted_caps:
                     cap = capsule_manager.load_capsule(capsule_id)
@@ -9042,7 +9062,7 @@ def compile_cocoon():
         if not organisms:
             return jsonify({'error': 'No organisms available. Run the simulation first or load capsules.'}), 404
         
-        logger.info(f"Compiling cocoon with {len(organisms)} organism(s)")
+        logger.info(f"Collected {len(organisms)} cocoon export candidate organism(s)")
         
         # Get vocabulary
         vocabulary = app.config.get('vocabulary')
@@ -9126,7 +9146,22 @@ def compile_cocoon():
         
         # Compile cocoon with specified format
         compiler = AgentCompiler()
-        
+        alliance_selection_metadata = None
+        if has_alliance_filter:
+            organisms, alliance_selection_metadata = compiler._filter_capsules_by_selected_alliances(
+                capsules=organisms,
+                alliance_system=alliance_system,
+                selected_alliances=selected_alliances,
+                include_unallied=include_unallied,
+            )
+            logger.info(
+                f"[COCOON] Alliance filter selected {len(organisms)} organism(s): "
+                f"{alliance_selection_metadata.get('selection_values', [])}"
+            )
+
+        if not organisms:
+            return jsonify({'error': 'Alliance selection matched no organisms.'}), 404
+
         # For ONNX/TorchScript with multiple organisms, use proper ensemble export
         is_ensemble = len(organisms) > 1
         if is_ensemble and export_format in ('onnx', 'torchscript'):
@@ -9141,7 +9176,8 @@ def compile_cocoon():
                 knowledge_web=knowledge_web,
                 context_memory=context_memory,
                 causation_explorer=causation_explorer,
-                alliance_system=alliance_system
+                alliance_system=alliance_system,
+                alliance_selection_metadata=alliance_selection_metadata
             )
             # This is a ZIP archive - always save as .zip for ensemble binary exports
             model_bytes = ensemble_archive.read()
@@ -9161,7 +9197,8 @@ def compile_cocoon():
                 conversation_history=conversation_history,
                 attractor_landscape=attractor_landscape,
                 shared_state=shared_state,
-                graph_image_base64=graph_image_base64
+                graph_image_base64=graph_image_base64,
+                alliance_selection_metadata=alliance_selection_metadata
             )
             # Unpack result - cocoon format returns (source, readme, graph_bytes)
             if isinstance(cocoon_result, tuple) and len(cocoon_result) == 3:
@@ -9190,7 +9227,8 @@ def compile_cocoon():
                 conversation_history=conversation_history,
                 attractor_landscape=attractor_landscape,
                 shared_state=shared_state,
-                graph_image_base64=graph_image_base64
+                graph_image_base64=graph_image_base64,
+                alliance_selection_metadata=alliance_selection_metadata
             )
             # Unpack result based on format
             # - 'cocoon' format returns (source, readme_text, graph_bytes)
@@ -9296,6 +9334,7 @@ def compile_cocoon():
             'size_kb': round(file_size / 1024, 1),
             'organism_count': len(organisms),
             'organism_names': organism_names,
+            'alliance_composition': alliance_selection_metadata,
             'features': {
                 'gym_adapter': include_gym,
                 'http_server': include_http,
