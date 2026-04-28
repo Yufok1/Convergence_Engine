@@ -5805,6 +5805,11 @@ if __name__ == '__main__':
                 # 3. COCOON.PY (self-contained Python)
                 # ─────────────────────────────────────────────────────────────
                 zf.writestr('cocoon.py', cocoon_source)
+                export_results['cocoon'] = {
+                    'success': True,
+                    'size': len(cocoon_source.encode('utf-8')),
+                    'error': None
+                }
                 logger.info(f"[PACKAGE] ✅ Cocoon source: {len(cocoon_source):,} chars")
                 
                 # ─────────────────────────────────────────────────────────────
@@ -5838,6 +5843,7 @@ if __name__ == '__main__':
                     member_profiles.append(profile)
                 
                 metadata = {
+                    'package_version': '2.1',
                     'mode': 'ENSEMBLE' if is_ensemble else 'SOLO',
                     'num_organisms': len(capsules),
                     'organism_names': organism_names,
@@ -5846,6 +5852,11 @@ if __name__ == '__main__':
                     'member_profiles': member_profiles,
                     'training_config': default_training,
                     'export_results': export_results,
+                    'vocab_size': vocab_data.get('vocab_size', 0),
+                    'base_pool_size': vocab_data.get('base_pool_size', 0),
+                    'runtime_vocab_size': vocab_data.get('runtime_vocab_size', 0),
+                    'knowledge_web_concepts': kw_data.get('concept_count', 0),
+                    'knowledge_web_relations': kw_data.get('relation_count', 0),
                     'generated': datetime.datetime.now().isoformat(),
                     'package_contents': [
                         'brain_ensemble.onnx' if export_results['onnx']['success'] else None,
@@ -5861,7 +5872,10 @@ if __name__ == '__main__':
                 }
                 # Filter out None entries
                 metadata['package_contents'] = [x for x in metadata['package_contents'] if x]
-                zf.writestr('metadata.json', json.dumps(metadata, indent=2))
+
+                def add_package_content(filename: str) -> None:
+                    if filename not in metadata['package_contents']:
+                        metadata['package_contents'].append(filename)
                 
                 # ─────────────────────────────────────────────────────────────
                 # 6. VOCABULARY.JSON
@@ -5951,15 +5965,7 @@ matplotlib>=3.8.0      # Trajectory visualization
                 zf.writestr('requirements.txt', requirements)
                 
                 # ─────────────────────────────────────────────────────────────
-                # 8. README.MD
-                # ─────────────────────────────────────────────────────────────
-                readme = self._generate_ultimate_readme(
-                    organism_names, brain_configs, metadata, export_results, is_ensemble
-                )
-                zf.writestr('README.md', readme)
-                
-                # ─────────────────────────────────────────────────────────────
-                # 9. QUICK-START SCRIPTS
+                # 8. QUICK-START SCRIPTS
                 # ─────────────────────────────────────────────────────────────
                 # Windows batch
                 start_bat = """@echo off
@@ -6019,7 +6025,7 @@ esac
                 zf.writestr('start.sh', start_sh)
                 
                 # ─────────────────────────────────────────────────────────────
-                # 10. SEMANTIC SYSTEMS (Full Intelligence Files)
+                # 9. SEMANTIC SYSTEMS (Full Intelligence Files)
                 # ─────────────────────────────────────────────────────────────
                 # These files contain the agent's learned semantic understanding
                 
@@ -6030,7 +6036,7 @@ esac
                         zf.writestr("semantic_convergence.json", json.dumps(semantic_data, indent=2))
                         logger.info(f"[PACKAGE] ✅ Semantic convergence: {semantic_data.get('total_words', 0)} words, "
                                    f"{semantic_data.get('total_anchors', 0)} anchors")
-                        metadata['package_contents'].append('semantic_convergence.json')
+                        add_package_content('semantic_convergence.json')
                     
                     # Also write context_memory.json for standalone_butterfly_chat.py compatibility
                     context_memory_data = self._serialize_context_memory_full(context_memory, capsules)
@@ -6038,7 +6044,7 @@ esac
                         zf.writestr("context_memory.json", json.dumps(context_memory_data, indent=2))
                         logger.info(f"[PACKAGE] ✅ Context memory: {context_memory_data.get('total_anchors', 0)} anchors, "
                                    f"{context_memory_data.get('total_associations', 0)} associations")
-                        metadata['package_contents'].append('context_memory.json')
+                        add_package_content('context_memory.json')
                 
                 # b) Knowledge Web (Full Semantic Relationships)
                 if knowledge_web is not None:
@@ -6047,7 +6053,7 @@ esac
                         zf.writestr("knowledge_web.json", json.dumps(kw_data, indent=2))
                         logger.info(f"[PACKAGE] ✅ Knowledge web: {kw_data.get('concept_count', 0)} concepts, "
                                    f"{kw_data.get('relation_count', 0)} relations")
-                        metadata['package_contents'].append('knowledge_web.json')
+                        add_package_content('knowledge_web.json')
                 
                 # c) Causation System (Event History)
                 if causation_explorer is not None:
@@ -6055,7 +6061,7 @@ esac
                     if causation_data:
                         zf.writestr("causation_system.json", json.dumps(causation_data, indent=2))
                         logger.info(f"[PACKAGE] ✅ Causation system: {causation_data.get('total_events', 0)} events")
-                        metadata['package_contents'].append('causation_system.json')
+                        add_package_content('causation_system.json')
                 
                 # d) Alliance System (Social Context)
                 if alliance_system is not None:
@@ -6063,9 +6069,13 @@ esac
                     if alliance_data:
                         zf.writestr("alliance_system.json", json.dumps(alliance_data, indent=2))
                         logger.info(f"[PACKAGE] ✅ Alliance system: {alliance_data.get('alliance_count', 0)} alliances")
-                        metadata['package_contents'].append('alliance_system.json')
+                        add_package_content('alliance_system.json')
                 
-                # Re-write metadata.json to include the semantic files we added
+                # Write README and metadata once, after optional semantic files are known.
+                readme = self._generate_ultimate_readme(
+                    organism_names, brain_configs, metadata, export_results, is_ensemble
+                )
+                zf.writestr('README.md', readme)
                 zf.writestr('metadata.json', json.dumps(metadata, indent=2))
             
             # Verify we got at least one model format
@@ -7945,7 +7955,7 @@ def run_ple_game(model, model_type: str, metadata: dict, env_name: str, episodes
     print("\\nDone! 🦋")
 
 def main():
-    parser = argparse.ArgumentParser(description='🦋 Butterfly Bridge - Universal Agent Runner')
+    parser = argparse.ArgumentParser(description='Butterfly Bridge - Universal Agent Runner')
     parser.add_argument('--model', '-m', default='brain_ensemble.onnx', help='Model file (.onnx or .pt)')
     parser.add_argument('--mode', choices=['interactive', 'http', 'gym'], default='interactive')
     parser.add_argument('--port', type=int, default=8080, help='HTTP server port')
@@ -7993,14 +8003,88 @@ if __name__ == '__main__':
             org_table += f"| {i+1} | `{org_id}` | {cfg.get('input_dim', 30)} | {cfg.get('hidden_dim', 64)} | {cfg.get('output_dim', 6)} | {has_lang} | {fitness_str} |\n"
         
         # Export status
-        onnx_status = "✅ Included" if export_results.get('onnx', {}).get('success') else "❌ Failed"
-        ts_status = "✅ Included" if export_results.get('torchscript', {}).get('success') else "❌ Failed"
+        onnx_success = bool(export_results.get('onnx', {}).get('success'))
+        ts_success = bool(export_results.get('torchscript', {}).get('success'))
+        onnx_status = "✅ Included" if onnx_success else "❌ Not included"
+        ts_status = "✅ Included" if ts_success else "❌ Not included"
         onnx_size = export_results.get('onnx', {}).get('size', 0)
         ts_size = export_results.get('torchscript', {}).get('size', 0)
         cocoon_size = export_results.get('cocoon', {}).get('size', 0)
         vocab_size = metadata.get('vocab_size', 0)
         kw_concepts = metadata.get('knowledge_web_concepts', 0)
         kw_relations = metadata.get('knowledge_web_relations', 0)
+        contents = set(metadata.get('package_contents', []))
+        content_rows = [
+            f"| `cocoon.py` | 🦋 **Full Python agent** - chat, gym, HTTP, sphere arena | {cocoon_size:,} bytes |",
+        ]
+        if onnx_success:
+            content_rows.append(f"| `brain_ensemble.onnx` | ONNX model (all organisms) - inference only | {onnx_size:,} bytes {onnx_status} |")
+        if ts_success:
+            content_rows.append(f"| `brain_ensemble.pt` | TorchScript model (all organisms) - can fine-tune | {ts_size:,} bytes {ts_status} |")
+        content_rows.extend([
+            "| `bridge.py` | Universal runner (Gym/HTTP/CLI) for ONNX/TorchScript | - |",
+            "| `proton_tournament.py` | 🎮 Proton Game Arena - organism battles | - |",
+            "| `vocabulary.json` | Token vocabulary | - |",
+        ])
+        if 'knowledge_web.json' in contents:
+            content_rows.append("| `knowledge_web.json` | Semantic knowledge graph | - |")
+        if 'context_memory.json' in contents:
+            content_rows.append("| `context_memory.json` | Conversation context | - |")
+        if 'semantic_convergence.json' in contents:
+            content_rows.append("| `semantic_convergence.json` | Learned semantic anchors and convergence state | - |")
+        if 'causation_system.json' in contents:
+            content_rows.append("| `causation_system.json` | Exported event history for this cocoon | - |")
+        if 'alliance_system.json' in contents:
+            content_rows.append("| `alliance_system.json` | Exported social/alliance context | - |")
+        content_rows.extend([
+            "| `metadata.json` | Complete configuration | - |",
+            "| `requirements.txt` | Python dependencies | - |",
+            "| `start.bat` / `start.sh` | Quick-start launcher | - |",
+        ])
+        package_contents_table = "\n".join(content_rows)
+
+        bridge_commands = []
+        if onnx_success:
+            bridge_commands.extend([
+                "# Interactive mode (ONNX - fastest)",
+                "python bridge.py --model brain_ensemble.onnx --mode interactive",
+                "",
+                "# Gymnasium environment",
+                "python bridge.py --model brain_ensemble.onnx --mode gym --env CartPole-v1 --render",
+                "",
+                "# HTTP API server",
+                "python bridge.py --model brain_ensemble.onnx --mode http --port 8080",
+            ])
+        if ts_success:
+            if bridge_commands:
+                bridge_commands.append("")
+            bridge_commands.extend([
+                "# Interactive mode (TorchScript - can fine-tune later)",
+                "python bridge.py --model brain_ensemble.pt --mode interactive",
+            ])
+        if not bridge_commands:
+            bridge_commands = [
+                "# No bridge model was exported in this package.",
+                "# Use cocoon.py modes instead.",
+            ]
+        bridge_command_block = "\n".join(bridge_commands)
+
+        learning_rows = [
+            "| `cocoon.py` | Python | ✅ Full (neural + symbolic) | ✅ All (VP, language, knowledge web) | Research, chat, games |",
+        ]
+        if ts_success:
+            learning_rows.append("| `.pt` (TorchScript) | brain_ensemble.pt | ✅ Neural only | ❌ None | Fine-tuning, C++ deployment |")
+        if onnx_success:
+            learning_rows.append("| `.onnx` (ONNX) | brain_ensemble.onnx | ❌ Inference only | ❌ None | Production deployment |")
+        learning_table = "\n".join(learning_rows)
+        export_warning = ""
+        failed_exports = [
+            f"{name}: {result.get('error')}"
+            for name, result in export_results.items()
+            if name != 'cocoon' and not result.get('success') and result.get('error')
+        ]
+        if failed_exports:
+            export_warning = "\n\n**Export notes:**\n" + "\n".join(f"- {item}" for item in failed_exports) + "\n"
         
         return f'''# 🦋🦋 Butterfly Ensemble - Ultimate Package
 
@@ -8017,17 +8101,8 @@ if __name__ == '__main__':
 
 | File | Description | Size |
 |------|-------------|------|
-| `cocoon.py` | 🦋 **Full Python agent** - chat, gym, HTTP, sphere arena | {cocoon_size:,} bytes |
-| `brain_ensemble.onnx` | ONNX model (all organisms) - inference only | {onnx_size:,} bytes {onnx_status} |
-| `brain_ensemble.pt` | TorchScript model (all organisms) - can fine-tune | {ts_size:,} bytes {ts_status} |
-| `bridge.py` | Universal runner (Gym/HTTP/CLI) for ONNX/TorchScript | - |
-| `proton_tournament.py` | 🎮 Proton Game Arena - organism battles | - |
-| `vocabulary.json` | Token vocabulary | - |
-| `knowledge_web.json` | Semantic knowledge graph | - |
-| `context_memory.json` | Conversation context | - |
-| `metadata.json` | Complete configuration | - |
-| `requirements.txt` | Python dependencies | - |
-| `start.bat` / `start.sh` | Quick-start launcher | - |
+{package_contents_table}
+{export_warning}
 
 ---
 
@@ -8069,17 +8144,7 @@ python cocoon.py --mode link --hatch ws://server:9000
 For deployment where you only need inference:
 
 ```bash
-# Interactive mode (ONNX - fastest)
-python bridge.py --model brain_ensemble.onnx --mode interactive
-
-# Interactive mode (TorchScript - can fine-tune later)
-python bridge.py --model brain_ensemble.pt --mode interactive
-
-# Gymnasium environment
-python bridge.py --model brain_ensemble.onnx --mode gym --env CartPole-v1 --render
-
-# HTTP API server
-python bridge.py --model brain_ensemble.onnx --mode http --port 8080
+{bridge_command_block}
 ```
 
 ---
@@ -8090,9 +8155,7 @@ python bridge.py --model brain_ensemble.onnx --mode http --port 8080
 
 | Format | File | Learning | Subsystems | Best For |
 |--------|------|----------|------------|----------|
-| `cocoon.py` | Python | ✅ Full (neural + symbolic) | ✅ All (VP, language, knowledge web) | Research, chat, games |
-| `.pt` (TorchScript) | brain_ensemble.pt | ✅ Neural only | ❌ None | Fine-tuning, C++ deployment |
-| `.onnx` (ONNX) | brain_ensemble.onnx | ❌ Inference only | ❌ None | Production deployment |
+{learning_table}
 
 **Fine-tuning TorchScript:**
 ```python
@@ -13787,7 +13850,7 @@ async def run_cocoon_link(agent, display_name: str, hatch_url: str):
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="🦋 Butterfly Cocoon - Self-Contained Learning Agent",
+    parser = argparse.ArgumentParser(description="Butterfly Cocoon - Self-Contained Learning Agent",
                                      formatter_class=argparse.RawDescriptionHelpFormatter,
                                      epilog="""
 Examples:
