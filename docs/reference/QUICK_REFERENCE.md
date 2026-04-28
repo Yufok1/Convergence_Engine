@@ -206,6 +206,8 @@ agent_downloads/cocoon_ensemble_<timestamp>/
 ├── knowledge_web.json     # Semantic relationships
 ├── context_memory.json    # Word-organism anchors
 ├── game_contracts.json    # Council/Cocoon HTTP, CLI, game, learning contract
+├── curriculum/            # Controlled language curriculum JSON files
+├── training_logs/schema.json # JSONL schema for post-export learning traces
 ├── metadata.json          # Export info
 └── README.md              # Usage instructions
 ```
@@ -223,6 +225,11 @@ python cocoon.py --mode serve --port 8080
 # Persist live learned state from HTTP runtime
 curl -X POST http://localhost:8080/save
 curl -X POST http://localhost:8080/export -H "Content-Type: application/json" -d '{"path":"evolved_cocoon.py"}'
+
+# Inspect curriculum and submit outside-coach reward scores
+curl http://localhost:8080/curriculum
+curl http://localhost:8080/training/logs
+curl -X POST http://localhost:8080/curriculum/score -H "Content-Type: application/json" -d '{"stage":"echo_game","input":"I am clone","target":"I am clone","output":"I am clone","reward":1.0}'
 
 # Gym training
 python bridge.py . --mode gym --gym-env CartPole-v1 --render
@@ -253,9 +260,10 @@ python cra_cli.py cocoon-validate Children/cocoon_ensemble_<timestamp>.zip --run
 ```
 
 **Champion Council contract:** Fresh package exports include connector words in `vocabulary.json`,
-`game_contracts.json`, native `/snapshot`, `/save`, `/export`, `/capabilities`, and
-Dreamer bridge endpoints `/dreamer/observe` + `/dreamer/propose`. Treat Cocoons as
-RL/game-native runtimes wrapped by Council tools, not as reliable tool-call JSON emitters.
+`game_contracts.json`, staged `curriculum/*.json`, `training_logs/schema.json`, native
+`/curriculum`, `/training/logs`, `/curriculum/score`, `/snapshot`, `/save`, `/export`,
+`/capabilities`, and Dreamer bridge endpoints `/dreamer/observe` + `/dreamer/propose`.
+Treat Cocoons as RL/game-native runtimes wrapped by Council tools, not as reliable tool-call JSON emitters.
 
 ---
 

@@ -1038,6 +1038,14 @@ def _vocab_word_count(vocab: Optional[Dict[str, Any]]) -> int:
 def validate_cocoon_package(path: Path, run_info: bool = False, python_executable: str = sys.executable) -> Dict[str, Any]:
     """Static validation for Cocoon ZIPs/directories used by Council adapters."""
     connector_words = {"a", "and", "to", "of", "in", "it", "is", "but", "then", "cocoon"}
+    curriculum_files = {
+        "curriculum/connector_words.json",
+        "curriculum/dialogue_frames.json",
+        "curriculum/role_transform_tasks.json",
+        "curriculum/game_language_tasks.json",
+        "curriculum/reward_rubric.json",
+        "training_logs/schema.json",
+    }
     result: Dict[str, Any] = {
         "path": str(path),
         "exists": path.exists(),
@@ -1091,6 +1099,13 @@ def validate_cocoon_package(path: Path, run_info: bool = False, python_executabl
                     result["warnings"].append("README references brain_ensemble.onnx but package does not include it.")
                 if "game_contracts.json" not in names:
                     result["warnings"].append("Missing game_contracts.json Council contract.")
+                result["curriculum_files"] = {
+                    name: name in names
+                    for name in sorted(curriculum_files)
+                }
+                missing_curriculum = [name for name, present in result["curriculum_files"].items() if not present]
+                if missing_curriculum:
+                    result["warnings"].append(f"Missing language curriculum files: {', '.join(missing_curriculum)}")
                 result["has_torchscript"] = "brain_ensemble.pt" in names
                 result["has_onnx"] = "brain_ensemble.onnx" in names
 
@@ -1104,7 +1119,7 @@ def validate_cocoon_package(path: Path, run_info: bool = False, python_executabl
 
         elif path.is_dir():
             result["kind"] = "directory"
-            names = {p.name for p in path.iterdir()}
+            names = {str(p.relative_to(path)).replace("\\", "/") for p in path.rglob("*") if p.is_file()}
             required = ["cocoon.py", "metadata.json", "vocabulary.json", "README.md"]
             result["files"] = {name: name in names for name in required}
             for name, present in result["files"].items():
@@ -1124,6 +1139,13 @@ def validate_cocoon_package(path: Path, run_info: bool = False, python_executabl
                 result["warnings"].append(f"Missing connector words: {', '.join(missing_connectors)}")
             if "game_contracts.json" not in names:
                 result["warnings"].append("Missing game_contracts.json Council contract.")
+            result["curriculum_files"] = {
+                name: name in names
+                for name in sorted(curriculum_files)
+            }
+            missing_curriculum = [name for name, present in result["curriculum_files"].items() if not present]
+            if missing_curriculum:
+                result["warnings"].append(f"Missing language curriculum files: {', '.join(missing_curriculum)}")
             result["has_torchscript"] = "brain_ensemble.pt" in names
             result["has_onnx"] = "brain_ensemble.onnx" in names
             extracted_dir = path
@@ -1171,6 +1193,10 @@ def summarize_cocoon_validation(data: Dict[str, Any]) -> None:
     if connectors:
         missing = [word for word, present in connectors.items() if not present]
         print(f"Connectors missing: {', '.join(missing) if missing else 'none'}")
+    curriculum = data.get("curriculum_files") or {}
+    if curriculum:
+        missing = [name for name, present in curriculum.items() if not present]
+        print(f"Curriculum files missing: {', '.join(missing) if missing else 'none'}")
     for key in ("errors", "warnings"):
         items = data.get(key) or []
         if items:

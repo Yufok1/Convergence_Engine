@@ -78,7 +78,8 @@ Cocoon + Champion Council
 Fresh exports include:
 - connector-word curriculum in vocabulary.json
 - game_contracts.json for Council adapters
-- native HTTP endpoints: /health, /act, /learn, /chat, /teach, /vocab, /snapshot, /save, /export, /capabilities
+- curriculum/*.json and training_logs/schema.json for staged language coaching
+- native HTTP endpoints: /health, /act, /learn, /chat, /teach, /vocab, /curriculum, /training/logs, /curriculum/score, /snapshot, /save, /export, /capabilities
 
 Run an exported Cocoon:
 python cocoon.py --mode info --max-organisms 1

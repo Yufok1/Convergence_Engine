@@ -141,9 +141,172 @@ class AgentCompiler:
             'you',
         ]
 
+    def _build_cocoon_language_curriculum(self) -> Dict[str, Dict[str, Any]]:
+        """Controlled language curriculum exported with each Cocoon package."""
+        connector_seed = [
+            'a', 'an', 'the', 'and', 'to', 'of', 'in', 'it', 'is', 'are',
+            'you', 'me', 'we', 'because', 'then',
+        ]
+        all_connectors = self._connector_curriculum_words()
+        return {
+            'curriculum/connector_words.json': {
+                'version': '1.0',
+                'stage': 1,
+                'name': 'connector_seed',
+                'purpose': 'Seed closed-class words before open-ended chat.',
+                'seed_words': connector_seed,
+                'extended_words': all_connectors,
+                'accept_single_character_connectors': True,
+                'lesson_shape': {
+                    'speaker': 'outside_coach',
+                    'target': 'cocoon_vocabulary',
+                    'reward': 'positive for adding connector words without output pressure',
+                },
+            },
+            'curriculum/dialogue_frames.json': {
+                'version': '1.0',
+                'stages': [
+                    {
+                        'stage': 2,
+                        'name': 'echo_game',
+                        'objective': 'Exact short phrase copy before semantic conversation.',
+                        'examples': [
+                            {'input': 'I am clone', 'target': 'I am clone'},
+                            {'input': 'we are here', 'target': 'we are here'},
+                            {'input': 'the ball is near', 'target': 'the ball is near'},
+                        ],
+                    },
+                    {
+                        'stage': 4,
+                        'name': 'turn_exchange_game',
+                        'objective': 'Tiny two-turn exchanges with stable role words.',
+                        'examples': [
+                            {'input': 'hello', 'target': 'hello'},
+                            {'input': 'I see you', 'target': 'you see me'},
+                            {'input': 'we move then rest', 'target': 'we move then rest'},
+                        ],
+                    },
+                ],
+                'constraints': {
+                    'max_words_initial': 5,
+                    'avoid_tool_prompts': True,
+                    'avoid_json_syntax': True,
+                },
+            },
+            'curriculum/role_transform_tasks.json': {
+                'version': '1.0',
+                'stage': 3,
+                'name': 'role_transform_game',
+                'objective': 'Preserve speaker/listener perspective across short replies.',
+                'transforms': [
+                    {'input': 'I am original', 'target': 'you are original'},
+                    {'input': 'I am clone', 'target': 'you are clone'},
+                    {'input': 'you see me', 'target': 'I see you'},
+                    {'input': 'we are together', 'target': 'we are together'},
+                ],
+                'score_fields': ['exact_match', 'pronoun_role_preserved', 'short_response'],
+            },
+            'curriculum/game_language_tasks.json': {
+                'version': '1.0',
+                'stage': 5,
+                'name': 'game_language_binding',
+                'objective': 'Attach language to RL observations, actions, and reward.',
+                'bindings': [
+                    {'state_hint': 'ball distance small', 'phrase': 'ball near', 'preferred_action_words': ['catch', 'move']},
+                    {'state_hint': 'ball x negative', 'phrase': 'move left', 'preferred_action_words': ['left']},
+                    {'state_hint': 'ball x positive', 'phrase': 'move right', 'preferred_action_words': ['right']},
+                    {'state_hint': 'positive reward', 'phrase': 'catch good', 'reward_target': 1.0},
+                    {'state_hint': 'negative reward', 'phrase': 'miss bad', 'reward_target': -1.0},
+                    {'state_hint': 'high rolling reward', 'phrase': 'reward high', 'reward_target': 0.8},
+                ],
+                'arena': {
+                    'stage': 6,
+                    'name': 'clone_dialogue_arena',
+                    'instruction': 'Run original vs clone with one target per exchange; score each turn before training.',
+                },
+            },
+            'curriculum/reward_rubric.json': {
+                'version': '1.0',
+                'coach_role': 'reward_judge_not_speaker',
+                'positive_rewards': {
+                    'connector_use': 0.15,
+                    'short_response_compliance': 0.20,
+                    'exact_phrase_copy_early': 0.40,
+                    'role_preservation': 0.35,
+                    'game_state_word_alignment': 0.30,
+                },
+                'penalties': {
+                    'repetition_loop': -0.50,
+                    'malformed_prompt_residue': -0.60,
+                    'json_or_tool_syntax_when_not_training_tools': -0.60,
+                    'long_unrequested_response': -0.20,
+                    'role_confusion': -0.35,
+                },
+                'blocked_residue_examples': [
+                    'toolcocoonlistargs',
+                    'functioncall',
+                    'assistantto=functions',
+                    'jsonschema',
+                    'systemprompt',
+                ],
+            },
+            'training_logs/schema.json': {
+                'version': '1.0',
+                'format': 'jsonl',
+                'default_path': 'training_logs/live_learning_trace.jsonl',
+                'purpose': 'Post-export language/RL learning trace for Council coaches and clone-from-live-state.',
+                'required_fields': [
+                    'timestamp',
+                    'event_type',
+                    'stage',
+                    'input',
+                    'target',
+                    'output',
+                    'reward',
+                    'score',
+                    'vocab_size',
+                    'training_step',
+                ],
+                'event_types': [
+                    'connector_seed',
+                    'echo_trial',
+                    'role_transform_trial',
+                    'turn_exchange_trial',
+                    'game_language_binding',
+                    'clone_dialogue_arena_turn',
+                    'rl_transition',
+                    'runtime_save',
+                ],
+                'coach_contract': {
+                    'speaker': False,
+                    'judge': True,
+                    'note': 'The outside coach scores Cocoon outputs; it should not dump raw prompt scaffolds into training text.',
+                },
+            },
+        }
+
+    def _build_cocoon_language_curriculum_manifest(self, curriculum_bundle: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Compact manifest for metadata and Council contracts."""
+        bundle = curriculum_bundle or self._build_cocoon_language_curriculum()
+        return {
+            'version': '1.0',
+            'purpose': 'Develop Cocoon language as staged RL curriculum, not open-ended free chat.',
+            'files': sorted(bundle.keys()),
+            'development_sequence': [
+                'connector_seed',
+                'echo_game',
+                'role_transform_game',
+                'turn_exchange_game',
+                'game_language_binding',
+                'clone_dialogue_arena',
+            ],
+            'coach_contract': 'Outside coach is a reward judge, not the speaker generating all target language.',
+        }
+
     def _build_cocoon_game_contracts(self) -> Dict[str, Any]:
         """Contract emitted for Council/runtime adapters that plug Cocoons into tools."""
         connector_words = self._connector_curriculum_words()
+        curriculum_bundle = self._build_cocoon_language_curriculum()
         return {
             'version': '1.0',
             'runtime_kind': 'rl_game_native_cocoon',
@@ -160,6 +323,7 @@ class AgentCompiler:
                 'required_words': connector_words,
                 'purpose': 'Closed-class connector words needed for coherent chat and proposal grammar.',
             },
+            'language_development': self._build_cocoon_language_curriculum_manifest(curriculum_bundle),
             'http_endpoints': {
                 'GET /health': 'Runtime health and organism count.',
                 'POST /act': 'Action inference from numeric state.',
@@ -167,6 +331,9 @@ class AgentCompiler:
                 'POST /chat': 'Prompt routed through the Cocoon, optionally learning.',
                 'POST /teach': 'Teach text with optional reward.',
                 'GET /vocab': 'Current live vocabulary.',
+                'GET /curriculum': 'Staged language curriculum and reward rubric.',
+                'GET /training/logs': 'Recent post-export learning trace entries.',
+                'POST /curriculum/score': 'Outside coach submits reward-judge score without injecting prompt sludge.',
                 'GET /snapshot': 'Serializable live symbolic/training state for cloning.',
                 'POST /save': 'Persist live symbolic state beside the running Cocoon.',
                 'POST /export': 'Export learned state into an updated cocoon.py.',
@@ -5526,6 +5693,10 @@ if __name__ == '__main__':
         alliance_bytes = zlib.compress(alliance_json.encode('utf-8'), level=9) if compress_data else alliance_json.encode('utf-8')
         alliance_b64 = base64.b64encode(alliance_bytes).decode('ascii')
         game_contracts = self._build_cocoon_game_contracts()
+        language_curriculum = self._build_cocoon_language_curriculum()
+        curriculum_json = json.dumps(language_curriculum, default=_json_default)
+        curriculum_bytes = zlib.compress(curriculum_json.encode('utf-8'), level=9) if compress_data else curriculum_json.encode('utf-8')
+        curriculum_b64 = base64.b64encode(curriculum_bytes).decode('ascii')
 
         # Generate cocoon source (always needed for 'cocoon' and 'package' formats)
         cocoon_source_shell = self._generate_cocoon_source(
@@ -5543,6 +5714,7 @@ if __name__ == '__main__':
             is_ensemble=is_ensemble,
             organism_names=organism_names,
             readme_b64="",
+            curriculum_b64=curriculum_b64,
         )
 
         # 🧬 Generate Formation Fingerprint - the emergent history of this cocoon
@@ -5594,6 +5766,7 @@ if __name__ == '__main__':
             is_ensemble=is_ensemble,
             organism_names=organism_names,
             readme_b64=readme_b64,
+            curriculum_b64=curriculum_b64,
         )
 
         # Handle different export formats
@@ -5944,6 +6117,7 @@ if __name__ == '__main__':
                     'knowledge_web_concepts': kw_data.get('concept_count', 0),
                     'knowledge_web_relations': kw_data.get('relation_count', 0),
                     'council_contract': game_contracts,
+                    'language_curriculum': self._build_cocoon_language_curriculum_manifest(language_curriculum),
                     'generated': datetime.datetime.now().isoformat(),
                     'package_contents': [
                         'brain_ensemble.onnx' if export_results['onnx']['success'] else None,
@@ -5970,6 +6144,9 @@ if __name__ == '__main__':
                 zf.writestr('vocabulary.json', vocab_json)
                 zf.writestr('game_contracts.json', json.dumps(game_contracts, indent=2))
                 add_package_content('game_contracts.json')
+                for curriculum_path, payload in language_curriculum.items():
+                    zf.writestr(curriculum_path, json.dumps(payload, indent=2, default=_json_default))
+                    add_package_content(curriculum_path)
                 
                 # ─────────────────────────────────────────────────────────────
                 # 7. REQUIREMENTS.TXT
@@ -6582,6 +6759,9 @@ python cocoon.py --mode serve --port 8080
 | `POST` | `/chat` | Chat with learning (returns all organism responses) |
 | `POST` | `/teach` | Teach new words/concepts |
 | `GET` | `/vocab` | Get current vocabulary |
+| `GET` | `/curriculum` | Get staged language curriculum and reward rubric |
+| `GET` | `/training/logs` | Get recent post-export learning traces |
+| `POST` | `/curriculum/score` | Submit outside coach reward score |
 
 **Example `/chat` request:**
 ```bash
@@ -8127,6 +8307,10 @@ if __name__ == '__main__':
             content_rows.append("| `alliance_system.json` | Exported social/alliance context | - |")
         if 'game_contracts.json' in contents:
             content_rows.append("| `game_contracts.json` | Council/Cocoon HTTP, CLI, game, and learning contract | - |")
+        if any(name.startswith('curriculum/') for name in contents):
+            content_rows.append("| `curriculum/*.json` | Staged language curriculum for connector, echo, role, turn, and game-language training | - |")
+        if 'training_logs/schema.json' in contents:
+            content_rows.append("| `training_logs/schema.json` | JSONL schema for post-export learning traces | - |")
         content_rows.extend([
             "| `metadata.json` | Complete configuration | - |",
             "| `requirements.txt` | Python dependencies | - |",
@@ -8178,6 +8362,10 @@ if __name__ == '__main__':
             export_warning = "\n\n**Export notes:**\n" + "\n".join(f"- {item}" for item in failed_exports) + "\n"
         connector_words = metadata.get('connector_curriculum', [])
         connector_preview = ", ".join(connector_words[:30]) if connector_words else "not recorded"
+        curriculum_manifest = metadata.get('language_curriculum', {})
+        curriculum_files = curriculum_manifest.get('files', [])
+        curriculum_preview = ", ".join(curriculum_files) if curriculum_files else "not recorded"
+        curriculum_sequence = " -> ".join(curriculum_manifest.get('development_sequence', [])) or "not recorded"
         
         return f'''# 🦋🦋 Butterfly Ensemble - Ultimate Package
 
@@ -8277,6 +8465,14 @@ tools instead of expecting reliable tool-call JSON from organism text.
 
 **Connector curriculum seeded in source vocab:** `{connector_preview}`
 
+**Controlled language curriculum:** `{curriculum_sequence}`
+
+**Curriculum files:** `{curriculum_preview}`
+
+The Cocoon should be trained as an RL organism with a language head. Use the
+outside coach as a reward judge, not as the speaker that injects raw prompt
+scaffolds into the training stream.
+
 **Native HTTP endpoints:**
 
 | Endpoint | Purpose |
@@ -8287,6 +8483,9 @@ tools instead of expecting reliable tool-call JSON from organism text.
 | `POST /chat` | Prompt routed through the Cocoon, optionally learning |
 | `POST /teach` | Teach text with optional reward |
 | `GET /vocab` | Current live vocabulary |
+| `GET /curriculum` | Staged language curriculum and reward rubric |
+| `GET /training/logs` | Recent post-export learning trace entries |
+| `POST /curriculum/score` | Outside coach submits reward-judge score |
 | `GET /snapshot` | Serializable live symbolic/training state for clone-from-live-state |
 | `POST /save` | Persist learned runtime state beside the running Cocoon |
 | `POST /export` | Export learned state to an updated `cocoon.py` |
@@ -8520,7 +8719,9 @@ This package was generated by the **Butterfly Convergence Engine** - a neuro-sym
                                 include_http: bool,
                                 is_ensemble: bool,
                                 organism_names: List[str],
-                                readme_b64: str) -> str:
+                                readme_b64: str,
+                                curriculum_b64: str = "",
+                                training_logs_b64: str = "") -> str:
         """Generate the complete cocoon Python source code with MONOLITHIC subsystems."""
 
         brain_data_py = "[\n" + ",\n".join(f'    "{b}"' for b in brain_data_list) + "\n]"
@@ -8591,6 +8792,8 @@ _TRAINING_CONFIG_B64 = "$CONFIG_B64"
 _ATOMIC_LANG_B64 = "$ATOMIC_LANG_B64"
 _CONVERSATION_HISTORY_B64 = "$CONVERSATION_B64"
 _ALLIANCE_B64 = "$ALLIANCE_B64"
+_LANGUAGE_CURRICULUM_B64 = "$LANGUAGE_CURRICULUM_B64"
+_TRAINING_LOGS_B64 = "$TRAINING_LOGS_B64"
 _DATA_COMPRESSED = $DATA_COMPRESSED
 _README_B64 = "$README_B64"
 _TMRL_ADAPTER_B64 = "$TMRL_ADAPTER_B64"
@@ -8661,6 +8864,59 @@ def _print_embedded_readme():
         print(f"[!] Failed to decode embedded README: {exc}")
         return
     _safe_print(text)
+
+
+def _default_training_log_schema() -> Dict[str, Any]:
+    return {
+        'version': '1.0',
+        'format': 'jsonl',
+        'default_path': 'training_logs/live_learning_trace.jsonl',
+        'required_fields': [
+            'timestamp', 'event_type', 'stage', 'input', 'target', 'output',
+            'reward', 'score', 'vocab_size', 'training_step',
+        ],
+        'coach_contract': {
+            'speaker': False,
+            'judge': True,
+            'note': 'Coach scores outputs; do not inject raw prompt scaffolds into learning text.',
+        },
+    }
+
+
+def cocoon_language_curriculum() -> Dict[str, Any]:
+    """Return embedded staged language curriculum for Council/coaches."""
+    payload = _decode_data(_LANGUAGE_CURRICULUM_B64, is_json=True)
+    if isinstance(payload, dict) and payload:
+        return payload
+    return {
+        'curriculum/connector_words.json': {
+            'version': '1.0',
+            'stage': 1,
+            'name': 'connector_seed',
+            'seed_words': sorted(_CONNECTOR_WORDS),
+        },
+        'training_logs/schema.json': _default_training_log_schema(),
+    }
+
+
+def cocoon_training_log_schema() -> Dict[str, Any]:
+    curriculum = cocoon_language_curriculum()
+    schema = curriculum.get('training_logs/schema.json')
+    return schema if isinstance(schema, dict) else _default_training_log_schema()
+
+
+def write_curriculum_bundle(output_dir: str) -> Dict[str, str]:
+    """Write embedded curriculum files and return absolute paths."""
+    paths = {}
+    for rel_path, payload in cocoon_language_curriculum().items():
+        if os.path.isabs(rel_path) or '..' in rel_path.replace('\\\\', '/').split('/'):
+            continue
+        out_path = os.path.join(output_dir, rel_path)
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        with open(out_path, 'w', encoding='utf-8') as f:
+            json.dump(payload, f, indent=2, default=_json_default)
+        paths[rel_path] = os.path.abspath(out_path)
+    return paths
 
 
 def _unpack_ultimate(output_dir: str, voting: str = 'confidence', max_organisms: Optional[int] = None) -> bool:
@@ -8760,6 +9016,15 @@ def _unpack_ultimate(output_dir: str, voting: str = 'confidence', max_organisms:
     except Exception as exc:
         print(f"[!] Vocabulary unpack failed: {exc}")
 
+    # 3b) Language curriculum and training-log schema
+    try:
+        curriculum_paths = write_curriculum_bundle(output_dir)
+        for rel_path, abs_path in curriculum_paths.items():
+            spawned.append(abs_path)
+            print(f"[OK] Unpacked curriculum: {rel_path}")
+    except Exception as exc:
+        print(f"[!] Curriculum unpack failed: {exc}")
+
     # 4) Metadata - handles existing metadata.json from package exports
     try:
         arch_obj = _decode_data(_ARCHITECTURE_B64, is_json=True)
@@ -8773,6 +9038,10 @@ def _unpack_ultimate(output_dir: str, voting: str = 'confidence', max_organisms:
             'data_compressed': bool(_DATA_COMPRESSED),
             'includes_readme': bool(_README_B64),
             'includes_tmrl_adapter': bool(_TMRL_ADAPTER_B64),
+            'language_curriculum': {
+                'files': sorted(cocoon_language_curriculum().keys()),
+                'training_log_schema': 'training_logs/schema.json',
+            },
             'unpack_outputs': {
                 'onnx': 'ensemble.onnx',
                 'weights': 'ensemble_weights.pt',
@@ -10059,6 +10328,9 @@ class CocoonAgent:
         # Add null checks in case decode fails (corrupted data)
         self.vocabulary = _decode_data(_VOCABULARY_B64) or {'word_to_id': {}, 'id_to_word': {}, 'vocab_size': 0}
         self._ensure_connector_curriculum()
+        self.language_curriculum = cocoon_language_curriculum()
+        decoded_logs = _decode_data(_TRAINING_LOGS_B64) or []
+        self.training_logs = decoded_logs if isinstance(decoded_logs, list) else []
         self.knowledge_web = _decode_data(_KNOWLEDGE_WEB_B64) or {'concepts': {}, 'relations': []}
         self.brains: List[OrganismBrain] = []
         self.optimizers: List[optim.Adam] = []
@@ -10262,9 +10534,52 @@ class CocoonAgent:
         print(f"[VOCAB] Learned new word: '{word}' (ID={new_id})")
         return new_id
 
+    def _looks_like_prompt_residue(self, word: str) -> bool:
+        """Reject raw tool/prompt scaffolds unless tool-language training is explicit."""
+        if not word:
+            return False
+        lower = word.lower()
+        residue_markers = (
+            'tool', 'function', 'assistant', 'developer', 'systemprompt',
+            'jsonschema', 'arguments', 'args', 'functioncall',
+        )
+        if lower in {'json', 'args', 'tool', 'schema'}:
+            return True
+        if len(lower) >= 12 and any(marker in lower for marker in residue_markers):
+            return True
+        if lower.startswith('cocoon') and lower.endswith('args'):
+            return True
+        if lower.startswith('tool') and 'args' in lower:
+            return True
+        return False
+
+    def record_training_log(self, event_type: str, stage: str = 'runtime',
+                            input_text: str = '', target: str = '',
+                            output: str = '', reward: float = 0.0,
+                            score: Optional[Dict[str, Any]] = None,
+                            extra: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        entry = {
+            'timestamp': time.time(),
+            'event_type': event_type,
+            'stage': stage,
+            'input': input_text,
+            'target': target,
+            'output': output,
+            'reward': reward,
+            'score': score or {},
+            'vocab_size': len(self.vocabulary.get('word_to_id', {})),
+            'training_step': getattr(self, 'training_step', 0),
+        }
+        if extra:
+            entry['extra'] = extra
+        self.training_logs.append(entry)
+        self.training_logs = self.training_logs[-2000:]
+        return entry
+
     def learn_from_text(self, text: str, context_state: Optional[np.ndarray] = None,
                         reward: float = 0.0, vp_value: Optional[float] = None,
-                        filter_by_knowledge_web: bool = True):
+                        filter_by_knowledge_web: bool = True,
+                        allow_tool_language: bool = False):
         """Learn from text input - adds valid words and creates training experience.
         
         Args:
@@ -10274,10 +10589,12 @@ class CocoonAgent:
             vp_value: Violation pressure value
             filter_by_knowledge_web: If True, only learn words that exist in knowledge_web
                                      (matching butterfly_chat's gating behavior)
+            allow_tool_language: If True, allow JSON/tool syntax vocabulary.
         """
         words = text.lower().split()
         tokens = []
         learned_count = 0
+        rejected_residue = []
         
         # Get knowledge_web concepts for filtering
         kw_concepts = self.knowledge_web.get('concepts', {}) if filter_by_knowledge_web else None
@@ -10286,6 +10603,9 @@ class CocoonAgent:
             # Clean word (remove punctuation)
             clean_word = ''.join(c for c in word if c.isalnum())
             if len(clean_word) < 2 and clean_word not in _CONNECTOR_WORDS:
+                continue
+            if not allow_tool_language and self._looks_like_prompt_residue(clean_word):
+                rejected_residue.append(clean_word)
                 continue
                 
             # FIXED: Learn ALL words, not just those in knowledge_web
@@ -10352,6 +10672,15 @@ class CocoonAgent:
                     target_tokens=[tokens[i+1]],
                     vp_value=vp_value
                 )
+        if rejected_residue:
+            self.record_training_log(
+                'prompt_residue_rejected',
+                stage='language_hygiene',
+                input_text=text[:500],
+                reward=-0.6,
+                score={'rejected_count': len(rejected_residue)},
+                extra={'rejected_words': rejected_residue[:50]},
+            )
         return tokens
 
     def add_concept(self, word: str, category: str = 'learned', confidence: float = 0.5):
@@ -11069,19 +11398,19 @@ class CocoonAgent:
         for brain in self.brains:
             buf = BytesIO()
             torch.save(brain.state_dict(), buf)
-            compressed = zlib.compress(buf.getvalue(), level=9)
-            new_brain_data.append(base64.b64encode(compressed).decode('ascii'))
+            payload = zlib.compress(buf.getvalue(), level=9) if _DATA_COMPRESSED else buf.getvalue()
+            new_brain_data.append(base64.b64encode(payload).decode('ascii'))
         
         # 2) Vocabulary (may have grown via learn_from_text)
         vocab_json = json.dumps(self.vocabulary, default=_json_default)
-        vocab_compressed = zlib.compress(vocab_json.encode('utf-8'), level=9)
-        vocab_b64 = base64.b64encode(vocab_compressed).decode('ascii')
+        vocab_bytes = zlib.compress(vocab_json.encode('utf-8'), level=9) if _DATA_COMPRESSED else vocab_json.encode('utf-8')
+        vocab_b64 = base64.b64encode(vocab_bytes).decode('ascii')
         
         # 3) Conversation history (accumulated during chat)
         conv_data = self.conversation.to_dict() if hasattr(self, 'conversation') else {'messages': [], 'topics': {}, 'turn_count': 0}
         conv_json = json.dumps(conv_data, default=_json_default)
-        conv_compressed = zlib.compress(conv_json.encode('utf-8'), level=9)
-        conv_b64 = base64.b64encode(conv_compressed).decode('ascii')
+        conv_bytes = zlib.compress(conv_json.encode('utf-8'), level=9) if _DATA_COMPRESSED else conv_json.encode('utf-8')
+        conv_b64 = base64.b64encode(conv_bytes).decode('ascii')
         
         # 4) Atomic language states (concept strengths learned during chat)
         atomic_data = []
@@ -11091,13 +11420,21 @@ class CocoonAgent:
         elif hasattr(self, 'atomic_language'):
             atomic_data.append(self.atomic_language.to_dict() if hasattr(self.atomic_language, 'to_dict') else {})
         atomic_json = json.dumps(atomic_data, default=_json_default)
-        atomic_compressed = zlib.compress(atomic_json.encode('utf-8'), level=9)
-        atomic_b64 = base64.b64encode(atomic_compressed).decode('ascii')
+        atomic_bytes = zlib.compress(atomic_json.encode('utf-8'), level=9) if _DATA_COMPRESSED else atomic_json.encode('utf-8')
+        atomic_b64 = base64.b64encode(atomic_bytes).decode('ascii')
         
         # 5) Knowledge web (may have grown via learn_from_text - FIXED: was missing!)
         kw_json = json.dumps(self.knowledge_web, default=_json_default)
-        kw_compressed = zlib.compress(kw_json.encode('utf-8'), level=9)
-        kw_b64 = base64.b64encode(kw_compressed).decode('ascii')
+        kw_bytes = zlib.compress(kw_json.encode('utf-8'), level=9) if _DATA_COMPRESSED else kw_json.encode('utf-8')
+        kw_b64 = base64.b64encode(kw_bytes).decode('ascii')
+
+        # 6) Curriculum and post-export learning traces
+        curriculum_json = json.dumps(getattr(self, 'language_curriculum', cocoon_language_curriculum()), default=_json_default)
+        curriculum_bytes = zlib.compress(curriculum_json.encode('utf-8'), level=9) if _DATA_COMPRESSED else curriculum_json.encode('utf-8')
+        curriculum_b64 = base64.b64encode(curriculum_bytes).decode('ascii')
+        logs_json = json.dumps(list(getattr(self, 'training_logs', [])[-2000:]), default=_json_default)
+        logs_bytes = zlib.compress(logs_json.encode('utf-8'), level=9) if _DATA_COMPRESSED else logs_json.encode('utf-8')
+        logs_b64 = base64.b64encode(logs_bytes).decode('ascii')
         
         # Read original source
         with open(__file__, 'r', encoding='utf-8') as f:
@@ -11145,6 +11482,16 @@ class CocoonAgent:
         if kw_start != -1:
             kw_end = source.find('"', kw_start + len('_KNOWLEDGE_WEB_B64 = "')) + 1
             source = source[:kw_start] + f'_KNOWLEDGE_WEB_B64 = "{kw_b64}"' + source[kw_end:]
+
+        # Replace curriculum and training logs for durable post-export coaching
+        curriculum_start = source.find('_LANGUAGE_CURRICULUM_B64 = "')
+        if curriculum_start != -1:
+            curriculum_end = source.find('"', curriculum_start + len('_LANGUAGE_CURRICULUM_B64 = "')) + 1
+            source = source[:curriculum_start] + f'_LANGUAGE_CURRICULUM_B64 = "{curriculum_b64}"' + source[curriculum_end:]
+        logs_start = source.find('_TRAINING_LOGS_B64 = "')
+        if logs_start != -1:
+            logs_end = source.find('"', logs_start + len('_TRAINING_LOGS_B64 = "')) + 1
+            source = source[:logs_start] + f'_TRAINING_LOGS_B64 = "{logs_b64}"' + source[logs_end:]
         
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(source)
@@ -11152,7 +11499,8 @@ class CocoonAgent:
         print(f"[OK] Exported updated cocoon to: {output_path}")
         print(f"     Preserved: brain weights, vocabulary ({len(self.vocabulary.get('word_to_id', {}))} words),")
         print(f"     knowledge_web ({len(self.knowledge_web.get('concepts', {}))} concepts),")
-        print(f"     conversation ({conv_data.get('turn_count', 0)} turns), atomic language states")
+        print(f"     conversation ({conv_data.get('turn_count', 0)} turns), atomic language states,")
+        print(f"     curriculum ({len(getattr(self, 'language_curriculum', {}))} files), logs ({len(getattr(self, 'training_logs', []))} entries)")
 
     def export_onnx(self, output_path: str, organism_idx: int = 0):
         """Export a brain as ONNX file for Netron visualization."""
@@ -13600,8 +13948,21 @@ def cocoon_capability_contract() -> Dict[str, Any]:
             'clone_from_live_state': True,
         },
         'connector_curriculum': sorted(_CONNECTOR_WORDS),
+        'language_development': {
+            'files': sorted(cocoon_language_curriculum().keys()),
+            'sequence': [
+                'connector_seed',
+                'echo_game',
+                'role_transform_game',
+                'turn_exchange_game',
+                'game_language_binding',
+                'clone_dialogue_arena',
+            ],
+            'coach_contract': 'outside coach scores outputs; coach is not the speaking dataset',
+        },
         'http_endpoints': [
             '/health', '/act', '/learn', '/chat', '/teach', '/vocab',
+            '/curriculum', '/training/logs', '/curriculum/score',
             '/snapshot', '/save', '/export', '/capabilities',
             '/dreamer/observe', '/dreamer/propose',
         ],
@@ -13645,6 +14006,9 @@ def build_live_snapshot(agent: CocoonAgent) -> Dict[str, Any]:
         'atomic_languages': atomic_languages,
         'training_step': getattr(agent, 'training_step', 0),
         'reward_history': list(getattr(agent, 'reward_history', [])[-200:]),
+        'training_logs': list(getattr(agent, 'training_logs', [])[-500:]),
+        'language_curriculum': getattr(agent, 'language_curriculum', cocoon_language_curriculum()),
+        'training_log_schema': cocoon_training_log_schema(),
         'capabilities': cocoon_capability_contract(),
     }
 
@@ -13652,6 +14016,13 @@ def build_live_snapshot(agent: CocoonAgent) -> Dict[str, Any]:
 def save_runtime_state(agent: CocoonAgent, output_dir: str = '.') -> Dict[str, Any]:
     """Persist live symbolic/training state beside the running Cocoon."""
     os.makedirs(output_dir, exist_ok=True)
+    if hasattr(agent, 'record_training_log'):
+        agent.record_training_log(
+            'runtime_save',
+            stage='durable_learning',
+            reward=0.0,
+            score={'output_dir': output_dir},
+        )
     snapshot = build_live_snapshot(agent)
     paths = {}
     files = {
@@ -13667,6 +14038,15 @@ def save_runtime_state(agent: CocoonAgent, output_dir: str = '.') -> Dict[str, A
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(payload, f, indent=2, default=_json_default)
         paths[key] = os.path.abspath(path)
+    for rel_path, abs_path in write_curriculum_bundle(output_dir).items():
+        paths[rel_path] = abs_path
+    log_dir = os.path.join(output_dir, 'training_logs')
+    os.makedirs(log_dir, exist_ok=True)
+    trace_path = os.path.join(log_dir, 'live_learning_trace.jsonl')
+    with open(trace_path, 'w', encoding='utf-8') as f:
+        for entry in snapshot.get('training_logs', []):
+            f.write(json.dumps(entry, default=_json_default) + '\n')
+    paths['training_logs/live_learning_trace.jsonl'] = os.path.abspath(trace_path)
     return {
         'saved': True,
         'output_dir': os.path.abspath(output_dir),
@@ -13710,6 +14090,13 @@ def run_http_server(agent: CocoonAgent, port: int = 8080):
             data['done']
         )
         loss = agent.train_step()
+        agent.record_training_log(
+            'rl_transition',
+            stage='game_language_binding',
+            reward=float(data.get('reward', 0.0)),
+            score={'loss': loss},
+            extra={'done': bool(data.get('done', False)), 'action': data.get('action')},
+        )
         return jsonify({'loss': loss, 'step': agent.training_step})
 
     @app.route('/chat', methods=['POST'])
@@ -13767,6 +14154,14 @@ def run_http_server(agent: CocoonAgent, port: int = 8080):
             agent.learn_from_text(prompt, reward=best_reward, vp_value=current_vp)
             if len(agent.experience_buffers[0]) >= agent.batch_size:
                 agent.train_step()
+            agent.record_training_log(
+                'chat_turn',
+                stage='free_chat_observed',
+                input_text=prompt[:500],
+                output=final_response[:500],
+                reward=best_reward,
+                score={'semantic_reward': best_reward, 'vp_value': current_vp},
+            )
         
         # Update conversation history
         agent.conversation.add_message('user', prompt)
@@ -13786,16 +14181,26 @@ def run_http_server(agent: CocoonAgent, port: int = 8080):
         data = request.json
         text = data.get('text', '')
         reward = data.get('reward', 0.5)
+        allow_tool_language = bool(data.get('allow_tool_language', False))
         
         if not text:
             return jsonify({'error': 'No text provided'}), 400
         
-        tokens = agent.learn_from_text(text, reward=reward)
+        tokens = agent.learn_from_text(text, reward=reward, allow_tool_language=allow_tool_language)
         
         # Train if we have enough experiences
         loss = 0.0
         if len(agent.experience_buffers[0]) >= agent.batch_size:
             loss = agent.train_step()
+        agent.record_training_log(
+            'teach_text',
+            stage=data.get('stage', 'curriculum'),
+            input_text=text[:500],
+            target=data.get('target', ''),
+            reward=reward,
+            score={'loss': loss, 'token_count': len(tokens)},
+            extra={'allow_tool_language': allow_tool_language},
+        )
         
         return jsonify({
             'tokens': tokens,
@@ -13810,6 +14215,41 @@ def run_http_server(agent: CocoonAgent, port: int = 8080):
             'vocab_size': len(agent.vocabulary.get('word_to_id', {})),
             'words': list(agent.vocabulary.get('word_to_id', {}).keys())
         })
+
+    @app.route('/curriculum', methods=['GET'])
+    def get_curriculum():
+        """Get staged language curriculum and reward rubric."""
+        return jsonify(agent.language_curriculum)
+
+    @app.route('/training/logs', methods=['GET'])
+    def get_training_logs():
+        """Get recent post-export learning trace entries."""
+        try:
+            limit = int(request.args.get('limit', 100))
+        except Exception:
+            limit = 100
+        limit = max(1, min(limit, 1000))
+        return jsonify({
+            'schema': cocoon_training_log_schema(),
+            'count': len(getattr(agent, 'training_logs', [])),
+            'entries': list(getattr(agent, 'training_logs', [])[-limit:]),
+        })
+
+    @app.route('/curriculum/score', methods=['POST'])
+    def curriculum_score():
+        """Accept outside coach reward scores without using the coach as speaker."""
+        data = request.json or {}
+        entry = agent.record_training_log(
+            data.get('event_type', 'curriculum_score'),
+            stage=data.get('stage', 'curriculum'),
+            input_text=data.get('input', '')[:500],
+            target=data.get('target', '')[:500],
+            output=data.get('output', '')[:500],
+            reward=float(data.get('reward', 0.0)),
+            score=data.get('score') if isinstance(data.get('score'), dict) else {},
+            extra={'coach': data.get('coach', 'external_reward_judge')},
+        )
+        return jsonify({'accepted': True, 'entry': entry})
 
     @app.route('/snapshot', methods=['GET'])
     def snapshot():
@@ -13900,7 +14340,7 @@ def run_http_server(agent: CocoonAgent, port: int = 8080):
         })
 
     print(f"\n🌐 HTTP API Server starting on port {port}")
-    print(f"   Endpoints: /health, /act, /learn, /chat, /teach, /vocab, /snapshot, /save, /export, /capabilities")
+    print(f"   Endpoints: /health, /act, /learn, /chat, /teach, /vocab, /curriculum, /training/logs, /curriculum/score, /snapshot, /save, /export, /capabilities")
     app.run(host='0.0.0.0', port=port)
 
 
@@ -14478,6 +14918,14 @@ Examples:
             
             # Learn from user input WITH the semantic reward (not hardcoded 0.1)
             agent.learn_from_text(user_input, reward=best_reward, vp_value=current_vp)
+            agent.record_training_log(
+                'chat_turn',
+                stage='interactive_chat',
+                input_text=user_input[:500],
+                output=final_response[:500],
+                reward=best_reward,
+                score={'semantic_reward': best_reward, 'vp_value': current_vp},
+            )
             
             # Gap 3 Fix: Words USED in response get higher strength (rewarding active vocabulary use)
             # Use the winning organism's atomic language (Gap 5 Alignment)
@@ -14860,6 +15308,8 @@ if __name__ == "__main__":
             ATOMIC_LANG_B64=atomic_lang_b64,
             CONVERSATION_B64=conversation_b64,
             ALLIANCE_B64=alliance_b64,
+            LANGUAGE_CURRICULUM_B64=curriculum_b64 or "",
+            TRAINING_LOGS_B64=training_logs_b64 or "",
             DATA_COMPRESSED=str(compressed),
             README_B64=readme_b64 or "",
             TMRL_ADAPTER_B64=tmrl_adapter_b64,
