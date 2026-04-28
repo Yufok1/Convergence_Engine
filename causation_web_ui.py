@@ -14965,6 +14965,8 @@ def manual_checkpoint_save():
     - Backup before making config changes
     """
     try:
+        payload = request.get_json(silent=True) or {}
+
         # Signal the simulation to save a checkpoint
         signal_file = project_root / 'data' / '.checkpoint_signal.json'
         signal_file.parent.mkdir(parents=True, exist_ok=True)
@@ -14972,7 +14974,7 @@ def manual_checkpoint_save():
         signal_data = {
             'action': 'save_now',
             'timestamp': datetime.now().isoformat(),
-            'reason': request.json.get('reason', 'manual_trigger') if request.json else 'manual_trigger'
+            'reason': payload.get('reason', 'manual_trigger')
         }
         
         with open(signal_file, 'w') as f:
@@ -15022,14 +15024,40 @@ def manual_checkpoint_restore():
     """
     try:
         checkpoint_dir = Path(project_root / 'data' / 'neural_checkpoints')
+        payload = request.get_json(silent=True) or {}
         
         # Get checkpoint name from request
-        checkpoint_name = None
-        if request.json:
-            checkpoint_name = request.json.get('checkpoint_name')
+        checkpoint_name = payload.get('checkpoint_name')
+        checkpoint_path = payload.get('checkpoint_path')
         
         # Find the checkpoint to restore
-        if checkpoint_name:
+        if checkpoint_path:
+            target_checkpoint = Path(checkpoint_path)
+            if not target_checkpoint.is_absolute():
+                target_checkpoint = project_root / target_checkpoint
+            try:
+                target_checkpoint = target_checkpoint.resolve()
+                checkpoint_root = checkpoint_dir.resolve()
+                if checkpoint_root not in target_checkpoint.parents and target_checkpoint != checkpoint_root:
+                    return jsonify({
+                        'success': False,
+                        'error': f'Checkpoint path is outside checkpoint directory: {checkpoint_path}'
+                    }), 400
+            except Exception:
+                return jsonify({
+                    'success': False,
+                    'error': f'Invalid checkpoint path: {checkpoint_path}'
+                }), 400
+            checkpoint_name = target_checkpoint.name
+            if not target_checkpoint.exists():
+                return jsonify({
+                    'success': False,
+                    'error': f'Checkpoint not found: {checkpoint_path}',
+                    'available_checkpoints': [d.name for d in checkpoint_dir.iterdir()
+                                              if d.is_dir() and d.name.startswith('checkpoint_')]
+                                              if checkpoint_dir.exists() else []
+                }), 404
+        elif checkpoint_name:
             target_checkpoint = checkpoint_dir / checkpoint_name
             if not target_checkpoint.exists():
                 return jsonify({
