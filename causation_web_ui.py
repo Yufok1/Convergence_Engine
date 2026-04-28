@@ -14998,10 +14998,11 @@ def manual_checkpoint_save():
         
         return jsonify({
             'success': True,
-            'message': 'Checkpoint save signal sent',
+            'message': 'Neural checkpoint save signal sent',
             'signal_file': str(signal_file),
             'checkpoint_triggered': checkpoint_triggered,
-            'reason': signal_data['reason']
+            'reason': signal_data['reason'],
+            'scope': 'neural_training_state_only'
         })
     except Exception as e:
         logger.error(f"Error sending checkpoint save signal: {e}", exc_info=True)
@@ -15020,7 +15021,9 @@ def manual_checkpoint_restore():
                       If not provided, restores from latest checkpoint
     
     NOTE: This signals the simulation to restore on next restart.
-    For immediate restore, the simulation must be restarted.
+    If the simulation is running with the latest code, it will attempt an
+    in-process neural checkpoint restore. This is not a full population/evolution
+    rewind; it restores neural training state into the current organisms.
     """
     try:
         checkpoint_dir = Path(project_root / 'data' / 'neural_checkpoints')
@@ -15117,11 +15120,12 @@ def manual_checkpoint_restore():
         
         return jsonify({
             'success': True,
-            'message': f'Checkpoint restore signal sent for {checkpoint_name}',
+            'message': f'Neural checkpoint restore signal sent for {checkpoint_name}',
             'checkpoint_name': checkpoint_name,
             'checkpoint_path': str(target_checkpoint),
             'metadata': signal_data['checkpoint_metadata'],
-            'note': 'Restore will apply on next simulation start/restart'
+            'scope': 'neural_training_state_only',
+            'note': 'Restore applies to neural training state, not full evolution/population state'
         })
     except Exception as e:
         logger.error(f"Error sending checkpoint restore signal: {e}", exc_info=True)

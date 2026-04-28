@@ -669,6 +669,99 @@ class RealitySimulator:
         """Resume the simulation"""
         self.paused = False
 
+    def _checkpoint_signal_file(self) -> str:
+        """Return the shared checkpoint signal path used by the web UI/API."""
+        return os.path.join(get_project_root(), "data", ".checkpoint_signal.json")
+
+    def _read_checkpoint_signal(self) -> Optional[Dict[str, Any]]:
+        """Read a pending checkpoint signal without deleting it."""
+        signal_file = self._checkpoint_signal_file()
+        if not os.path.exists(signal_file):
+            return None
+        try:
+            with open(signal_file, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.debug(f"Could not read checkpoint signal: {e}")
+            return None
+
+    def _clear_checkpoint_signal(self) -> None:
+        """Remove the checkpoint signal file after it has been handled."""
+        signal_file = self._checkpoint_signal_file()
+        try:
+            if os.path.exists(signal_file):
+                os.remove(signal_file)
+        except Exception as e:
+            logger.debug(f"Could not remove checkpoint signal: {e}")
+
+    def _resolve_checkpoint_path_from_signal(self, signal_data: Optional[Dict[str, Any]]) -> Optional[Path]:
+        """Resolve a restore signal to a checkpoint directory."""
+        if not signal_data or signal_data.get('action') != 'restore':
+            return None
+
+        base_dir = Path(getattr(self.neural_trainer, 'checkpoint_dir', 'data/neural_checkpoints'))
+        if not base_dir.is_absolute():
+            base_dir = Path(get_project_root()) / base_dir
+
+        checkpoint_path = signal_data.get('checkpoint_path')
+        checkpoint_name = signal_data.get('checkpoint_name')
+
+        if checkpoint_path:
+            candidate = Path(checkpoint_path)
+            if not candidate.is_absolute():
+                candidate = Path(get_project_root()) / candidate
+        elif checkpoint_name:
+            candidate = base_dir / checkpoint_name
+        else:
+            return None
+
+        try:
+            candidate = candidate.resolve()
+            checkpoint_root = base_dir.resolve()
+            if checkpoint_root not in candidate.parents and candidate != checkpoint_root:
+                logger.warning(f"[NEURAL CHECKPOINT] Restore path outside checkpoint dir: {candidate}")
+                return None
+        except Exception as e:
+            logger.warning(f"[NEURAL CHECKPOINT] Invalid restore checkpoint path: {e}")
+            return None
+
+        if not candidate.exists():
+            logger.warning(f"[NEURAL CHECKPOINT] Requested restore checkpoint not found: {candidate}")
+            return None
+
+        return candidate
+
+    def _restore_neural_checkpoint(self, checkpoint_path: Path, reason: str = "manual") -> Optional[Dict[str, Any]]:
+        """Restore neural checkpoint data into the current organism population."""
+        network = self.components.get('network')
+        if not network or not self.neural_trainer:
+            logger.warning("[NEURAL CHECKPOINT] Restore requested but network/trainer is unavailable")
+            return None
+
+        print(f"[NEURAL CHECKPOINT] Restoring from: {checkpoint_path.name} ({reason})")
+        result = self.neural_trainer.load_checkpoint(
+            checkpoint_dir=str(checkpoint_path),
+            organisms=list(network.organisms.values()),
+            strict=False
+        )
+
+        if result.get('success'):
+            loaded = result.get('loaded', {})
+            print(ColorScheme.colorize("[NEURAL CHECKPOINT] Neural checkpoint loaded", ColorScheme.GREEN))
+            print(f"  Brains loaded: {loaded.get('brains', 0)}")
+            print(f"  Experiences loaded: {loaded.get('experiences', 0)}")
+            print(f"  Optimizers loaded: {loaded.get('optimizers', 0)}")
+            meta = result.get('metadata', {})
+            if meta:
+                print(f"  Checkpoint generation: {meta.get('generation', 'unknown')}")
+                print(f"  Checkpoint timestamp: {meta.get('timestamp', 'unknown')}")
+            if loaded.get('brains', 0) == 0:
+                print("[NEURAL CHECKPOINT] WARNING: 0 brains matched/loaded. This is not a full population restore.")
+        else:
+            print(f"[NEURAL CHECKPOINT] Restore failed: {result.get('errors', ['unknown error'])}")
+
+        return result
+
     def _load_config(self, config_path: Optional[str]) -> Dict[str, Any]:
         """Load simulation configuration"""
         default_config = {
@@ -962,13 +1055,18 @@ class RealitySimulator:
                     
                     # Auto-resume from latest checkpoint if enabled
                     if self.neural_trainer.checkpoint_auto_resume:
-                        latest_checkpoint = self.neural_trainer.get_latest_checkpoint(
+                        restore_signal = self._read_checkpoint_signal()
+                        requested_checkpoint = self._resolve_checkpoint_path_from_signal(restore_signal)
+                        latest_checkpoint = str(requested_checkpoint) if requested_checkpoint else self.neural_trainer.get_latest_checkpoint(
                             self.neural_trainer.checkpoint_dir
                         )
                         if latest_checkpoint:
                             from pathlib import Path
                             checkpoint_path = Path(latest_checkpoint)
-                            print(f"[NEURAL CHECKPOINT] Found latest checkpoint: {checkpoint_path.name}")
+                            if requested_checkpoint:
+                                print(f"[NEURAL CHECKPOINT] Found requested restore checkpoint: {checkpoint_path.name}")
+                            else:
+                                print(f"[NEURAL CHECKPOINT] Found latest checkpoint: {checkpoint_path.name}")
                             # We'll restore neural states after organisms are created in network
                             # Store the checkpoint path for deferred loading
                             self._pending_checkpoint_restore = checkpoint_path
@@ -1160,34 +1258,15 @@ class RealitySimulator:
         # ═══════════════════════════════════════════════════════════════
         if hasattr(self, '_pending_checkpoint_restore') and self._pending_checkpoint_restore:
             checkpoint_path = self._pending_checkpoint_restore
-            network = self.components.get('network')
-            if network and self.neural_trainer:
-                print(f"[NEURAL CHECKPOINT] Restoring from: {checkpoint_path.name}")
-                try:
-                    result = self.neural_trainer.load_checkpoint(
-                        checkpoint_dir=str(checkpoint_path),
-                        organisms=list(network.organisms.values()),
-                        strict=False
-                    )
-                    if result.get('success'):
-                        print(ColorScheme.colorize(f"[NEURAL CHECKPOINT] Successfully restored neural state!", ColorScheme.GREEN))
-                        # Get metadata for display
-                        meta = result.get('metadata', {})
-                        if meta:
-                            print(f"  Restored from: {meta.get('timestamp', 'unknown')}")
-                            print(f"  Generation: {meta.get('generation', 'unknown')}")
-                            print(f"  Training steps: {meta.get('training_step_count', 'unknown')}")
-                            print(f"  Brains loaded: {result.get('loaded', {}).get('brains', 0)}")
-                        if result.get('warnings'):
-                            for warning in result['warnings'][:3]:  # Show first 3 warnings
-                                print(f"  ⚠️ {warning}")
-                    else:
-                        errors = result.get('errors', ['Unknown error'])
-                        print(f"[NEURAL CHECKPOINT] Restore failed: {errors}")
-                except Exception as e:
-                    print(f"[WARN] Checkpoint restore failed: {e}")
-                    import traceback
-                    traceback.print_exc()
+            try:
+                self._restore_neural_checkpoint(checkpoint_path, reason="startup")
+                signal = self._read_checkpoint_signal()
+                if signal and signal.get('action') == 'restore':
+                    self._clear_checkpoint_signal()
+            except Exception as e:
+                print(f"[WARN] Checkpoint restore failed: {e}")
+                import traceback
+                traceback.print_exc()
             # Clear the pending restore flag
             self._pending_checkpoint_restore = None
         
@@ -1614,8 +1693,9 @@ class RealitySimulator:
                     logger.debug(f"[NEURAL] Training step completed, loss: {loss:.6f}, epsilon: {avg_epsilon:.3f}")
                 
                 # Check for manual checkpoint signal (from web UI or API)
-                checkpoint_signal_file = os.path.join("data", ".checkpoint_signal.json")
+                checkpoint_signal_file = self._checkpoint_signal_file()
                 force_checkpoint = False
+                signal = None
                 if os.path.exists(checkpoint_signal_file):
                     try:
                         with open(checkpoint_signal_file, 'r') as f:
@@ -1623,8 +1703,13 @@ class RealitySimulator:
                         if signal.get('action') == 'save_now':
                             force_checkpoint = True
                             print(f"[NEURAL CHECKPOINT] Manual save triggered: {signal.get('reason', 'unknown')}")
-                        # Remove signal file after reading
-                        os.remove(checkpoint_signal_file)
+                        elif signal.get('action') == 'restore':
+                            requested_checkpoint = self._resolve_checkpoint_path_from_signal(signal)
+                            if requested_checkpoint:
+                                self._restore_neural_checkpoint(requested_checkpoint, reason="runtime_signal")
+                            else:
+                                print("[NEURAL CHECKPOINT] Restore signal could not be resolved")
+                            self._clear_checkpoint_signal()
                     except Exception as e:
                         logger.debug(f"Could not read checkpoint signal: {e}")
                 
@@ -1642,6 +1727,7 @@ class RealitySimulator:
                         metadata={'trigger': 'manual', 'reason': signal.get('reason', 'manual')}
                     )
                     if checkpoint_saved:
+                        self._clear_checkpoint_signal()
                         self.neural_trainer.rotate_checkpoints(
                             self.neural_trainer.checkpoint_dir,
                             self.neural_trainer.checkpoint_max_count
