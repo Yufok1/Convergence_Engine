@@ -10,13 +10,28 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import subprocess
 import sys
+import tempfile
+import zipfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib import error, parse, request
 
 
 DEFAULT_BASE_URL = "http://127.0.0.1:5000"
+NOTE_TYPES = [
+    "note",
+    "observation",
+    "hypothesis",
+    "causation",
+    "analysis",
+    "conclusion",
+    "question",
+    "todo",
+    "cra",
+]
 
 
 class CRAClient:
@@ -244,6 +259,64 @@ def parse_args() -> argparse.Namespace:
     subparsers.add_parser(
         "swarm-stats",
         help="Show Butterfly Chat language-learning and training stats.",
+    )
+
+    notepad_parser = subparsers.add_parser(
+        "notepad",
+        help="Read/search the CRA Research Notepad scientific journal.",
+    )
+    notepad_parser.add_argument("--type", choices=NOTE_TYPES, help="Filter by note type.")
+    notepad_parser.add_argument("--query", help="Search content, tags, and linked events.")
+    notepad_parser.add_argument("--limit", type=int, default=20, help="Max entries to show.")
+    notepad_parser.add_argument("--summary", action="store_true", help="Show summary only.")
+
+    notepad_add_parser = subparsers.add_parser(
+        "notepad-add",
+        help="Append an entry to the CRA Research Notepad.",
+    )
+    notepad_add_parser.add_argument("type", choices=NOTE_TYPES, help="Entry type.")
+    notepad_add_parser.add_argument("message", nargs="*", help="Entry content. Reads stdin if omitted.")
+    notepad_add_parser.add_argument("--event", action="append", default=[], help="Linked event id. Repeat as needed.")
+    notepad_add_parser.add_argument("--confidence", choices=["low", "medium", "high"], help="Hypothesis confidence.")
+    notepad_add_parser.add_argument("--cause", help="Cause event id for causation notes.")
+    notepad_add_parser.add_argument("--effect", help="Effect event id for causation notes.")
+    notepad_add_parser.add_argument("--source", default="cra_cli", help="Source metadata label.")
+
+    cocoon_validate_parser = subparsers.add_parser(
+        "cocoon-validate",
+        help="Validate a Cocoon ZIP or extracted package without starting the main system.",
+    )
+    cocoon_validate_parser.add_argument("path", help="Path to Cocoon ZIP or extracted directory.")
+    cocoon_validate_parser.add_argument(
+        "--run-info",
+        action="store_true",
+        help="Run cocoon.py --mode info --max-organisms 1 after extraction/directory check.",
+    )
+    cocoon_validate_parser.add_argument(
+        "--python",
+        default=sys.executable,
+        help="Python executable for --run-info (default: current interpreter).",
+    )
+
+    receipt_parser = subparsers.add_parser(
+        "scientific-receipt",
+        help="Capture a CRA scientific run receipt into the Research Notepad.",
+    )
+    receipt_parser.add_argument(
+        "--title",
+        default="Scientific run receipt",
+        help="Receipt title/content prefix.",
+    )
+    receipt_parser.add_argument(
+        "--tag",
+        default="#scientific_receipt",
+        help="Hashtag to include in the notepad entry.",
+    )
+    receipt_parser.add_argument(
+        "--event-limit",
+        type=int,
+        default=5,
+        help="Recent event count to include.",
     )
 
     repl_parser = subparsers.add_parser(
@@ -903,6 +976,263 @@ def summarize_swarm_stats(data: Dict[str, Any]) -> None:
         print(f"Neologisms: {vocab.get('neologisms_minted', 0)}")
 
 
+def summarize_notepad(data: Dict[str, Any], summary_only: bool = False) -> None:
+    if not data.get("success", True):
+        print_json(data)
+        return
+
+    summary = data.get("summary") or {}
+    if "summary" in summary:
+        summary = summary["summary"]
+    entries = data.get("entries") or []
+
+    print_heading("Research Notepad")
+    print(f"Session: {data.get('sessionId', '-')}")
+    print(f"Last saved: {data.get('lastSaved', '-')}")
+    print(f"Total: {summary.get('total', data.get('totalEntries', len(entries)))}")
+    print(f"Returned: {data.get('returned', len(entries))}")
+    print(f"Open hypotheses: {summary.get('openHypotheses', 0)}")
+    print(f"Pending todos: {summary.get('pendingTodos', 0)}")
+
+    by_type = summary.get("byType") or {}
+    if by_type:
+        compact = ", ".join(f"{k}={v}" for k, v in sorted(by_type.items()) if v)
+        if compact:
+            print(f"By type: {compact}")
+
+    if summary_only:
+        return
+
+    for entry in entries:
+        timestamp = entry.get("timestamp", "-")
+        note_type = entry.get("type", "note")
+        content = (entry.get("content") or "").strip()
+        print_heading(f"{note_type} {entry.get('id', '-')}")
+        print(f"Time: {timestamp}")
+        if entry.get("linkedEvents"):
+            print(f"Events: {', '.join(str(e) for e in entry.get('linkedEvents', []))}")
+        metadata = entry.get("metadata") or {}
+        if metadata:
+            useful = {k: v for k, v in metadata.items() if v not in (None, "", [])}
+            if useful:
+                print(f"Metadata: {json.dumps(useful, ensure_ascii=False)}")
+        print(content)
+
+
+def _read_zip_json(zf: zipfile.ZipFile, name: str) -> Optional[Dict[str, Any]]:
+    try:
+        with zf.open(name) as fh:
+            data = json.loads(fh.read().decode("utf-8", errors="replace"))
+        return data if isinstance(data, dict) else None
+    except Exception:
+        return None
+
+
+def _vocab_word_count(vocab: Optional[Dict[str, Any]]) -> int:
+    if not isinstance(vocab, dict):
+        return 0
+    word_to_id = vocab.get("word_to_id")
+    return len(word_to_id) if isinstance(word_to_id, dict) else len(vocab)
+
+
+def validate_cocoon_package(path: Path, run_info: bool = False, python_executable: str = sys.executable) -> Dict[str, Any]:
+    """Static validation for Cocoon ZIPs/directories used by Council adapters."""
+    connector_words = {"a", "and", "to", "of", "in", "it", "is", "but", "then", "cocoon"}
+    result: Dict[str, Any] = {
+        "path": str(path),
+        "exists": path.exists(),
+        "kind": "missing",
+        "ok": False,
+        "errors": [],
+        "warnings": [],
+        "files": {},
+    }
+    if not path.exists():
+        result["errors"].append("Path does not exist.")
+        return result
+
+    extracted_dir: Optional[Path] = None
+    temp_dir: Optional[tempfile.TemporaryDirectory[str]] = None
+
+    try:
+        if path.is_file() and path.suffix.lower() == ".zip":
+            result["kind"] = "zip"
+            with zipfile.ZipFile(path) as zf:
+                names = [item.filename for item in zf.infolist()]
+                duplicates = sorted({name for name in names if names.count(name) > 1})
+                result["duplicates"] = duplicates
+                if duplicates:
+                    result["warnings"].append(f"Duplicate ZIP entries: {', '.join(duplicates)}")
+
+                required = ["cocoon.py", "metadata.json", "vocabulary.json", "README.md"]
+                result["files"] = {name: name in names for name in required}
+                for name, present in result["files"].items():
+                    if not present:
+                        result["errors"].append(f"Missing {name}")
+
+                metadata = _read_zip_json(zf, "metadata.json")
+                vocab = _read_zip_json(zf, "vocabulary.json")
+                readme = ""
+                try:
+                    readme = zf.read("README.md").decode("utf-8", errors="replace")
+                except Exception:
+                    pass
+                result["metadata_package_version"] = metadata.get("package_version") if metadata else None
+                result["metadata_vocab_size"] = metadata.get("vocab_size") if metadata else None
+                result["vocabulary_count"] = _vocab_word_count(vocab)
+                result["connector_words"] = {
+                    word: bool(isinstance(vocab, dict) and word in (vocab.get("word_to_id") or {}))
+                    for word in sorted(connector_words)
+                }
+                missing_connectors = [w for w, present in result["connector_words"].items() if not present]
+                if missing_connectors:
+                    result["warnings"].append(f"Missing connector words: {', '.join(missing_connectors)}")
+                if "brain_ensemble.onnx" in readme and "brain_ensemble.onnx" not in names:
+                    result["warnings"].append("README references brain_ensemble.onnx but package does not include it.")
+                if "game_contracts.json" not in names:
+                    result["warnings"].append("Missing game_contracts.json Council contract.")
+                result["has_torchscript"] = "brain_ensemble.pt" in names
+                result["has_onnx"] = "brain_ensemble.onnx" in names
+
+                if run_info:
+                    temp_parent = Path(os.environ.get("TEMP", tempfile.gettempdir()))
+                    if Path("D:/temp").exists():
+                        temp_parent = Path("D:/temp")
+                    temp_dir = tempfile.TemporaryDirectory(prefix="cocoon_validate_", dir=str(temp_parent))
+                    zf.extractall(temp_dir.name)
+                    extracted_dir = Path(temp_dir.name)
+
+        elif path.is_dir():
+            result["kind"] = "directory"
+            names = {p.name for p in path.iterdir()}
+            required = ["cocoon.py", "metadata.json", "vocabulary.json", "README.md"]
+            result["files"] = {name: name in names for name in required}
+            for name, present in result["files"].items():
+                if not present:
+                    result["errors"].append(f"Missing {name}")
+            metadata = read_json_file(str(path / "metadata.json")) if (path / "metadata.json").exists() else None
+            vocab = read_json_file(str(path / "vocabulary.json")) if (path / "vocabulary.json").exists() else None
+            result["metadata_package_version"] = metadata.get("package_version") if metadata else None
+            result["metadata_vocab_size"] = metadata.get("vocab_size") if metadata else None
+            result["vocabulary_count"] = _vocab_word_count(vocab)
+            result["connector_words"] = {
+                word: bool(isinstance(vocab, dict) and word in (vocab.get("word_to_id") or {}))
+                for word in sorted(connector_words)
+            }
+            missing_connectors = [w for w, present in result["connector_words"].items() if not present]
+            if missing_connectors:
+                result["warnings"].append(f"Missing connector words: {', '.join(missing_connectors)}")
+            if "game_contracts.json" not in names:
+                result["warnings"].append("Missing game_contracts.json Council contract.")
+            result["has_torchscript"] = "brain_ensemble.pt" in names
+            result["has_onnx"] = "brain_ensemble.onnx" in names
+            extracted_dir = path
+        else:
+            result["errors"].append("Path must be a Cocoon ZIP or extracted directory.")
+
+        if run_info and extracted_dir:
+            cocoon_py = extracted_dir / "cocoon.py"
+            if cocoon_py.exists():
+                proc = subprocess.run(
+                    [python_executable, str(cocoon_py), "--mode", "info", "--max-organisms", "1"],
+                    cwd=str(extracted_dir),
+                    capture_output=True,
+                    text=True,
+                    timeout=90,
+                    env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+                )
+                result["runtime_info"] = {
+                    "returncode": proc.returncode,
+                    "stdout_tail": proc.stdout[-4000:],
+                    "stderr_tail": proc.stderr[-2000:],
+                }
+                if proc.returncode != 0:
+                    result["warnings"].append("cocoon.py --mode info returned nonzero.")
+            else:
+                result["warnings"].append("Cannot run info: cocoon.py missing.")
+    finally:
+        if temp_dir is not None:
+            temp_dir.cleanup()
+
+    result["ok"] = not result["errors"]
+    return result
+
+
+def summarize_cocoon_validation(data: Dict[str, Any]) -> None:
+    print_heading("Cocoon Validation")
+    print(f"Path: {data.get('path')}")
+    print(f"Kind: {data.get('kind')}")
+    print(f"OK: {data.get('ok')}")
+    print(f"Vocab count: {data.get('vocabulary_count', 0)}")
+    print(f"Metadata vocab: {data.get('metadata_vocab_size', '-')}")
+    print(f"TorchScript: {data.get('has_torchscript', False)}")
+    print(f"ONNX: {data.get('has_onnx', False)}")
+    connectors = data.get("connector_words") or {}
+    if connectors:
+        missing = [word for word, present in connectors.items() if not present]
+        print(f"Connectors missing: {', '.join(missing) if missing else 'none'}")
+    for key in ("errors", "warnings"):
+        items = data.get(key) or []
+        if items:
+            print_heading(key.title())
+            for item in items:
+                print(f"- {item}")
+    runtime_info = data.get("runtime_info") or {}
+    if runtime_info:
+        print_heading("Runtime Info")
+        print(f"Return code: {runtime_info.get('returncode')}")
+        stdout = runtime_info.get("stdout_tail") or ""
+        if stdout:
+            print(stdout.strip())
+
+
+def build_scientific_receipt(client: CRAClient, title: str, tag: str, event_limit: int) -> Dict[str, Any]:
+    """Collect a compact run receipt and write it to the Research Notepad."""
+    sections: Dict[str, Any] = {}
+    for name, method, path in [
+        ("status", "GET", "/api/cra/status"),
+        ("system", "GET", "/api/cra/system/state"),
+        ("swarm", "GET", "/api/cra/diagnostics/agent_swarm"),
+        ("exporter", "GET", "/api/cra/diagnostics/checkpoint_status"),
+        ("notepad", "GET", "/api/research-notepad/summary"),
+    ]:
+        try:
+            sections[name] = client.request_json(method, path)
+        except Exception as exc:
+            sections[name] = {"error": str(exc)}
+    try:
+        sections["events"] = client.request_json("GET", "/api/cra/events/recent")
+    except Exception as exc:
+        sections["events"] = {"error": str(exc)}
+
+    status = sections.get("status", {})
+    system = sections.get("system", {})
+    swarm = sections.get("swarm", {})
+    notepad = sections.get("notepad", {})
+    content_lines = [
+        f"{title} {tag}".strip(),
+        "",
+        f"Status keys: {', '.join(status.keys()) if isinstance(status, dict) else 'unavailable'}",
+        f"System keys: {', '.join(system.keys()) if isinstance(system, dict) else 'unavailable'}",
+        f"Swarm available: {'error' not in swarm if isinstance(swarm, dict) else False}",
+        f"Notepad total: {((notepad.get('summary') or {}).get('total') if isinstance(notepad, dict) else 'unavailable')}",
+        f"Recent event limit requested: {event_limit}",
+        "",
+        "Receipt JSON:",
+        json.dumps(sections, indent=2, default=str)[:12000],
+    ]
+    note = client.request_json(
+        "POST",
+        "/api/research-notepad",
+        payload={
+            "type": "analysis",
+            "content": "\n".join(content_lines),
+            "metadata": {"source": "cra_cli", "kind": "scientific_receipt"},
+        },
+    )
+    return {"receipt": sections, "notepad": note}
+
+
 def parse_query_pairs(items: List[str]) -> Dict[str, str]:
     query: Dict[str, str] = {}
     for item in items:
@@ -1305,6 +1635,79 @@ def main() -> int:
                 print_json(data)
             else:
                 summarize_swarm_stats(data)
+            return 0
+
+        if args.command == "notepad":
+            if args.summary:
+                data = client.request_json("GET", "/api/research-notepad/summary")
+                if args.json:
+                    print_json(data)
+                else:
+                    summarize_notepad(data, summary_only=True)
+                return 0
+
+            data = client.request_json(
+                "GET",
+                "/api/research-notepad",
+                query={
+                    "type": args.type,
+                    "query": args.query,
+                    "limit": args.limit,
+                },
+            )
+            if args.json:
+                print_json(data)
+            else:
+                summarize_notepad(data)
+            return 0
+
+        if args.command == "notepad-add":
+            content = read_message(args)
+            metadata: Dict[str, Any] = {"source": args.source}
+            if args.confidence:
+                metadata["confidence"] = args.confidence
+            if args.cause:
+                metadata["causeEventId"] = args.cause
+            if args.effect:
+                metadata["effectEventId"] = args.effect
+            payload = {
+                "type": args.type,
+                "content": content,
+                "metadata": metadata,
+                "linkedEvents": args.event,
+            }
+            data = client.request_json("POST", "/api/research-notepad", payload=payload)
+            if args.json:
+                print_json(data)
+            else:
+                entry = data.get("entry", {})
+                print(f"Added {entry.get('type', args.type)} note: {entry.get('id', '-')}")
+            return 0
+
+        if args.command == "cocoon-validate":
+            data = validate_cocoon_package(
+                Path(args.path),
+                run_info=args.run_info,
+                python_executable=args.python,
+            )
+            if args.json:
+                print_json(data)
+            else:
+                summarize_cocoon_validation(data)
+            return 0
+
+        if args.command == "scientific-receipt":
+            data = build_scientific_receipt(
+                client,
+                title=args.title,
+                tag=args.tag,
+                event_limit=args.event_limit,
+            )
+            if args.json:
+                print_json(data)
+            else:
+                entry = (data.get("notepad") or {}).get("entry", {})
+                print(f"Scientific receipt saved to Research Notepad: {entry.get('id', '-')}")
             return 0
 
         if args.command == "repl":

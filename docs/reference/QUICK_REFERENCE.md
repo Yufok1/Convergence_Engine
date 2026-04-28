@@ -201,10 +201,11 @@ agent_downloads/cocoon_ensemble_<timestamp>/
 ├── bridge.py              # Universal interface (Gym, HTTP, CLI)
 ├── proton_tournament.py   # Self-improvement battles
 ├── brain_ensemble.pt      # Neural weights (TorchScript)
-├── brain_ensemble.onnx    # Neural weights (ONNX for Netron)
+├── brain_ensemble.onnx    # Neural weights (ONNX for Netron, if export succeeds)
 ├── vocabulary.json        # Word pool
 ├── knowledge_web.json     # Semantic relationships
 ├── context_memory.json    # Word-organism anchors
+├── game_contracts.json    # Council/Cocoon HTTP, CLI, game, learning contract
 ├── metadata.json          # Export info
 └── README.md              # Usage instructions
 ```
@@ -215,6 +216,13 @@ cd agent_downloads/cocoon_ensemble_<timestamp>
 
 # Chat mode
 python cocoon.py --mode chat
+
+# Native HTTP runtime for Council adapters
+python cocoon.py --mode serve --port 8080
+
+# Persist live learned state from HTTP runtime
+curl -X POST http://localhost:8080/save
+curl -X POST http://localhost:8080/export -H "Content-Type: application/json" -d '{"path":"evolved_cocoon.py"}'
 
 # Gym training
 python bridge.py . --mode gym --gym-env CartPole-v1 --render
@@ -228,6 +236,26 @@ tournament = ProtonTournament(agent)
 tournament.swarm_pong_arena(lives=3, headless=True)
 "
 ```
+
+**CRA CLI scientific surface:**
+```bash
+# Research Notepad, shared with CRA scientific tab
+python cra_cli.py notepad --summary
+python cra_cli.py notepad --type hypothesis --limit 10
+python cra_cli.py notepad-add observation "Run started #baseline"
+
+# Capture one scientific receipt into the notepad
+python cra_cli.py scientific-receipt --title "Baseline run receipt"
+
+# Validate a Cocoon package before handing it to Champion Council
+python cra_cli.py cocoon-validate Children/cocoon_ensemble_<timestamp>.zip
+python cra_cli.py cocoon-validate Children/cocoon_ensemble_<timestamp>.zip --run-info
+```
+
+**Champion Council contract:** Fresh package exports include connector words in `vocabulary.json`,
+`game_contracts.json`, native `/snapshot`, `/save`, `/export`, `/capabilities`, and
+Dreamer bridge endpoints `/dreamer/observe` + `/dreamer/propose`. Treat Cocoons as
+RL/game-native runtimes wrapped by Council tools, not as reliable tool-call JSON emitters.
 
 ---
 

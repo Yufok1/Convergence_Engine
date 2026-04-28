@@ -11,7 +11,7 @@ ssh -R 80:localhost:5000 nokey@localhost.run
 
 Clone and setup
 ---------------
-git clone https://gitlab.com/Toasteedo/Convergence_Engine.git
+git clone https://github.com/Yufok1/Convergence_Engine.git
 cd Convergence_Engine
 
 python -m venv .venv
@@ -65,5 +65,27 @@ python cra_cli.py training-status
 python cra_cli.py exporter-status
 python cra_cli.py organisms --limit 10
 python cra_cli.py config-set /simulation/max_frames 5000
+python cra_cli.py notepad --summary
+python cra_cli.py notepad-add observation "Run started #baseline"
+python cra_cli.py scientific-receipt --title "Baseline run receipt"
 python cra_cli.py compile-cocoon --top-n 5 --format cocoon
+python cra_cli.py compile-cocoon --top-n 5 --format package
+python cra_cli.py cocoon-validate Children/cocoon_ensemble_<timestamp>.zip
 python cra_cli.py compile-learning --organism-id <id>
+
+Cocoon + Champion Council
+-------------------------
+Fresh exports include:
+- connector-word curriculum in vocabulary.json
+- game_contracts.json for Council adapters
+- native HTTP endpoints: /health, /act, /learn, /chat, /teach, /vocab, /snapshot, /save, /export, /capabilities
+
+Run an exported Cocoon:
+python cocoon.py --mode info --max-organisms 1
+python cocoon.py --mode serve --port 8080
+python cocoon.py --mode sphere --headless --balls 1 --misses 1 --train
+python cocoon.py --mode gym --env CartPole-v1 --episodes 1 --no-learn
+
+Persist live learned state:
+curl -X POST http://localhost:8080/save
+curl -X POST http://localhost:8080/export -H "Content-Type: application/json" -d '{"path":"evolved_cocoon.py"}'

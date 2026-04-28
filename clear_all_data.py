@@ -44,7 +44,8 @@ PRESERVED (Not Deleted):
 NOTE: Neural-ML Symbiosis, ConfigTuner, and Health Monitor data is stored in-memory only
 (no persistent files to clear - history resets on restart)
 
-NOTE: Research Notepad is stored in browser localStorage (not cleared by this script)
+NOTE: Research Notepad persists in browser localStorage and data/research_notepad.json
+(not cleared by this script)
 """
 
 import shutil

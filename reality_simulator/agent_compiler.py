@@ -131,6 +131,80 @@ class AgentCompiler:
         self._base_vocabulary_cache = None  # Cache for base vocabulary pool
         self._base_knowledge_web_cache = None  # Cache for base knowledge web
 
+    @staticmethod
+    def _connector_curriculum_words() -> List[str]:
+        """Small closed-class word set required for coherent Cocoon dialogue."""
+        return [
+            'a', 'an', 'and', 'are', 'as', 'at', 'be', 'because', 'but', 'by',
+            'for', 'from', 'if', 'in', 'is', 'it', 'of', 'on', 'or', 'so',
+            'that', 'the', 'then', 'this', 'to', 'was', 'we', 'when', 'with',
+            'you',
+        ]
+
+    def _build_cocoon_game_contracts(self) -> Dict[str, Any]:
+        """Contract emitted for Council/runtime adapters that plug Cocoons into tools."""
+        connector_words = self._connector_curriculum_words()
+        return {
+            'version': '1.0',
+            'runtime_kind': 'rl_game_native_cocoon',
+            'tool_native': False,
+            'learning': {
+                'chat_learning': True,
+                'teach_learning': True,
+                'rl_transition_learning': True,
+                'post_snapshot_sphere_training': True,
+                'durable_runtime_save': True,
+                'clone_from_live_state': True,
+            },
+            'connector_curriculum': {
+                'required_words': connector_words,
+                'purpose': 'Closed-class connector words needed for coherent chat and proposal grammar.',
+            },
+            'http_endpoints': {
+                'GET /health': 'Runtime health and organism count.',
+                'POST /act': 'Action inference from numeric state.',
+                'POST /learn': 'One RL transition and train step.',
+                'POST /chat': 'Prompt routed through the Cocoon, optionally learning.',
+                'POST /teach': 'Teach text with optional reward.',
+                'GET /vocab': 'Current live vocabulary.',
+                'GET /snapshot': 'Serializable live symbolic/training state for cloning.',
+                'POST /save': 'Persist live symbolic state beside the running Cocoon.',
+                'POST /export': 'Export learned state into an updated cocoon.py.',
+                'GET /capabilities': 'Machine-readable Cocoon capability contract.',
+                'POST /dreamer/observe': 'Record an observation from a game/runtime lane.',
+                'POST /dreamer/propose': 'Return simple observation-driven game/training proposals.',
+            },
+            'cli_lanes': {
+                'info': 'python cocoon.py --mode info --max-organisms 1',
+                'chat': 'python cocoon.py --mode chat',
+                'serve': 'python cocoon.py --mode serve --port 8080',
+                'gym_eval': 'python cocoon.py --mode gym --env CartPole-v1 --episodes 1 --no-learn',
+                'sphere_train': 'python cocoon.py --mode sphere --headless --balls 1 --misses 1 --train',
+                'export_live': 'python cocoon.py --export evolved_cocoon.py',
+            },
+            'council_tools': [
+                'cocoon_import', 'cocoon_list', 'cocoon_info', 'cocoon_start',
+                'cocoon_stop', 'cocoon_chat', 'cocoon_teach', 'cocoon_act',
+                'cocoon_learn', 'cocoon_run_game', 'cocoon_spawn_game',
+                'cocoon_game_status', 'cocoon_stop_game', 'cocoon_vocab_check',
+                'cocoon_capabilities', 'cocoon_plug_slot',
+            ],
+            'games': {
+                'sphere': {
+                    'mode': 'sphere',
+                    'supports_training': True,
+                    'headless': True,
+                    'args': ['--balls', '--misses', '--train', '--headless', '--max-organisms'],
+                },
+                'gym': {
+                    'mode': 'gym',
+                    'supports_training': True,
+                    'headless': True,
+                    'args': ['--env', '--episodes', '--render', '--no-learn', '--max-organisms'],
+                },
+            },
+        }
+
     def _load_base_vocabulary_pool(self) -> Dict[str, Any]:
         """
         🌐 Load the base vocabulary pool from the distilled knowledge web.
@@ -199,6 +273,15 @@ class AgentCompiler:
                 full_vocab['word_to_id'][word] = word_id
                 full_vocab['id_to_word'][str(word_id)] = word
                 word_id += 1
+
+        # Closed-class connector words are often filtered out of curated concept
+        # pools, but they are required for readable Cocoon chat and Council
+        # proposal grammar. Seed them into every source vocabulary.
+        for word in self._connector_curriculum_words():
+            if word not in full_vocab['word_to_id']:
+                full_vocab['word_to_id'][word] = word_id
+                full_vocab['id_to_word'][str(word_id)] = word
+                word_id += 1
         
         # Merge runtime vocabulary if provided
         if runtime_vocabulary is not None:
@@ -210,6 +293,7 @@ class AgentCompiler:
                     word_id += 1
         
         full_vocab['vocab_size'] = word_id
+        full_vocab['connector_curriculum'] = self._connector_curriculum_words()
         return full_vocab
     
     def _build_full_knowledge_web_export(self, runtime_knowledge_web: Any = None) -> Dict[str, Any]:
@@ -5441,6 +5525,7 @@ if __name__ == '__main__':
         alliance_json = json.dumps(alliance_data, default=_json_default)
         alliance_bytes = zlib.compress(alliance_json.encode('utf-8'), level=9) if compress_data else alliance_json.encode('utf-8')
         alliance_b64 = base64.b64encode(alliance_bytes).decode('ascii')
+        game_contracts = self._build_cocoon_game_contracts()
 
         # Generate cocoon source (always needed for 'cocoon' and 'package' formats)
         cocoon_source_shell = self._generate_cocoon_source(
@@ -5855,8 +5940,10 @@ if __name__ == '__main__':
                     'vocab_size': vocab_data.get('vocab_size', 0),
                     'base_pool_size': vocab_data.get('base_pool_size', 0),
                     'runtime_vocab_size': vocab_data.get('runtime_vocab_size', 0),
+                    'connector_curriculum': vocab_data.get('connector_curriculum', []),
                     'knowledge_web_concepts': kw_data.get('concept_count', 0),
                     'knowledge_web_relations': kw_data.get('relation_count', 0),
+                    'council_contract': game_contracts,
                     'generated': datetime.datetime.now().isoformat(),
                     'package_contents': [
                         'brain_ensemble.onnx' if export_results['onnx']['success'] else None,
@@ -5881,6 +5968,8 @@ if __name__ == '__main__':
                 # 6. VOCABULARY.JSON
                 # ─────────────────────────────────────────────────────────────
                 zf.writestr('vocabulary.json', vocab_json)
+                zf.writestr('game_contracts.json', json.dumps(game_contracts, indent=2))
+                add_package_content('game_contracts.json')
                 
                 # ─────────────────────────────────────────────────────────────
                 # 7. REQUIREMENTS.TXT
@@ -8036,6 +8125,8 @@ if __name__ == '__main__':
             content_rows.append("| `causation_system.json` | Exported event history for this cocoon | - |")
         if 'alliance_system.json' in contents:
             content_rows.append("| `alliance_system.json` | Exported social/alliance context | - |")
+        if 'game_contracts.json' in contents:
+            content_rows.append("| `game_contracts.json` | Council/Cocoon HTTP, CLI, game, and learning contract | - |")
         content_rows.extend([
             "| `metadata.json` | Complete configuration | - |",
             "| `requirements.txt` | Python dependencies | - |",
@@ -8085,6 +8176,8 @@ if __name__ == '__main__':
         ]
         if failed_exports:
             export_warning = "\n\n**Export notes:**\n" + "\n".join(f"- {item}" for item in failed_exports) + "\n"
+        connector_words = metadata.get('connector_curriculum', [])
+        connector_preview = ", ".join(connector_words[:30]) if connector_words else "not recorded"
         
         return f'''# 🦋🦋 Butterfly Ensemble - Ultimate Package
 
@@ -8174,6 +8267,47 @@ for state, target in new_data:
 
 torch.jit.save(model, "brain_finetuned.pt")
 ```
+
+---
+
+## 🔌 Champion Council Contract
+
+This Cocoon is **RL/game-native**, not tool-native. Council should wrap it with
+tools instead of expecting reliable tool-call JSON from organism text.
+
+**Connector curriculum seeded in source vocab:** `{connector_preview}`
+
+**Native HTTP endpoints:**
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /health` | Runtime health and organism count |
+| `POST /act` | Action inference from numeric state |
+| `POST /learn` | One RL transition + train step |
+| `POST /chat` | Prompt routed through the Cocoon, optionally learning |
+| `POST /teach` | Teach text with optional reward |
+| `GET /vocab` | Current live vocabulary |
+| `GET /snapshot` | Serializable live symbolic/training state for clone-from-live-state |
+| `POST /save` | Persist learned runtime state beside the running Cocoon |
+| `POST /export` | Export learned state to an updated `cocoon.py` |
+| `GET /capabilities` | Machine-readable capability contract |
+| `POST /dreamer/observe` | Record a game/runtime observation |
+| `POST /dreamer/propose` | Return observation-driven game/training proposals |
+
+**Durable learning path:**
+
+```bash
+# Start native runtime
+python cocoon.py --mode serve --port 8080
+
+# In another shell: persist live symbolic state
+curl -X POST http://localhost:8080/save
+
+# Export learned state into a new standalone Cocoon
+curl -X POST http://localhost:8080/export -H "Content-Type: application/json" -d '{{"path":"evolved_cocoon.py"}}'
+```
+
+For full contract details, inspect `game_contracts.json`.
 
 ---
 
@@ -8463,6 +8597,12 @@ _TMRL_ADAPTER_B64 = "$TMRL_ADAPTER_B64"
 _DRONE_ADAPTER_B64 = "$DRONE_ADAPTER_B64"
 _DRONE_ARENA_B64 = "$DRONE_ARENA_B64"
 _DRONE_PHYSICS_B64 = "$DRONE_PHYSICS_B64"
+_CONNECTOR_WORDS = {
+    'a', 'an', 'and', 'are', 'as', 'at', 'be', 'because', 'but', 'by',
+    'for', 'from', 'if', 'in', 'is', 'it', 'of', 'on', 'or', 'so',
+    'that', 'the', 'then', 'this', 'to', 'was', 'we', 'when', 'with',
+    'you',
+}
 
 
 def _decode_data(b64_str: str, is_json: bool = True) -> Any:
@@ -9918,6 +10058,7 @@ class CocoonAgent:
         self.concept_weight = self.config.get('concept_loss_weight', 0.1)  # Default matches config.json gamma
         # Add null checks in case decode fails (corrupted data)
         self.vocabulary = _decode_data(_VOCABULARY_B64) or {'word_to_id': {}, 'id_to_word': {}, 'vocab_size': 0}
+        self._ensure_connector_curriculum()
         self.knowledge_web = _decode_data(_KNOWLEDGE_WEB_B64) or {'concepts': {}, 'relations': []}
         self.brains: List[OrganismBrain] = []
         self.optimizers: List[optim.Adam] = []
@@ -10074,6 +10215,16 @@ class CocoonAgent:
             fitness = cfg.get('fitness', 1.0 + idx * 0.05)
             self.organism_fitness.append(fitness)
 
+    def _ensure_connector_curriculum(self):
+        """Ensure closed-class connector words exist in live vocabulary."""
+        if not isinstance(self.vocabulary, dict):
+            self.vocabulary = {'word_to_id': {}, 'id_to_word': {}, 'vocab_size': 0}
+        self.vocabulary.setdefault('word_to_id', {})
+        self.vocabulary.setdefault('id_to_word', {})
+        for word in sorted(_CONNECTOR_WORDS):
+            self.add_word(word)
+        self.vocabulary['connector_curriculum'] = sorted(_CONNECTOR_WORDS)
+
     def tokenize(self, text: str) -> List[int]:
         word_to_id = self.vocabulary.get('word_to_id', {})
         unk_id = word_to_id.get('<UNK>', 1)
@@ -10134,7 +10285,7 @@ class CocoonAgent:
         for word in words:
             # Clean word (remove punctuation)
             clean_word = ''.join(c for c in word if c.isalnum())
-            if len(clean_word) < 2:
+            if len(clean_word) < 2 and clean_word not in _CONNECTOR_WORDS:
                 continue
                 
             # FIXED: Learn ALL words, not just those in knowledge_web
@@ -13434,6 +13585,98 @@ class GymRunner:
         print(f"   Best reward: {np.max(all_rewards):.2f}")
 
 
+def cocoon_capability_contract() -> Dict[str, Any]:
+    """Machine-readable runtime contract for Council/adapter integrations."""
+    return {
+        'version': '1.0',
+        'runtime_kind': 'rl_game_native_cocoon',
+        'tool_native': False,
+        'learning': {
+            'chat_learning': True,
+            'teach_learning': True,
+            'rl_transition_learning': True,
+            'post_snapshot_sphere_training': True,
+            'durable_runtime_save': True,
+            'clone_from_live_state': True,
+        },
+        'connector_curriculum': sorted(_CONNECTOR_WORDS),
+        'http_endpoints': [
+            '/health', '/act', '/learn', '/chat', '/teach', '/vocab',
+            '/snapshot', '/save', '/export', '/capabilities',
+            '/dreamer/observe', '/dreamer/propose',
+        ],
+        'game_lanes': {
+            'sphere': {
+                'cli': 'python cocoon.py --mode sphere --headless --balls 1 --misses 1 --train',
+                'supports_training': True,
+                'headless': True,
+            },
+            'gym': {
+                'cli': 'python cocoon.py --mode gym --env CartPole-v1 --episodes 1 --no-learn',
+                'supports_training': True,
+                'headless': True,
+            },
+        },
+        'council_tools': [
+            'cocoon_import', 'cocoon_list', 'cocoon_info', 'cocoon_start',
+            'cocoon_stop', 'cocoon_chat', 'cocoon_teach', 'cocoon_act',
+            'cocoon_learn', 'cocoon_run_game', 'cocoon_spawn_game',
+            'cocoon_game_status', 'cocoon_stop_game', 'cocoon_vocab_check',
+            'cocoon_capabilities', 'cocoon_plug_slot',
+        ],
+    }
+
+
+def build_live_snapshot(agent: CocoonAgent) -> Dict[str, Any]:
+    """Serializable live state used for Council clone-from-live-state workflows."""
+    atomic_languages = []
+    for als in getattr(agent, 'atomic_languages', []) or []:
+        atomic_languages.append(als.to_dict() if hasattr(als, 'to_dict') else {})
+    return {
+        'snapshot_time': time.time(),
+        'mode': 'ENSEMBLE' if getattr(agent, 'is_ensemble', False) else 'SOLO',
+        'num_organisms': len(getattr(agent, 'brains', []) or []),
+        'organism_names': list(getattr(agent, 'organism_names', []) or []),
+        'vocabulary': agent.vocabulary,
+        'vocab_size': len(agent.vocabulary.get('word_to_id', {})),
+        'knowledge_web': agent.knowledge_web,
+        'knowledge_web_concepts': len(agent.knowledge_web.get('concepts', {})) if isinstance(agent.knowledge_web, dict) else 0,
+        'conversation': agent.conversation.to_dict() if hasattr(agent, 'conversation') else {},
+        'atomic_languages': atomic_languages,
+        'training_step': getattr(agent, 'training_step', 0),
+        'reward_history': list(getattr(agent, 'reward_history', [])[-200:]),
+        'capabilities': cocoon_capability_contract(),
+    }
+
+
+def save_runtime_state(agent: CocoonAgent, output_dir: str = '.') -> Dict[str, Any]:
+    """Persist live symbolic/training state beside the running Cocoon."""
+    os.makedirs(output_dir, exist_ok=True)
+    snapshot = build_live_snapshot(agent)
+    paths = {}
+    files = {
+        'runtime_state': ('runtime_state.json', snapshot),
+        'vocabulary': ('vocabulary.json', agent.vocabulary),
+        'knowledge_web': ('knowledge_web.json', agent.knowledge_web),
+        'conversation': ('conversation_history.json', snapshot.get('conversation', {})),
+        'atomic_languages': ('atomic_languages.json', snapshot.get('atomic_languages', [])),
+        'game_contracts': ('game_contracts.json', cocoon_capability_contract()),
+    }
+    for key, (filename, payload) in files.items():
+        path = os.path.join(output_dir, filename)
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(payload, f, indent=2, default=_json_default)
+        paths[key] = os.path.abspath(path)
+    return {
+        'saved': True,
+        'output_dir': os.path.abspath(output_dir),
+        'paths': paths,
+        'vocab_size': snapshot.get('vocab_size', 0),
+        'knowledge_web_concepts': snapshot.get('knowledge_web_concepts', 0),
+        'training_step': snapshot.get('training_step', 0),
+    }
+
+
 # Optional HTTP server
 def run_http_server(agent: CocoonAgent, port: int = 8080):
     try:
@@ -13568,8 +13811,96 @@ def run_http_server(agent: CocoonAgent, port: int = 8080):
             'words': list(agent.vocabulary.get('word_to_id', {}).keys())
         })
 
+    @app.route('/snapshot', methods=['GET'])
+    def snapshot():
+        """Return live symbolic/training state for clone-from-live-state."""
+        return jsonify(build_live_snapshot(agent))
+
+    @app.route('/save', methods=['POST'])
+    def save_state():
+        """Persist live symbolic state beside the running Cocoon."""
+        data = request.json or {}
+        output_dir = data.get('output_dir') or data.get('dir') or '.'
+        return jsonify(save_runtime_state(agent, output_dir=output_dir))
+
+    @app.route('/export', methods=['POST'])
+    def export_state():
+        """Export an updated standalone cocoon.py with learned state embedded."""
+        data = request.json or {}
+        output_path = data.get('path') or data.get('output') or 'evolved_cocoon.py'
+        agent.export_cocoon(output_path)
+        return jsonify({
+            'exported': True,
+            'path': os.path.abspath(output_path),
+            'vocab_size': len(agent.vocabulary.get('word_to_id', {})),
+            'training_step': agent.training_step
+        })
+
+    @app.route('/capabilities', methods=['GET'])
+    def capabilities():
+        """Machine-readable Council/Cocoon capability matrix."""
+        contract = cocoon_capability_contract()
+        contract['live'] = {
+            'organisms': len(agent.brains),
+            'vocab_size': len(agent.vocabulary.get('word_to_id', {})),
+            'training_step': agent.training_step,
+        }
+        return jsonify(contract)
+
+    @app.route('/dreamer/observe', methods=['POST'])
+    def dreamer_observe():
+        """Record a game/runtime observation for proposal generation."""
+        data = request.json or {}
+        observation = {
+            'timestamp': time.time(),
+            'game': data.get('game', 'unknown'),
+            'observation': data.get('observation', data),
+            'reward': data.get('reward'),
+            'done': data.get('done', False),
+        }
+        if not hasattr(agent, 'dreamer_observations'):
+            agent.dreamer_observations = []
+        agent.dreamer_observations.append(observation)
+        agent.dreamer_observations = agent.dreamer_observations[-200:]
+        return jsonify({
+            'accepted': True,
+            'observation_count': len(agent.dreamer_observations),
+            'proposal_hint': 'Call /dreamer/propose for candidate next game/training lanes.'
+        })
+
+    @app.route('/dreamer/propose', methods=['POST'])
+    def dreamer_propose():
+        """Return simple observation-driven proposals for Council orchestration."""
+        data = request.json or {}
+        observations = getattr(agent, 'dreamer_observations', [])[-20:]
+        rewards = [o.get('reward') for o in observations if isinstance(o.get('reward'), (int, float))]
+        avg_reward = sum(rewards) / len(rewards) if rewards else 0.0
+        proposals = []
+        if avg_reward < 0.2:
+            proposals.append({
+                'lane': 'sphere',
+                'args': {'headless': True, 'train': True, 'balls': 1, 'misses': 3},
+                'reason': 'Low recent reward; use short headless sphere training for dense feedback.'
+            })
+        else:
+            proposals.append({
+                'lane': 'gym',
+                'args': {'env': data.get('env', 'CartPole-v1'), 'episodes': 3, 'no_learn': False},
+                'reason': 'Reward is nonzero; try a short Gym training/evaluation loop.'
+            })
+        proposals.append({
+            'lane': 'save',
+            'args': {'output_dir': '.'},
+            'reason': 'Persist live vocabulary/knowledge after runtime learning.'
+        })
+        return jsonify({
+            'avg_reward': avg_reward,
+            'observation_count': len(observations),
+            'proposals': proposals,
+        })
+
     print(f"\n🌐 HTTP API Server starting on port {port}")
-    print(f"   Endpoints: /health, /act, /learn, /chat, /teach, /vocab")
+    print(f"   Endpoints: /health, /act, /learn, /chat, /teach, /vocab, /snapshot, /save, /export, /capabilities")
     app.run(host='0.0.0.0', port=port)
 
 
@@ -13862,7 +14193,8 @@ Examples:
   python cocoon.py --export updated_cocoon.py
   python cocoon.py --export-onnx brain.onnx
   python cocoon.py --export-package ./my_model
-    python cocoon.py --unpack ./ultimate_package
+  python cocoon.py --save-state ./live_state
+  python cocoon.py --unpack ./ultimate_package
         """)
     parser.add_argument('--mode', choices=['chat', 'gym', 'serve', 'link', 'sphere', 'info'], default='info')
     parser.add_argument('--env', type=str, default='CartPole-v1')
@@ -13874,6 +14206,7 @@ Examples:
     parser.add_argument('--export-onnx', type=str, help='Export ONNX model (ensemble exports all brains combined)')
     parser.add_argument('--export-torchscript', type=str, help='Export TorchScript model (ensemble exports all brains combined)')
     parser.add_argument('--export-package', type=str, help='Export full package (ONNX + README + metadata)')
+    parser.add_argument('--save-state', type=str, help='Save live symbolic state to a directory')
     parser.add_argument('--unpack', type=str, help='Unpack ultimate package assets to a directory (README/adapter/vocab/ensemble.onnx/ensemble_weights.pt)')
     parser.add_argument('--organism', type=int, default=0, help='Organism index for single-brain ONNX export (default: export all as ensemble)')
     parser.add_argument('--voting', choices=['majority', 'weighted', 'confidence'], default='confidence')
@@ -13953,6 +14286,11 @@ Examples:
         return
 
     agent = CocoonAgent(voting=args.voting, max_organisms=args.max_organisms)
+
+    if args.save_state:
+        result = save_runtime_state(agent, output_dir=args.save_state)
+        print(json.dumps(result, indent=2, default=_json_default))
+        return
 
     if args.mode == 'chat':
         print("\n🦋 Butterfly Cocoon - Interactive Chat")

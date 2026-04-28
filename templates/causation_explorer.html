@@ -16538,7 +16538,7 @@
             // observations, hypotheses, causation chains, and analytical notes.
             // ============================================
 
-            // Notepad state - persisted to localStorage
+            // Notepad state - localStorage fallback, synced to backend when available
             const researchNotepad = {
                 entries: [],
                 sessionId: generateNotepadSessionId(),
@@ -16562,8 +16562,54 @@
                 return 'session_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 5);
             }
 
-            // Initialize notepad from localStorage
-            function initResearchNotepad() {
+            function mergeNotepadEntries(entries) {
+                const byId = new Map();
+                [...researchNotepad.entries, ...(entries || [])].forEach(entry => {
+                    if (entry && entry.id) byId.set(entry.id, entry);
+                });
+                researchNotepad.entries = Array.from(byId.values())
+                    .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+            }
+
+            async function syncNotepadWithBackend() {
+                try {
+                    const response = await fetch('/api/research-notepad/sync', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            sessionId: researchNotepad.sessionId,
+                            entries: researchNotepad.entries
+                        })
+                    });
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const data = await response.json();
+                    if (data.success && Array.isArray(data.entries)) {
+                        mergeNotepadEntries(data.entries);
+                        researchNotepad.lastSaved = data.lastSaved || researchNotepad.lastSaved;
+                        localStorage.setItem('researchNotepad', JSON.stringify(researchNotepad));
+                        updateNotepadDisplay();
+                        updateNotepadStats();
+                    }
+                } catch (e) {
+                    console.warn('[Notepad] Backend sync unavailable; using localStorage only:', e);
+                }
+            }
+
+            async function syncNotepadEntryToBackend(entry) {
+                try {
+                    const response = await fetch('/api/research-notepad', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(entry)
+                    });
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                } catch (e) {
+                    console.warn('[Notepad] Failed to sync entry to backend:', e);
+                }
+            }
+
+            // Initialize notepad from localStorage, then merge backend notes
+            async function initResearchNotepad() {
                 try {
                     const saved = localStorage.getItem('researchNotepad');
                     if (saved) {
@@ -16580,6 +16626,7 @@
                 document.getElementById('notepadSessionId').textContent = researchNotepad.sessionId.substr(0, 15) + '...';
                 updateNotepadDisplay();
                 updateNotepadStats();
+                await syncNotepadWithBackend();
             }
 
             // Save notepad to localStorage
@@ -22371,6 +22418,7 @@
                 
                 researchNotepad.entries.unshift(entry); // Add to beginning
                 saveNotepad();
+                syncNotepadEntryToBackend(entry);
                 updateNotepadDisplay();
                 updateNotepadStats();
                 
@@ -22706,6 +22754,8 @@
                 
                 researchNotepad.entries = [];
                 saveNotepad();
+                fetch('/api/research-notepad?confirm=true', { method: 'DELETE' })
+                    .catch(e => console.warn('[Notepad] Failed to clear backend notepad:', e));
                 updateNotepadDisplay();
                 updateNotepadStats();
             }

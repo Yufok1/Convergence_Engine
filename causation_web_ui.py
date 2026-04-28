@@ -32,6 +32,163 @@ from contextlib import contextmanager
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Persistent Research Notepad bridge.
+# The browser tab keeps localStorage for offline/fallback use; this file gives
+# SSH/CLI agents and Champion Council a shared scientific notebook surface.
+RESEARCH_NOTEPAD_PATH = Path(__file__).parent / "data" / "research_notepad.json"
+RESEARCH_NOTEPAD_LOCK = threading.RLock()
+RESEARCH_NOTE_TYPES = {
+    "note",
+    "observation",
+    "hypothesis",
+    "causation",
+    "analysis",
+    "conclusion",
+    "question",
+    "todo",
+    "cra",
+}
+
+
+def _notepad_timestamp() -> str:
+    return datetime.utcnow().isoformat() + "Z"
+
+
+def _notepad_session_id() -> str:
+    return f"backend_{int(time.time() * 1000)}_{uuid.uuid4().hex[:6]}"
+
+
+def _notepad_extract_tags(content: str) -> List[str]:
+    return [tag.lower() for tag in re.findall(r"#\w+", content or "")]
+
+
+def _empty_notepad() -> Dict[str, Any]:
+    now = _notepad_timestamp()
+    return {
+        "entries": [],
+        "sessionId": _notepad_session_id(),
+        "lastSaved": now,
+        "source": "backend",
+        "version": 1,
+    }
+
+
+def _load_research_notepad() -> Dict[str, Any]:
+    with RESEARCH_NOTEPAD_LOCK:
+        if not RESEARCH_NOTEPAD_PATH.exists():
+            return _empty_notepad()
+        try:
+            with RESEARCH_NOTEPAD_PATH.open("r", encoding="utf-8") as fh:
+                data = json.load(fh)
+        except Exception as exc:
+            logger.warning(f"[NOTEPAD] Failed to load research notepad: {exc}")
+            return _empty_notepad()
+
+        if not isinstance(data, dict):
+            data = _empty_notepad()
+        data.setdefault("entries", [])
+        data.setdefault("sessionId", _notepad_session_id())
+        data.setdefault("lastSaved", _notepad_timestamp())
+        data.setdefault("source", "backend")
+        data.setdefault("version", 1)
+        return data
+
+
+def _save_research_notepad(data: Dict[str, Any]) -> None:
+    with RESEARCH_NOTEPAD_LOCK:
+        data["lastSaved"] = _notepad_timestamp()
+        RESEARCH_NOTEPAD_PATH.parent.mkdir(parents=True, exist_ok=True)
+        tmp_path = RESEARCH_NOTEPAD_PATH.with_suffix(".json.tmp")
+        with tmp_path.open("w", encoding="utf-8") as fh:
+            json.dump(data, fh, indent=2, ensure_ascii=False)
+        tmp_path.replace(RESEARCH_NOTEPAD_PATH)
+
+
+def _normalize_notepad_entry(raw: Dict[str, Any], session_id: Optional[str] = None) -> Dict[str, Any]:
+    if not isinstance(raw, dict):
+        raw = {}
+
+    content = str(raw.get("content", "")).strip()
+    if not content:
+        raise ValueError("content is required")
+
+    note_type = str(raw.get("type") or raw.get("action") or "note").lower().strip()
+    action_aliases = {
+        "observe": "observation",
+        "hypothesize": "hypothesis",
+        "analyze": "analysis",
+        "conclude": "conclusion",
+        "auto": "cra",
+    }
+    note_type = action_aliases.get(note_type, note_type)
+    if note_type not in RESEARCH_NOTE_TYPES:
+        note_type = "note"
+
+    metadata = raw.get("metadata") if isinstance(raw.get("metadata"), dict) else {}
+    metadata = dict(metadata)
+
+    linked_events = raw.get("linkedEvents") or raw.get("events") or metadata.get("linkedEvents") or []
+    if isinstance(linked_events, str):
+        linked_events = [item.strip() for item in linked_events.split(",") if item.strip()]
+    if not isinstance(linked_events, list):
+        linked_events = []
+
+    if raw.get("confidence") and "confidence" not in metadata:
+        metadata["confidence"] = raw.get("confidence")
+    if raw.get("cause") and "causeEventId" not in metadata:
+        metadata["causeEventId"] = raw.get("cause")
+    if raw.get("effect") and "effectEventId" not in metadata:
+        metadata["effectEventId"] = raw.get("effect")
+    if raw.get("source") and "source" not in metadata:
+        metadata["source"] = raw.get("source")
+
+    for event_id in (metadata.get("causeEventId"), metadata.get("effectEventId")):
+        if event_id and event_id not in linked_events:
+            linked_events.append(event_id)
+
+    return {
+        "id": str(raw.get("id") or f"note_{int(time.time() * 1000)}_{uuid.uuid4().hex[:5]}"),
+        "type": note_type,
+        "content": content,
+        "timestamp": str(raw.get("timestamp") or _notepad_timestamp()),
+        "session": str(raw.get("session") or session_id or _notepad_session_id()),
+        "metadata": metadata,
+        "tags": raw.get("tags") if isinstance(raw.get("tags"), list) else _notepad_extract_tags(content),
+        "linkedEvents": linked_events,
+        "status": raw.get("status") if raw.get("status") is not None else ("pending" if note_type == "todo" else None),
+    }
+
+
+def _filter_notepad_entries(entries: List[Dict[str, Any]], note_type: Optional[str] = None,
+                            query: Optional[str] = None, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+    filtered = entries
+    if note_type:
+        filtered = [entry for entry in filtered if entry.get("type") == note_type]
+    if query:
+        q = query.lower()
+        filtered = [
+            entry for entry in filtered
+            if q in str(entry.get("content", "")).lower()
+            or any(q in str(tag).lower() for tag in entry.get("tags", []))
+            or any(q in str(event).lower() for event in entry.get("linkedEvents", []))
+        ]
+    if limit is not None and limit >= 0:
+        filtered = filtered[:limit]
+    return filtered
+
+
+def _notepad_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
+    by_type = {note_type: 0 for note_type in sorted(RESEARCH_NOTE_TYPES)}
+    for entry in entries:
+        by_type[entry.get("type", "note")] = by_type.get(entry.get("type", "note"), 0) + 1
+    return {
+        "total": len(entries),
+        "byType": by_type,
+        "pendingTodos": len([e for e in entries if e.get("type") == "todo" and e.get("status") != "done"]),
+        "openHypotheses": len([e for e in entries if e.get("type") == "hypothesis"]),
+        "lastEntry": entries[0] if entries else None,
+    }
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # SIMULATION PAUSE CONTEXT MANAGER
 # Use this to pause the simulation during exports to prevent race conditions
@@ -11227,6 +11384,131 @@ Use this context to understand what the graph structure means. Match the visual 
     except Exception as e:
         logger.error(f"Error in Ollama chat: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/research-notepad', methods=['GET'])
+def research_notepad_list():
+    """List persistent CRA research notepad entries."""
+    try:
+        data = _load_research_notepad()
+        note_type = request.args.get('type') or None
+        query = request.args.get('query') or None
+        limit_arg = request.args.get('limit')
+        limit = int(limit_arg) if limit_arg not in (None, "") else None
+        entries = _filter_notepad_entries(data.get('entries', []), note_type=note_type, query=query, limit=limit)
+        return jsonify({
+            'success': True,
+            'sessionId': data.get('sessionId'),
+            'lastSaved': data.get('lastSaved'),
+            'entries': entries,
+            'totalEntries': len(data.get('entries', [])),
+            'returned': len(entries),
+            'summary': _notepad_summary(data.get('entries', []))
+        })
+    except Exception as e:
+        logger.error(f"Error listing research notepad: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/research-notepad', methods=['POST'])
+def research_notepad_add():
+    """Append one entry to the persistent CRA research notepad."""
+    try:
+        payload = request.get_json() or {}
+        data = _load_research_notepad()
+        entry = _normalize_notepad_entry(payload, session_id=data.get('sessionId'))
+
+        # Avoid duplicating entries when the browser syncs an already-persisted note.
+        entries = data.setdefault('entries', [])
+        existing_ids = {str(item.get('id')) for item in entries}
+        if entry['id'] not in existing_ids:
+            entries.insert(0, entry)
+            _save_research_notepad(data)
+        else:
+            for idx, item in enumerate(entries):
+                if str(item.get('id')) == entry['id']:
+                    entries[idx] = entry
+                    _save_research_notepad(data)
+                    break
+
+        return jsonify({
+            'success': True,
+            'entry': entry,
+            'summary': _notepad_summary(data.get('entries', []))
+        })
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+    except Exception as e:
+        logger.error(f"Error adding research notepad entry: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/research-notepad/sync', methods=['POST'])
+def research_notepad_sync():
+    """Merge browser-local notepad entries into backend persistence."""
+    try:
+        payload = request.get_json() or {}
+        incoming = payload.get('entries', [])
+        if not isinstance(incoming, list):
+            return jsonify({'success': False, 'error': 'entries must be a list'}), 400
+
+        data = _load_research_notepad()
+        entries = data.setdefault('entries', [])
+        by_id = {str(item.get('id')): item for item in entries}
+        merged = 0
+        for raw_entry in incoming:
+            try:
+                entry = _normalize_notepad_entry(raw_entry, session_id=data.get('sessionId'))
+            except ValueError:
+                continue
+            if entry['id'] not in by_id:
+                entries.append(entry)
+                by_id[entry['id']] = entry
+                merged += 1
+
+        entries.sort(key=lambda item: item.get('timestamp', ''), reverse=True)
+        _save_research_notepad(data)
+        return jsonify({
+            'success': True,
+            'merged': merged,
+            'entries': entries,
+            'summary': _notepad_summary(entries),
+            'lastSaved': data.get('lastSaved'),
+            'sessionId': data.get('sessionId')
+        })
+    except Exception as e:
+        logger.error(f"Error syncing research notepad: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/research-notepad/summary', methods=['GET'])
+def research_notepad_summary():
+    """Summary counts for the persistent CRA research notepad."""
+    try:
+        data = _load_research_notepad()
+        return jsonify({
+            'success': True,
+            'sessionId': data.get('sessionId'),
+            'lastSaved': data.get('lastSaved'),
+            'summary': _notepad_summary(data.get('entries', []))
+        })
+    except Exception as e:
+        logger.error(f"Error summarizing research notepad: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/research-notepad', methods=['DELETE'])
+def research_notepad_clear():
+    """Clear backend research notepad entries. Requires confirm=true."""
+    try:
+        if request.args.get('confirm') != 'true':
+            return jsonify({'success': False, 'error': 'confirm=true is required'}), 400
+        data = _empty_notepad()
+        _save_research_notepad(data)
+        return jsonify({'success': True, 'summary': _notepad_summary([])})
+    except Exception as e:
+        logger.error(f"Error clearing research notepad: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/api/butterfly/chat', methods=['POST'])
