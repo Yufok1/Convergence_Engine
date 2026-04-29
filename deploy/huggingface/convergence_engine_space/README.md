@@ -5,7 +5,7 @@ sdk_version: 5.33.1
 app_file: app.py
 pinned: false
 license: mit
-short_description: Public launch page for the Convergence Engine notebook tunnel demo.
+short_description: Convergence Engine notebook tunnel launcher.
 ---
 
 # Convergence Engine
