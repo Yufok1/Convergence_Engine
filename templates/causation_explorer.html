@@ -339,9 +339,12 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: var(--space-md);
-            max-height: min(340px, 38vh);
+            height: min(340px, 38vh);
+            min-height: 180px;
+            max-height: 75vh;
             overflow-y: auto;
             overscroll-behavior: contain;
+            resize: vertical;
             padding: var(--space-md);
             background: var(--bg-deepest);
             border: 1px solid var(--border-subtle);
@@ -353,7 +356,8 @@
         .organism-binder.pack-mode {
             grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
             gap: var(--space-sm);
-            max-height: min(360px, 42vh);
+            height: min(360px, 42vh);
+            max-height: 75vh;
             padding: var(--space-sm);
             align-items: start;
             background:
@@ -367,17 +371,17 @@
 
         .organism-binder.pack-4 {
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            max-height: min(285px, 38vh);
+            height: min(285px, 38vh);
         }
 
         .organism-binder.pack-6 {
             grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-            max-height: min(360px, 45vh);
+            height: min(360px, 45vh);
         }
 
         .organism-binder.pack-8 {
             grid-template-columns: repeat(auto-fit, minmax(116px, 1fr));
-            max-height: min(430px, 55vh);
+            height: min(430px, 55vh);
         }
 
         .organism-binder.pack-mode .organism-card:not(.focused) {
@@ -431,15 +435,37 @@
             background: rgba(0, 0, 0, 0.22);
         }
 
-        .organism-binder.pack-mode .organism-card:not(.focused) .card-stats .stat-item:nth-child(n+3),
-        .organism-binder.pack-mode .organism-card:not(.focused) .card-identity-row,
-        .organism-binder.pack-mode .organism-card:not(.focused) .fitness-sparkline-container,
-        .organism-binder.pack-mode .organism-card:not(.focused) .action-sequence-container,
-        .organism-binder.pack-mode .organism-card:not(.focused) .competition-stats,
-        .organism-binder.pack-mode .organism-card:not(.focused) .fingerprint-viz,
-        .organism-binder.pack-mode .organism-card:not(.focused) .card-traits,
+        .organism-binder.pack-mode .organism-card:not(.focused) .card-name-row,
         .organism-binder.pack-mode .organism-card:not(.focused) .card-chat-container {
             display: none;
+        }
+
+        .organism-binder.pack-mode .organism-card:not(.focused) .card-identity-row {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .organism-binder.pack-mode .organism-card:not(.focused) .alignment-icon,
+        .organism-binder.pack-mode .organism-card:not(.focused) .personality-icon,
+        .organism-binder.pack-mode .organism-card:not(.focused) .dossier-btn,
+        .organism-binder.pack-mode .organism-card:not(.focused) .source-dot {
+            display: none;
+        }
+
+        .organism-binder.pack-mode .organism-card:not(.focused) .fitness-sparkline-container {
+            height: 16px;
+        }
+
+        .organism-binder.pack-mode .organism-card:not(.focused) .action-sequence-container {
+            height: 8px;
+            margin: 0;
+        }
+
+        .organism-binder.pack-mode .organism-card:not(.focused) .competition-stats,
+        .organism-binder.pack-mode .organism-card:not(.focused) .fingerprint-viz,
+        .organism-binder.pack-mode .organism-card:not(.focused) .card-traits {
+            font-size: 0.86em;
         }
 
         .organism-binder.pack-mode .organism-card.focused {
@@ -546,6 +572,7 @@
             display: flex;
             align-items: center;
             gap: var(--space-sm);
+            min-width: 0;
         }
         
         .card-id {
@@ -554,6 +581,18 @@
             font-weight: 600;
             color: var(--text-primary);
             letter-spacing: -0.02em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 18ch;
+        }
+
+        .card-serial {
+            font-family: var(--font-mono);
+            font-size: 0.58em;
+            color: var(--text-muted);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
         }
         
         .card-rarity-badge {
@@ -641,6 +680,38 @@
             flex-direction: column;
             gap: var(--space-sm);
             flex: 1;
+        }
+
+        .card-name-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+
+        .card-name-label {
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 0.62em;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .card-name-input {
+            min-width: 0;
+            flex: 1;
+            padding: 5px 7px;
+            border: 1px solid rgba(214, 166, 86, 0.28);
+            border-radius: var(--radius-sm);
+            background: rgba(0, 0, 0, 0.28);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.75em;
+        }
+
+        .card-name-input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 1px rgba(91, 221, 255, 0.2);
         }
         
         /* ─── Alignment & Personality Compact Row ─── */
@@ -16919,6 +16990,8 @@
             let currentBinderView = 'grid';
             let currentBinderPack = window.matchMedia?.('(max-width: 720px)')?.matches ? 4 : 6;
             let currentFocusedOrganismId = null;
+            const ORGANISM_NICKNAMES_KEY = 'convergenceEngine_organismNicknames';
+            let organismNicknames = loadOrganismNicknames();
             
             // Personality icons mapping - Clean geometric symbols
             const personalityIcons = {
@@ -16939,6 +17012,70 @@
                 if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
                 return n.toString();
             };
+
+            function loadOrganismNicknames() {
+                try {
+                    return JSON.parse(localStorage.getItem(ORGANISM_NICKNAMES_KEY) || '{}');
+                } catch (e) {
+                    console.warn('[AgentExporter] Failed to load organism nicknames:', e);
+                    return {};
+                }
+            }
+
+            function saveOrganismNicknames() {
+                try {
+                    localStorage.setItem(ORGANISM_NICKNAMES_KEY, JSON.stringify(organismNicknames));
+                } catch (e) {
+                    console.warn('[AgentExporter] Failed to save organism nicknames:', e);
+                }
+            }
+
+            function getOrganismSerial(org) {
+                return org.short_id || String(org.id || '').substring(0, 8);
+            }
+
+            function getOrganismNickname(org) {
+                return organismNicknames[org.id] || '';
+            }
+
+            function getOrganismDisplayName(org) {
+                return getOrganismNickname(org) || getOrganismSerial(org);
+            }
+
+            function setOrganismNickname(orgId, rawValue) {
+                const value = String(rawValue || '').trim().slice(0, 48);
+                if (value) {
+                    organismNicknames[orgId] = value;
+                } else {
+                    delete organismNicknames[orgId];
+                }
+                saveOrganismNicknames();
+
+                const org = allOrganisms.find(o => o.id === orgId);
+                const displayName = org ? getOrganismDisplayName(org) : value;
+                document.querySelectorAll('.organism-card').forEach(card => {
+                    if (card.dataset.organismId !== orgId) return;
+                    const label = card.querySelector('.card-id');
+                    if (label) label.textContent = displayName;
+                });
+
+                const selector = document.getElementById('agentExporterOrganismSelect');
+                if (selector && org) {
+                    Array.from(selector.options).forEach(option => {
+                        if (option.value === orgId) option.textContent = `${displayName} (${orgId})`;
+                    });
+                }
+            }
+
+            function getOrganismDisplayNamesForExport(selectedIds = []) {
+                const selected = new Set(selectedIds || []);
+                const restrictToSelection = selected.size > 0;
+                return Object.fromEntries(
+                    Object.entries(organismNicknames)
+                        .filter(([id, name]) => name && (!restrictToSelection || selected.has(id)))
+                        .map(([id, name]) => [id, String(name).trim().slice(0, 48)])
+                );
+            }
             
             // Populate the organism binder with cards
             async function populateOrganismSelector() {
@@ -16966,7 +17103,7 @@
                             organisms.forEach(org => {
                                 const option = document.createElement('option');
                                 option.value = org.id;
-                                option.textContent = org.id;
+                                option.textContent = `${getOrganismDisplayName(org)} (${org.id})`;
                                 selector.appendChild(option);
                             });
                         }
@@ -18014,6 +18151,9 @@
                 
                 // Personality icon
                 const persIcon = personalityIcons[org.personality_type] || '◆';
+                const serialName = getOrganismSerial(org);
+                const displayName = getOrganismDisplayName(org);
+                const nickname = getOrganismNickname(org);
                 
                 // Fingerprint bars (behavioral distribution)
                 const fingerprint = org.behavioral_fingerprint || [0, 0, 0, 0, 0, 0];
@@ -18048,7 +18188,8 @@
                 card.innerHTML = `
                     <div class="card-header">
                         <div class="card-id-section">
-                            <span class="card-id">${org.short_id || org.id.substring(0, 8)}</span>
+                            <span class="card-id">${escapeHtml(displayName)}</span>
+                            ${nickname ? `<span class="card-serial">${escapeHtml(serialName)}</span>` : ''}
                             <span class="card-rarity-badge">${org.rarity || 'common'}</span>
                         </div>
                         <div class="card-source-indicator">
@@ -18059,6 +18200,16 @@
                     </div>
                     
                     <div class="card-body">
+                        <div class="card-name-row" onclick="event.stopPropagation()">
+                            <span class="card-name-label">Name</span>
+                            <input class="card-name-input"
+                                   value="${escapeAttributeValue(nickname)}"
+                                   placeholder="Name this organism"
+                                   maxlength="48"
+                                   oninput="setOrganismNickname('${escapeAttr(org.id)}', this.value)"
+                                   onclick="event.stopPropagation()">
+                        </div>
+
                         <div class="card-identity-row">
                             <div class="card-alignment" title="${org.alignment || 'Unknown'}">
                                 <span class="alignment-icon">${org.alignment_icon || '◇'}</span>
@@ -21014,6 +21165,14 @@
             function escapeAttr(text) {
                 return String(text).replace(/'/g, "\\'").replace(/"/g, '&quot;');
             }
+
+            function escapeAttributeValue(text) {
+                return String(text ?? '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+            }
             
             // Export dossier as beautiful standalone HTML
             function exportDossierHTML(orgId) {
@@ -22347,7 +22506,7 @@
                 if (clickedBtn) {
                     clickedBtn.classList.add('active');
                 } else {
-                    document.querySelector(`.view-btn[onclick*="'${view}'"]`)?.classList.add('active');
+                    document.querySelector(`.binder-mode-btn[data-view="${view}"]`)?.classList.add('active');
                 }
                 
                 // Re-render
@@ -22483,6 +22642,7 @@
                             format: format,
                             selected_alliances: selectedAlliances,
                             include_unallied: includeUnallied,
+                            organism_display_names: getOrganismDisplayNamesForExport(selected),
                             graph_image: graphImage
                         })
                     });
@@ -22664,6 +22824,7 @@
                             format: format,
                             selected_alliances: selectedAlliances,
                             include_unallied: includeUnallied,
+                            organism_display_names: getOrganismDisplayNamesForExport(selected),
                             graph_image: graphImage
                         })
                     });

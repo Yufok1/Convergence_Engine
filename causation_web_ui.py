@@ -8960,6 +8960,14 @@ def compile_cocoon():
         export_format = data.get('format', 'cocoon')  # cocoon, onnx, torchscript, package
         training_config = data.get('training_config', {})
         graph_image_base64 = data.get('graph_image')  # HTML graph capture from client
+        raw_display_names = data.get('organism_display_names') or {}
+        organism_display_names = {}
+        if isinstance(raw_display_names, dict):
+            organism_display_names = {
+                str(org_id): str(name).strip()[:48]
+                for org_id, name in raw_display_names.items()
+                if str(name).strip()
+            }
         selected_alliances = (
             data.get('selected_alliances')
             or data.get('alliance_ids')
@@ -9177,6 +9185,7 @@ def compile_cocoon():
                 context_memory=context_memory,
                 causation_explorer=causation_explorer,
                 alliance_system=alliance_system,
+                organism_display_names=organism_display_names,
                 alliance_selection_metadata=alliance_selection_metadata
             )
             # This is a ZIP archive - always save as .zip for ensemble binary exports
@@ -9198,6 +9207,7 @@ def compile_cocoon():
                 attractor_landscape=attractor_landscape,
                 shared_state=shared_state,
                 graph_image_base64=graph_image_base64,
+                organism_display_names=organism_display_names,
                 alliance_selection_metadata=alliance_selection_metadata
             )
             # Unpack result - cocoon format returns (source, readme, graph_bytes)
@@ -9228,6 +9238,7 @@ def compile_cocoon():
                 attractor_landscape=attractor_landscape,
                 shared_state=shared_state,
                 graph_image_base64=graph_image_base64,
+                organism_display_names=organism_display_names,
                 alliance_selection_metadata=alliance_selection_metadata
             )
             # Unpack result based on format
@@ -9317,6 +9328,11 @@ def compile_cocoon():
         
         file_size = download_path.stat().st_size
         organism_names = [str(getattr(org, 'organism_id', getattr(org, 'id', i))) for i, org in enumerate(organisms)]
+        exported_display_names = {
+            org_id: organism_display_names[org_id]
+            for org_id in organism_names
+            if org_id in organism_display_names
+        }
         
         logger.info(f"[COCOON] Generated {export_format} ({mode}): {filename} ({file_size:,} bytes)")
         
@@ -9334,6 +9350,7 @@ def compile_cocoon():
             'size_kb': round(file_size / 1024, 1),
             'organism_count': len(organisms),
             'organism_names': organism_names,
+            'organism_display_names': exported_display_names,
             'alliance_composition': alliance_selection_metadata,
             'features': {
                 'gym_adapter': include_gym,

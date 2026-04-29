@@ -5487,6 +5487,7 @@ if __name__ == '__main__':
                                      context_memory: Any = None,
                                      causation_explorer: Any = None,
                                      alliance_system: Any = None,
+                                     organism_display_names: Optional[Dict[str, str]] = None,
                                      alliance_selection_metadata: Optional[Dict[str, Any]] = None) -> BytesIO:
         """Compile multiple capsules into a single ensemble model archive.
         
@@ -5511,16 +5512,23 @@ if __name__ == '__main__':
         brains = []
         names = []
         members_meta = []
+        display_name_map = {
+            str(org_id): str(name).strip()[:48]
+            for org_id, name in (organism_display_names or {}).items()
+            if str(name).strip()
+        }
         for cap in capsules:
             b = self._reconstruct_brain_from_capsule(cap)
             # CRITICAL: Move brain to CPU for export (avoids cuda/cpu device mismatch)
             b = b.cpu()
             brains.append(b)
             name = str(cap.organism_id)
+            display_name = display_name_map.get(name, name)
             names.append(name)
             members_meta.append({
                 'organism_id': name,
                 'name': name,
+                'display_name': display_name,
                 'input_dim': b.input_dim,
                 'output_dim': b.output_dim,
                 'has_language_head': getattr(b, 'use_language_head', False),
@@ -5667,6 +5675,7 @@ if __name__ == '__main__':
         metadata = {
             'export_timestamp': datetime.datetime.now().isoformat(),
             'export_format': chosen_format,
+            'operator_display_names': display_name_map,
             'ensemble': {
                 'members': members_meta,
                 'member_count': len(members_meta),
@@ -5811,6 +5820,7 @@ if __name__ == '__main__':
                        attractor_landscape: Any = None,
                        shared_state: Dict[str, Any] = None,
                        graph_image_base64: str = None,
+                       organism_display_names: Optional[Dict[str, str]] = None,
                        selected_alliances: Any = None,
                        include_unallied: bool = False,
                        alliance_selection_metadata: Optional[Dict[str, Any]] = None) -> Tuple[str, Optional[bytes]]:
@@ -5869,11 +5879,19 @@ if __name__ == '__main__':
         brain_data_list = []
         brain_configs = []
         organism_names = []
+        display_name_map = {
+            str(org_id): str(name).strip()[:48]
+            for org_id, name in (organism_display_names or {}).items()
+            if str(name).strip()
+        }
+        organism_display_name_list = []
 
         for entity in capsules:
             brain = self._get_brain_from_entity(entity)
             name = self._get_organism_id(entity)
+            display_name = display_name_map.get(name, name)
             organism_names.append(name)
+            organism_display_name_list.append(display_name)
 
             state_buffer = BytesIO()
             torch.save(brain.state_dict(), state_buffer)
@@ -5893,6 +5911,7 @@ if __name__ == '__main__':
             hopfield_layer = getattr(brain, 'hopfield', None)
             config = {
                 'organism_id': name,
+                'display_name': display_name,
                 'input_dim': brain.input_dim,
                 'hidden_dim': brain.hidden_dim,
                 'output_dim': brain.output_dim,
@@ -5951,6 +5970,8 @@ if __name__ == '__main__':
         arch_data = {
             'brain_configs': brain_configs,
             'organism_names': organism_names,
+            'organism_display_names': organism_display_name_list,
+            'operator_display_names': display_name_map,
             'ensemble_size': len(capsules),
             'is_ensemble': is_ensemble,
         }
@@ -6107,6 +6128,8 @@ if __name__ == '__main__':
                 'generated': datetime.datetime.now().isoformat(),
                 'template_size': f"{len(cocoon_source_shell):,} chars (code only)",
                 'num_organisms': len(capsules),
+                'organism_display_names': organism_display_name_list,
+                'operator_display_names': display_name_map,
                 'alliance_composition': selection_metadata or alliance_data,
             },
             is_ensemble=is_ensemble,
@@ -6202,6 +6225,8 @@ if __name__ == '__main__':
                 metadata = {
                     'generated': datetime.datetime.now().isoformat(),
                     'organism_id': self._get_organism_id(capsules[0]),
+                    'display_name': display_name_map.get(self._get_organism_id(capsules[0]), self._get_organism_id(capsules[0])),
+                    'operator_display_names': display_name_map,
                     'brain_config': {
                         'input_dim': getattr(brain, 'input_dim', 30),
                         'hidden_dim': getattr(brain, 'hidden_dim', 64),
@@ -6288,6 +6313,8 @@ if __name__ == '__main__':
                 metadata = {
                     'generated': datetime.datetime.now().isoformat(),
                     'organism_id': self._get_organism_id(capsules[0]),
+                    'display_name': display_name_map.get(self._get_organism_id(capsules[0]), self._get_organism_id(capsules[0])),
+                    'operator_display_names': display_name_map,
                     'organism_count': len(capsules),
                     'brain_config': {
                         'input_dim': getattr(brain, 'input_dim', 30),
@@ -6474,6 +6501,8 @@ if __name__ == '__main__':
                     'mode': 'ENSEMBLE' if is_ensemble else 'SOLO',
                     'num_organisms': len(capsules),
                     'organism_names': organism_names,
+                    'organism_display_names': organism_display_name_list,
+                    'operator_display_names': display_name_map,
                     'max_input_dim': wrapper.max_input_dim,
                     'brain_configs': brain_configs,
                     'member_profiles': member_profiles,
