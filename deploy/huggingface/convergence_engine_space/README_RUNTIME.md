@@ -1,45 +1,12 @@
-# Convergence Engine Cloud CLI
+# Convergence Engine Cloud Runtime
 
-This is the persistent `/data` workspace for the Hugging Face Space.
+This directory is the persistent `/data` workspace for the Hugging Face Space.
 
-Open a Terminal in JupyterLab and run:
+Open `Convergence_Engine_Cloud_Run.ipynb` and run the cells in order:
 
-```bash
-cd /data
-./01_prepare_engine.sh
-./02_run_engine.sh
-./03_show_tunnel_url.sh
-```
+1. Clone or update `Yufok1/Convergence_Engine` into `/data/Convergence_Engine`.
+2. Install the repo dependencies in this cloud runtime.
+3. Start `unified_entry.py` with `--no-viz --tunnel localhostrun`.
+4. Open the printed tunnel URL to use the real Convergence web UI.
 
-Then open the printed tunnel URL.
-
-Useful commands:
-
-```bash
-./04_tail_engine_log.sh
-./05_stop_engine.sh
-./06_live_dashboard.sh
-./07_ssh_tunnel_status.sh
-```
-
-The full repo is cloned to `/data/Convergence_Engine`. The notebook is optional.
-
-## Always-On Tabs
-
-These start automatically when the Space starts:
-
-- `python live_dashboard.py`
-- `ssh -R 80:localhost:5000 nokey@localhost.run`
-
-Open these files from the left file browser:
-
-- `SSH_TUNNEL.log` - copy/click the localhost.run URL here
-- `LIVE_DASHBOARD.log` - dashboard output
-
-To watch from a terminal:
-
-```bash
-cd /data
-./06_live_dashboard.sh
-./07_ssh_tunnel_status.sh
-```
+The Space itself is JupyterLab. The Convergence web page is served by the running engine process and exposed through the tunnel URL printed by the notebook.

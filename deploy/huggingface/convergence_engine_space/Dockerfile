@@ -29,16 +29,12 @@ WORKDIR /app
 
 COPY start_server.sh /app/start_server.sh
 COPY space_tools.py /app/space_tools.py
-COPY cli_banner.py /app/cli_banner.py
 COPY README_RUNTIME.md /app/README_RUNTIME.md
 COPY notebooks /app/notebooks
 COPY jupyter-settings /app/jupyter-settings
-COPY scripts /app/scripts
 
 RUN sed -i 's/\r$//' /app/start_server.sh \
     && chmod +x /app/start_server.sh \
-    && find /app/scripts -type f -name '*.sh' -exec sed -i 's/\r$//' {} \; \
-    && find /app/scripts -type f -name '*.sh' -exec chmod +x {} \; \
     && mkdir -p /data
 
 EXPOSE 7860
