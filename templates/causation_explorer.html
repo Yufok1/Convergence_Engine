@@ -349,6 +349,118 @@
             scrollbar-width: thin;
             scrollbar-color: var(--border-default) var(--bg-deep);
         }
+
+        .organism-binder.pack-mode {
+            grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+            gap: var(--space-sm);
+            max-height: min(360px, 42vh);
+            padding: var(--space-sm);
+            align-items: start;
+            background:
+                linear-gradient(135deg, rgba(178, 132, 62, 0.12), transparent 38%),
+                linear-gradient(180deg, rgba(12, 14, 18, 0.96), rgba(4, 6, 10, 0.98));
+            border: 2px solid rgba(190, 143, 70, 0.42);
+            box-shadow:
+                inset 0 0 0 1px rgba(255, 232, 170, 0.08),
+                inset 0 18px 44px rgba(255, 214, 128, 0.05);
+        }
+
+        .organism-binder.pack-4 {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            max-height: min(285px, 38vh);
+        }
+
+        .organism-binder.pack-6 {
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            max-height: min(360px, 45vh);
+        }
+
+        .organism-binder.pack-8 {
+            grid-template-columns: repeat(auto-fit, minmax(116px, 1fr));
+            max-height: min(430px, 55vh);
+        }
+
+        .organism-binder.pack-mode .organism-card:not(.focused) {
+            min-height: 128px;
+            border-width: 2px;
+            border-color: rgba(214, 166, 86, 0.34);
+            border-radius: 10px;
+            background:
+                linear-gradient(180deg, rgba(37, 31, 23, 0.96), rgba(12, 14, 19, 0.98));
+            box-shadow:
+                inset 0 0 0 1px rgba(255, 236, 183, 0.06),
+                0 2px 0 rgba(0, 0, 0, 0.6);
+        }
+
+        .organism-binder.pack-mode .organism-card:not(.focused) .card-header {
+            padding: var(--space-xs);
+            background: linear-gradient(180deg, rgba(201, 155, 78, 0.17), rgba(23, 21, 18, 0.92));
+            border-bottom-color: rgba(214, 166, 86, 0.24);
+        }
+
+        .organism-binder.pack-mode .organism-card:not(.focused) .card-id-section {
+            min-width: 0;
+        }
+
+        .organism-binder.pack-mode .organism-card:not(.focused) .card-id {
+            max-width: 7.5ch;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #f2d596;
+            letter-spacing: 0.01em;
+        }
+
+        .organism-binder.pack-mode .organism-card:not(.focused) .card-rarity-badge {
+            font-size: 0.58em;
+            padding: 1px 4px;
+            border-radius: 2px;
+        }
+
+        .organism-binder.pack-mode .organism-card:not(.focused) .card-body {
+            padding: var(--space-xs);
+        }
+
+        .organism-binder.pack-mode .organism-card:not(.focused) .card-stats {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: var(--space-xs);
+            background: transparent;
+        }
+
+        .organism-binder.pack-mode .organism-card:not(.focused) .stat-item {
+            border: 1px solid rgba(214, 166, 86, 0.18);
+            background: rgba(0, 0, 0, 0.22);
+        }
+
+        .organism-binder.pack-mode .organism-card:not(.focused) .card-stats .stat-item:nth-child(n+3),
+        .organism-binder.pack-mode .organism-card:not(.focused) .card-identity-row,
+        .organism-binder.pack-mode .organism-card:not(.focused) .fitness-sparkline-container,
+        .organism-binder.pack-mode .organism-card:not(.focused) .action-sequence-container,
+        .organism-binder.pack-mode .organism-card:not(.focused) .competition-stats,
+        .organism-binder.pack-mode .organism-card:not(.focused) .fingerprint-viz,
+        .organism-binder.pack-mode .organism-card:not(.focused) .card-traits,
+        .organism-binder.pack-mode .organism-card:not(.focused) .card-chat-container {
+            display: none;
+        }
+
+        .organism-binder.pack-mode .organism-card.focused {
+            grid-column: 1 / -1;
+            border-color: rgba(91, 221, 255, 0.72);
+            box-shadow:
+                0 0 0 1px rgba(255, 224, 148, 0.26),
+                0 10px 36px rgba(0, 0, 0, 0.48);
+        }
+
+        @media (max-width: 720px) {
+            .organism-binder.pack-mode {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                max-height: min(380px, 50vh);
+            }
+
+            .organism-binder.pack-mode .organism-card.focused {
+                max-height: 70vh;
+                overflow-y: auto;
+            }
+        }
         
         .organism-binder::-webkit-scrollbar {
             width: 6px;
@@ -1325,6 +1437,7 @@
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-md);
             align-items: center;
+            flex-wrap: wrap;
         }
         
         .binder-filter, .binder-sort {
@@ -3895,8 +4008,19 @@
             padding: 2px;
             border-radius: var(--radius-sm);
         }
+
+        .pack-label {
+            align-self: center;
+            padding: 0 var(--space-xs);
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 0.68em;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
         
-        .view-btn {
+        .view-btn,
+        .pack-btn {
             padding: var(--space-xs) var(--space-sm);
             background: transparent;
             border: none;
@@ -3908,15 +4032,62 @@
             border-radius: var(--radius-sm);
         }
         
-        .view-btn:hover {
+        .view-btn:hover,
+        .pack-btn:hover {
             color: var(--text-secondary);
             background: var(--bg-hover);
         }
         
-        .view-btn.active {
+        .view-btn.active,
+        .pack-btn.active {
             background: var(--accent-cyan);
             color: var(--bg-deepest);
             font-weight: 600;
+        }
+
+        @media (max-width: 720px) {
+            .binder-controls {
+                align-items: stretch;
+                gap: var(--space-xs);
+            }
+
+            .binder-search {
+                flex: 1 1 100%;
+                width: 100%;
+            }
+
+            .binder-filter,
+            .binder-sort {
+                flex: 1 1 calc(50% - var(--space-xs));
+                min-width: 0;
+            }
+
+            .multi-rank-btn,
+            .binder-view-toggle {
+                flex: 1 1 auto;
+            }
+
+            .selection-bar {
+                align-items: stretch;
+                gap: var(--space-xs);
+            }
+
+            .selection-actions {
+                width: 100%;
+                overflow-x: auto;
+                padding-bottom: 2px;
+                scrollbar-width: thin;
+            }
+
+            .selection-actions .action-btn {
+                flex: 0 0 auto;
+            }
+
+            .pagination-bar {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 4px;
+            }
         }
         
         /* ═══════════════════════════════════════════════════════════════════════════
@@ -6987,8 +7158,13 @@
                             </div>
                             
                             <div class="binder-view-toggle">
-                                <button class="view-btn active" onclick="setBinderView('grid', this)" title="Grid View">▦</button>
-                                <button class="view-btn" onclick="setBinderView('list', this)" title="List View">☰</button>
+                                <button class="view-btn binder-mode-btn active" data-view="grid" onclick="setBinderView('grid', this)" title="Grid View">▦</button>
+                                <button class="view-btn binder-mode-btn" data-view="list" onclick="setBinderView('list', this)" title="List View">☰</button>
+                                <span class="pack-label">Pack</span>
+                                <button class="pack-btn" data-pack="4" onclick="setBinderPack(4, this)" title="Four-card compact binder">4</button>
+                                <button class="pack-btn active" data-pack="6" onclick="setBinderPack(6, this)" title="Six-card compact binder">6</button>
+                                <button class="pack-btn" data-pack="8" onclick="setBinderPack(8, this)" title="Eight-card compact binder">8</button>
+                                <button class="pack-btn" data-pack="0" onclick="setBinderPack(0, this)" title="Full detail cards">Full</button>
                             </div>
                         </div>
                         
@@ -16741,6 +16917,8 @@
             let allOrganisms = [];
             let selectedOrganismIds = new Set();
             let currentBinderView = 'grid';
+            let currentBinderPack = window.matchMedia?.('(max-width: 720px)')?.matches ? 4 : 6;
+            let currentFocusedOrganismId = null;
             
             // Personality icons mapping - Clean geometric symbols
             const personalityIcons = {
@@ -16874,7 +17052,14 @@
                 if (!binder) return;
                 
                 binder.innerHTML = '';
-                binder.className = `organism-binder ${currentBinderView === 'list' ? 'list-view' : ''}`;
+                const binderClasses = ['organism-binder'];
+                if (currentBinderView === 'list') {
+                    binderClasses.push('list-view');
+                } else if (currentBinderPack > 0) {
+                    binderClasses.push('pack-mode', `pack-${currentBinderPack}`);
+                }
+                binder.className = binderClasses.join(' ');
+                syncBinderControls();
                 
                 organisms.forEach(org => {
                     const card = createOrganismCard(org);
@@ -17810,6 +17995,9 @@
                 if (selectedOrganismIds.has(org.id)) {
                     card.classList.add('selected');
                 }
+                if (currentFocusedOrganismId === org.id) {
+                    card.classList.add('focused');
+                }
                 
                 // Fitness bar class
                 const fitnessPercent = Math.round((org.fitness || 0) * 100);
@@ -18006,6 +18194,7 @@
             
             // Toggle organism selection
             function toggleOrganismSelection(orgId) {
+                currentFocusedOrganismId = orgId;
                 if (selectedOrganismIds.has(orgId)) {
                     selectedOrganismIds.delete(orgId);
                 } else {
@@ -18013,9 +18202,13 @@
                 }
                 
                 // Update card visual
+                document.querySelectorAll('.organism-card.focused').forEach(card => {
+                    card.classList.remove('focused');
+                });
                 const card = document.querySelector(`[data-organism-id="${orgId}"]`);
                 if (card) {
                     card.classList.toggle('selected', selectedOrganismIds.has(orgId));
+                    card.classList.add('focused');
                 }
                 
                 // Update hidden select
@@ -22147,7 +22340,7 @@
                 currentBinderView = view;
                 
                 // Update button states
-                document.querySelectorAll('.view-btn').forEach(btn => {
+                document.querySelectorAll('.binder-mode-btn').forEach(btn => {
                     btn.classList.remove('active');
                 });
                 // Use passed button or find by view type
@@ -22159,6 +22352,29 @@
                 
                 // Re-render
                 renderOrganismBinder(getFilteredOrganisms());
+            }
+
+            // Switch compact binder pocket density. A pack size of 0 shows full detail cards.
+            function setBinderPack(size, clickedBtn) {
+                currentBinderPack = Number(size) || 0;
+                currentBinderView = 'grid';
+                if (!currentFocusedOrganismId && selectedOrganismIds.size > 0) {
+                    currentFocusedOrganismId = Array.from(selectedOrganismIds)[0];
+                }
+                syncBinderControls(clickedBtn);
+                renderOrganismBinder(getFilteredOrganisms());
+            }
+
+            function syncBinderControls(clickedPackBtn = null) {
+                document.querySelectorAll('.binder-mode-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector(`.binder-mode-btn[data-view="${currentBinderView}"]`)?.classList.add('active');
+
+                document.querySelectorAll('.pack-btn').forEach(btn => btn.classList.remove('active'));
+                if (clickedPackBtn) {
+                    clickedPackBtn.classList.add('active');
+                    return;
+                }
+                document.querySelector(`.pack-btn[data-pack="${currentBinderPack}"]`)?.classList.add('active');
             }
             
             // Update status message
