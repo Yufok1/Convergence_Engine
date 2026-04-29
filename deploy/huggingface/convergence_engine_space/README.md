@@ -1,29 +1,36 @@
 ---
 title: Convergence Engine
-sdk: gradio
-sdk_version: 5.33.1
-app_file: app.py
+sdk: docker
+app_port: 7860
 pinned: false
 license: mit
-short_description: Convergence Engine notebook tunnel launcher.
+short_description: Cloud Jupyter runner for Convergence Engine.
 ---
 
 # Convergence Engine
 
-This Space is the public launch page for the Convergence Engine demo.
+This Space runs a cloud JupyterLab control plane for the Convergence Engine.
 
-The full Convergence Engine runtime is launched from a notebook or rented runtime, then exposed through the built-in tunnel workflow. This keeps the public surface lightweight while preserving the real engine, compiler, and web UI in the GitHub source tree.
+Open the Space app, enter the `JUPYTER_TOKEN` configured in Space secrets, and run the prepared notebook:
 
-## Source
+`Convergence_Engine_Cloud_Run.ipynb`
 
-GitHub: https://github.com/Yufok1/Convergence_Engine
+The notebook runs inside this Hugging Face Space. It clones or updates the GitHub repo under `/data/Convergence_Engine`, installs dependencies in the cloud runtime, starts `unified_entry.py`, and prints the public tunnel URL for the real Convergence web UI.
 
-## Launch Model
+## Required Space Secret
 
-1. Open a Hugging Face/Jupyter or rented runtime.
-2. Clone the GitHub repo.
-3. Install dependencies.
-4. Start `unified_entry.py` with `--no-viz --tunnel localhostrun`.
-5. Open the tunnel URL written to `data/tunnel_url.txt`.
+Set this in `Settings -> Variables and secrets`:
 
-See `docs/guides/HUGGINGFACE_JUPYTER_TUNNEL.md` in the GitHub repo for the canonical notebook cells.
+`JUPYTER_TOKEN=<strong password>`
+
+If `JUPYTER_TOKEN` is not set, the container falls back to `huggingface`, which is not appropriate for a public executable notebook.
+
+## Runtime Shape
+
+1. JupyterLab runs on Space port `7860`.
+2. Persistent storage mounts at `/data`.
+3. The prepared notebook opens by default.
+4. The notebook starts `unified_entry.py --no-viz --tunnel localhostrun`.
+5. The notebook prints the tunnel URL for the real web UI.
+
+Source repo: https://github.com/Yufok1/Convergence_Engine
