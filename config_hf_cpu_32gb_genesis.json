@@ -1,15 +1,14 @@
 {
-  "_case_study": "VAST.AI RTX 3060 GENESIS - GPU-Accelerated Mid-Scale Boom-Bust",
-  "_hypothesis": "12GB VRAM + 761GB RAM + 52 CPU threads = 20-min wave cycles with 20K max population",
-  "_hardware_profile_help": "Vast.ai Intel Xeon Platinum 8272CL (52 threads) + 761GB RAM + RTX 3060 12GB",
+  "_case_study": "Hugging Face Space CPU Upgrade - 8 vCPU / 32GB RAM Genesis Demo",
+  "_hypothesis": "32GB RAM CPU Space = public-facing 100-organism genesis with slower 20-minute Highlander concentration waves",
+  "_hardware_profile_help": "Hugging Face CPU upgrade class: no CUDA assumptions, 8 vCPU / 32GB RAM target",
   "_vast_notes": {
-    "ram_gb": 761,
-    "cpu": "Intel Xeon Platinum 8272CL (52 threads)",
-    "gpu": "RTX 3060 12GB",
-    "vram_gb": 12,
-    "cost_per_hour": 0.163,
-    "strategy": "Genesis boom/bust - GPU-accelerated training, 5 founders → 20K max, Highlander concentration",
-    "value_proposition": "GPU acceleration + ample RAM = best of both worlds"
+    "ram_gb": 32,
+    "cpu": "Hugging Face CPU upgrade",
+    "gpu": "None",
+    "vram_gb": 0,
+    "strategy": "Public demo genesis - CPU-safe 100 progenitors, bounded growth, Highlander concentration",
+    "value_proposition": "Stable full-facility web demo without requiring a rented GPU"
   },
   "language": {
     "_help": "Grounded Language Mode: Organisms learn language through action-outcome associations before semantic understanding",
@@ -139,7 +138,7 @@
       },
       "organism_count": {
         "collapse": 200,
-        "_collapse_help": "Scaled for 20K max population",
+        "_collapse_help": "Scaled for HF CPU public demo population",
         "direction": "above"
       },
       "violation_pressure": {
@@ -211,7 +210,7 @@
     },
     "rate_limit_frames": 120
   },
-  "hardware_profile": "vast_rtx3060_genesis",
+  "hardware_profile": "cpu_only",
   "hardware_governor": {
     "_auto_scale_help": "Set to false to disable auto-scaling of config values. Governor will only clamp to max, not scale up.",
     "auto_scale": false
@@ -238,18 +237,18 @@
   },
   "highlander": {
     "eval_interval_seconds": 1200,
-    "_eval_interval_seconds_help": "BOOM-BUST WAVES: 20-minute growth periods. Mastery 4+ organisms only.",
+    "_eval_interval_seconds_help": "BOOM-BUST WAVES: 20-minute growth periods for HF CPU public demo. Mastery 4+ organisms only.",
     "alliance_warfare": {
       "betrayal_chance": 0.0,
       "confederation_war_threshold": 0.5,
       "enabled": true,
       "existential_war_threshold": 0.7,
-      "max_alliance_size": 2000,
-      "_max_alliance_size_help": "Scaled for 20K max population (50% of 1.5TB)",
-      "max_alliances": 20000,
-      "_max_alliances_help": "20K alliances possible - scaled for 761GB RAM",
-      "max_confederations": 4000,
-      "_max_confederations_help": "4K confederations = mega empires (scaled)",
+      "max_alliance_size": 50,
+      "_max_alliance_size_help": "Scaled for HF CPU 32GB public demo",
+      "max_alliances": 500,
+      "_max_alliances_help": "Bounded for shared public Space runtime",
+      "max_confederations": 100,
+      "_max_confederations_help": "Bounded for shared public Space runtime",
       "min_alliance_size": 2,
       "war_declaration_threshold": 0.5,
       "war_frequency": 0.3,
@@ -272,7 +271,7 @@
       "bust_detection_threshold": 0.25,
       "resource_scarcity_multiplier": 1.5,
       "abundance_germination_boost": 3.0,
-      "_abundance_germination_boost_help": "HIGH boost - explode from 5 to 20K",
+      "_abundance_germination_boost_help": "Boosted growth, bounded by HF CPU demo caps",
       "scarcity_competition_boost": 2.0,
       "_scarcity_competition_boost_help": "Intense competition during bust phase",
       "cycle_memory_generations": 30,
@@ -296,7 +295,7 @@
     "chaos_factor": 0.0,
     "competition_intensity": 0.15,
     "_competition_intensity_help": "Low initial intensity - let population boom first",
-    "description": "RTX 3060 GENESIS - 20-min wave cycles: 100 progenitors → GPU-accelerated boom to 20K → learn → Highlander culling → regenerate",
+    "description": "HF CPU 32GB GENESIS - 20-min wave cycles: 100 progenitors → bounded public demo growth → learn → Highlander culling → regenerate",
     "enabled": true,
     "extreme_mode": {
       "chaos_factor": 0.0,
@@ -305,7 +304,7 @@
       "description": "GENESIS EXTREME - Extinction event mode",
       "germination_rate": 0.3,
       "max_battle_rounds": 20,
-      "max_population": 20000,
+      "max_population": 500,
       "min_population": 3,
       "_min_population_help": "Can drop to just 3 survivors during extinction",
       "mutation_rate": 0.15,
@@ -319,10 +318,10 @@
     "_germination_rate_help": "HIGH germination - rapid population explosion from 5 founders",
     "max_battle_rounds": 100,
     "max_capsules": 2000,
-    "_max_capsules_help": "Capsule storage scaled for 761GB RAM",
-    "max_genetic_samples": 2000,
-    "max_population": 20000,
-    "_max_population_help": "761GB RAM = 20K organisms (50% of 1.5TB config)",
+    "_max_capsules_help": "Capsule storage bounded for HF CPU 32GB public demo",
+    "max_genetic_samples": 500,
+    "max_population": 500,
+    "_max_population_help": "HF CPU 32GB demo cap; keeps public Space responsive",
     "min_population": 3,
     "_min_population_help": "Allow near-extinction for dramatic recovery arcs",
     "mutation_rate": 0.05,
@@ -338,16 +337,16 @@
   "lattice": {
     "entropy_sensitivity": 5e-05,
     "interaction_precision": 0.0001,
-    "particles": 20000,
-    "_particles_help": "20K particles for quantum substrate (scaled)",
+    "particles": 2000,
+    "_particles_help": "Bounded quantum substrate for HF CPU 32GB public demo",
     "prune_threshold": 0,
     "stability_tolerance": 0.0005
   },
   "logging": {
-    "shared_state_dump_interval": 60,
-    "_shared_state_dump_interval_help": "Less frequent dumps - long running genesis",
-    "sample_rate": 10,
-    "_sample_rate_help": "Log 1 in 10 - save disk space on long runs",
+    "shared_state_dump_interval": 30,
+    "_shared_state_dump_interval_help": "Frequent enough for the public web UI to feel live",
+    "sample_rate": 5,
+    "_sample_rate_help": "Moderate logging for public demo observability",
     "track_lineage": true
   },
   "meta_cognitive": {
@@ -407,13 +406,13 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 1000000,
-    "_max_connections_help": "1M connections for political networks (50% of 1.5TB)",
-    "max_organisms": 20000,
-    "_max_organisms_help": "761GB RAM = 20K organisms",
+    "max_connections": 100000,
+    "_max_connections_help": "Bounded for HF CPU 32GB public demo",
+    "max_organisms": 500,
+    "_max_organisms_help": "HF CPU 32GB public demo cap",
     "resource_flow_precision": 0.0001,
-    "resource_pool": 20000,
-    "_resource_pool_help": "Resource pool scaled for 20K max population",
+    "resource_pool": 500,
+    "_resource_pool_help": "Resource pool scaled for HF CPU demo cap",
     "stability_precision": 1e-07
   },
   "neural": {
@@ -455,8 +454,8 @@
       "num_key_compositions": 30,
       "utility_update_alpha": 0.15
     },
-    "device": "cuda",
-    "_device_help": "RTX 3060 12GB - GPU accelerated training, brains in RAM, batches on GPU",
+    "device": "cpu",
+    "_device_help": "HF CPU Space profile - no CUDA required",
     "enabled": true,
     "inheritance": {
       "crossover_rate": 0.9,
@@ -592,16 +591,16 @@
     },
     "optimization": {
       "amp": {
-        "enabled": true,
-        "_enabled_help": "RTX 3060 Ampere has Tensor Cores - AMP gives 2x speedup",
+        "enabled": false,
+        "_enabled_help": "Disabled for CPU-only Hugging Face Space",
         "dtype": "auto",
         "_dtype_help": "'auto' detects FP16 for Ampere",
         "description": "Mixed precision training - 2x GPU speedup"
       },
       "compile_mode": "default",
       "reuse_optimizers": true,
-      "use_compile": true,
-      "_use_compile_help": "torch.compile for kernel fusion - takes 30-60s on first run",
+      "use_compile": false,
+      "_use_compile_help": "Disabled for HF CPU demo startup stability",
       "use_scripted_inference": false,
       "_use_scripted_inference_help": "Disabled - can break export/cocoon"
     },
@@ -616,8 +615,8 @@
       "_survival_help": "Higher survival reward - genesis is dangerous"
     },
     "training": {
-      "batch_size": 128,
-      "_batch_size_help": "CPU mode with 761GB RAM - larger batches OK",
+      "batch_size": 32,
+      "_batch_size_help": "HF CPU 32GB public demo batch size",
       "early_stopping": {
         "enabled": true,
         "min_delta": 0.0001,
@@ -640,8 +639,8 @@
         "type": "cosine",
         "warmup_steps": 100
       },
-      "memory_size": 500000,
-      "_memory_size_help": "761GB RAM = 500K replay buffer (scaled)",
+      "memory_size": 50000,
+      "_memory_size_help": "HF CPU 32GB replay buffer cap",
       "update_frequency": 1
     },
     "vp_aware_planning": {
@@ -672,8 +671,8 @@
       "measurements": 0.25,
       "superposition": 0.25
     },
-    "initial_states": 750,
-    "_initial_states_help": "Scaled quantum states for 761GB RAM",
+    "initial_states": 200,
+    "_initial_states_help": "Bounded quantum states for HF CPU 32GB public demo",
     "performance_thresholds": {
       "fitness_std_threshold": 0.3,
       "iteration_time_ms": 10,
@@ -686,10 +685,10 @@
   },
   "ray": {
     "enabled": false,
-    "actor_pool_size": 26,
-    "_actor_pool_size_help": "Xeon 52 threads: Half for actors",
-    "batch_inference_size": 256,
-    "_batch_inference_size_help": "Moderate batch for 12GB VRAM",
+    "actor_pool_size": 4,
+    "_actor_pool_size_help": "HF CPU upgrade: leave cores for Flask/UI and system loop",
+    "batch_inference_size": 32,
+    "_batch_inference_size_help": "CPU-safe inference batch",
     "description": "Ray DISABLED - metrics agent spam issue",
     "fallback_on_error": true,
     "logging_level": "warning",
@@ -698,18 +697,18 @@
       "cleanup_on_organism_death": true,
       "max_object_refs": 5000
     },
-    "num_cpus": 52,
-    "num_gpus": 1,
+    "num_cpus": 8,
+    "num_gpus": 0,
     "object_store_memory": null,
-    "parallelization_threshold": 400,
-    "_parallelization_threshold_help": "Scaled for 20K max population",
+    "parallelization_threshold": 100,
+    "_parallelization_threshold_help": "Scaled for HF CPU demo population",
     "state_synchronization": {
       "consistency_model": "sequential",
       "max_state_age_ms": 100,
       "snapshot_strategy": "breath_cycle"
     },
-    "training_threshold": 48,
-    "_training_threshold_help": "Scaled training threshold"
+    "training_threshold": 24,
+    "_training_threshold_help": "CPU-safe training threshold"
   },
   "rendering": {
     "enable_visualizations": true,
@@ -755,14 +754,14 @@
   },
   "simulation": {
     "log_level": "INFO",
-    "max_runtime": 86400.0,
-    "_max_runtime_help": "24 hours max - designed for long genesis runs",
+    "max_runtime": 172800.0,
+    "_max_runtime_help": "48 hours max to match HF CPU upgrade sleep window",
     "measurement_precision": 4,
     "performance_sampling_rate": 200,
     "save_interval": 120.0,
-    "_save_interval_help": "Less frequent saves for long runs",
-    "target_fps": 0,
-    "_target_fps_help": "0 = unlimited speed, >0 = rate limit to N cycles/sec",
+    "_save_interval_help": "Balanced persistence for public demo runs",
+    "target_fps": 10,
+    "_target_fps_help": "Rate-limited for HF CPU shared public demo responsiveness",
     "time_resolution_ms": 1.0
   },
   "vp_monitoring": {
