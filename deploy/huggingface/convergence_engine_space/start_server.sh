@@ -1,7 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
-JUPYTER_TOKEN="${JUPYTER_TOKEN:=huggingface}"
+if [ -z "${JUPYTER_TOKEN:-}" ]; then
+  echo "ERROR: JUPYTER_TOKEN is required. Add it in Space Settings -> Variables and secrets."
+  exit 1
+fi
+
 NOTEBOOK_DIR="/data"
 
 mkdir -p "$NOTEBOOK_DIR"
