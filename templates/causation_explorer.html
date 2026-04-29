@@ -4750,9 +4750,57 @@
             /* Match filter panel height */
         }
 
+        .graph-container.graph-minimized {
+            min-height: 0;
+        }
+
+        .graph-shell-toolbar {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 8px;
+            margin: 0 0 8px 0;
+        }
+
+        .graph-minimize-toggle {
+            background: #111;
+            border: 1px solid #0ff;
+            color: #0ff;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 0.8em;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0.03em;
+        }
+
+        .graph-minimize-toggle:hover {
+            background: #0ff;
+            color: #000;
+        }
+
+        .graph-minimized-status {
+            display: none;
+            border: 1px dashed #0aa;
+            background: #050a0a;
+            color: #0aa;
+            padding: 14px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            text-align: center;
+        }
+
+        .graph-container.graph-minimized .graph-controls,
+        .graph-container.graph-minimized #graph {
+            display: none;
+        }
+
+        .graph-container.graph-minimized .graph-minimized-status {
+            display: block;
+        }
+
         .graph-controls {
             position: absolute;
-            top: 10px;
+            top: 52px;
             right: 10px;
             background: #111;
             border: 1px solid #0ff;
@@ -5504,6 +5552,24 @@
         /* Agent Exporter Tab Styles */
         #agentExporterTabContent {
             display: none;
+            flex-direction: column;
+            min-height: calc(100vh - 180px);
+            overflow: visible;
+        }
+
+        #agentExporterTabContent .swarm-dashboard,
+        #agentExporterTabContent .binder-controls,
+        #agentExporterTabContent .selection-bar,
+        #agentExporterTabContent .pagination-bar,
+        #agentExporterTabContent .export-controls {
+            flex: 0 0 auto;
+        }
+
+        #agentExporterTabContent .organism-binder {
+            flex: 1 1 auto;
+            min-height: clamp(520px, 62vh, 1100px);
+            max-height: none;
+            align-content: start;
         }
 
         pre {
@@ -6392,6 +6458,14 @@
 
             <!-- Graph Container -->
             <div class="graph-container">
+                <div class="graph-shell-toolbar">
+                    <button class="graph-minimize-toggle" id="graphMinimizeToggle" onclick="toggleGraphContainer()"
+                        aria-controls="graph" aria-expanded="true"
+                        title="Hide the graph surface while keeping controls and lower panels available">Hide Graph</button>
+                </div>
+                <div class="graph-minimized-status" id="graphMinimizedStatus">
+                    Graph hidden. Event stream, chat, dashboard, and exporter panels remain active below.
+                </div>
                 <div class="graph-controls" id="graphControls">
                     <button class="graph-controls-toggle" id="graphControlsToggle" onclick="toggleGraphControls()">⎯
                         Minimize Navigation</button>
@@ -7652,6 +7726,7 @@
 
             // Graph controls collapse state
             let graphControlsCollapsed = false;
+            let graphContainerMinimized = false;
 
             // Calculate activity score (0.0 = static, 1.0 = maximum change)
             function calculateActivityScore() {
@@ -13024,6 +13099,48 @@
                 graphControlsCollapsed = !graphControlsCollapsed;
                 controls.classList.toggle('collapsed', graphControlsCollapsed);
                 toggleBtn.textContent = graphControlsCollapsed ? '＋ Show Navigation' : '⎯ Minimize Navigation';
+            }
+
+            function getGraphContainer() {
+                const graphElement = document.getElementById('graph');
+                return graphElement ? graphElement.closest('.graph-container') : document.querySelector('.graph-container');
+            }
+
+            function setGraphContainerMinimized(minimized, persist = true) {
+                const container = getGraphContainer();
+                const toggleBtn = document.getElementById('graphMinimizeToggle');
+                if (!container || !toggleBtn) return;
+
+                graphContainerMinimized = Boolean(minimized);
+                container.classList.toggle('graph-minimized', graphContainerMinimized);
+                toggleBtn.textContent = graphContainerMinimized ? 'Show Graph' : 'Hide Graph';
+                toggleBtn.setAttribute('aria-expanded', graphContainerMinimized ? 'false' : 'true');
+                toggleBtn.setAttribute(
+                    'title',
+                    graphContainerMinimized
+                        ? 'Restore the graph surface'
+                        : 'Hide the graph surface while keeping controls and lower panels available'
+                );
+
+                if (persist) {
+                    try {
+                        localStorage.setItem('graphContainerMinimized', graphContainerMinimized ? 'true' : 'false');
+                    } catch (error) {
+                        console.warn('[GRAPH] Unable to persist graph minimize state:', error);
+                    }
+                }
+            }
+
+            function toggleGraphContainer() {
+                setGraphContainerMinimized(!graphContainerMinimized);
+            }
+
+            function restoreGraphContainerState() {
+                try {
+                    setGraphContainerMinimized(localStorage.getItem('graphContainerMinimized') === 'true', false);
+                } catch (error) {
+                    setGraphContainerMinimized(false, false);
+                }
             }
 
             // CRITICAL: Store event listener references for cleanup
@@ -22449,7 +22566,7 @@
                 } else if (tab === 'agent_exporter') {
                     agentExporterTab.style.background = '#f0f';
                     agentExporterTab.style.color = '#000';
-                    agentExporterContent.style.display = 'block';
+                    agentExporterContent.style.display = 'flex';
                     populateOrganismSelector();
                 }
             }
@@ -28923,6 +29040,7 @@
                 setupChatListeners();
                 restoreCRAChatPanelState();
                 restoreHeaderControlsState();
+                restoreGraphContainerState();
                 
                 // Snapshot count display
                 const snapshotCountDisplay = document.getElementById('snapshotCountDisplay');
