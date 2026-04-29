@@ -1628,6 +1628,10 @@ class UnifiedSystem:
         """Initialize web UI integration with access to organism networks"""
         try:
             print("[UNIFIED] [WEB] Initializing web UI integration...")
+            try:
+                web_port = int(os.environ.get('UNIFIED_WEB_PORT') or os.environ.get('PORT') or '5000')
+            except Exception:
+                web_port = 5000
             
             # Import web UI app directly
             import causation_web_ui
@@ -1750,7 +1754,7 @@ class UnifiedSystem:
                     handler.setFormatter(logging.Formatter('[WEB] %(message)s'))
                     log.addHandler(handler)
                     
-                    self.web_ui.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False, threaded=True)
+                    self.web_ui.run(host='0.0.0.0', port=web_port, debug=False, use_reloader=False, threaded=True)
                 except Exception as e:
                     print(f"[UNIFIED] [WEB] ❌ Web UI thread crashed: {e}")
                     import traceback
@@ -1763,11 +1767,11 @@ class UnifiedSystem:
             web_thread.start()
             print("[UNIFIED] [WEB] ✅ Web UI started in background thread (same process for live organism access)")
             
-            print("[UNIFIED] [WEB] 🌐 Web interface available at http://localhost:5000")
+            print(f"[UNIFIED] [WEB] 🌐 Web interface available at http://localhost:{web_port}")
 
             # If we're in Colab, localhost isn't directly reachable.
             # Colab provides a built-in port proxy that yields a clickable public-ish URL.
-            colab_url = _try_get_colab_proxy_url(5000)
+            colab_url = _try_get_colab_proxy_url(web_port)
             if colab_url:
                 print(f"[UNIFIED] [WEB] 🌐 Colab proxied URL: {colab_url}")
                 print("[UNIFIED] [WEB] (Colab) Open that URL to view the dashboard.")
@@ -1792,7 +1796,7 @@ class UnifiedSystem:
                 # Run on any platform including Colab (Colab proxy doesn't work from subprocess).
                 last_url = None
                 while os.environ.get('UNIFIED_TUNNEL', '').strip().lower() == 'localhostrun':
-                    proc = _maybe_start_localhostrun_tunnel(local_port=5000, remote_port=remote_port)
+                    proc = _maybe_start_localhostrun_tunnel(local_port=web_port, remote_port=remote_port)
                     if not proc:
                         time.sleep(5)
                         continue
@@ -1824,7 +1828,7 @@ class UnifiedSystem:
                 # Run on any platform including Colab (Colab proxy doesn't work from subprocess).
                 last_url = None
                 while os.environ.get('UNIFIED_TUNNEL', '').strip().lower() == 'cloudflared':
-                    proc = _maybe_start_cloudflared_tunnel(local_port=5000)
+                    proc = _maybe_start_cloudflared_tunnel(local_port=web_port)
                     if not proc:
                         time.sleep(5)
                         continue
