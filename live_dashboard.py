@@ -39,6 +39,8 @@ class LiveDashboard:
     def __init__(self):
         self.data = {}
         self.data_path = Path("data/live_report.json")
+        self.engine_log_path = Path(os.environ.get("ENGINE_LOG", "data/unified_entry.log"))
+        self.boot_started_at = time.time()
         self.running = True
         self.view = "main"  # main, organisms, alliances, neural, language
         
@@ -50,6 +52,77 @@ class LiveDashboard:
             return True
         except:
             return False
+
+    def load_boot_log_tail(self, max_lines=18):
+        """Load the latest engine boot lines while live_report.json is not ready."""
+        try:
+            if not self.engine_log_path.exists():
+                return [f"Waiting for engine log: {self.engine_log_path}"]
+            lines = self.engine_log_path.read_text(errors="replace").splitlines()
+            return lines[-max_lines:] if lines else ["Engine log is empty so far."]
+        except Exception as exc:
+            return [f"Could not read engine log: {exc}"]
+
+    def parse_boot_progress(self, lines):
+        """Extract best-effort brain creation progress from noisy boot logs."""
+        import re
+
+        current = None
+        total = None
+        for line in reversed(lines):
+            if "Creating brains" not in line:
+                continue
+            match = re.search(r"(\d+)\s*/\s*(\d+)", line)
+            if not match:
+                continue
+            current = int(match.group(1))
+            total_text = match.group(2)
+            if len(total_text) > 3 and total_text.startswith("100"):
+                total = 100
+            else:
+                total = int(total_text)
+            break
+        return current, total
+
+    def make_boot_dashboard(self):
+        """Render a dashboard-shaped boot monitor until live_report.json exists."""
+        lines = self.load_boot_log_tail()
+        current, total = self.parse_boot_progress(lines)
+        elapsed = int(time.time() - self.boot_started_at)
+
+        layout = Layout()
+        layout.split_column(
+            Layout(name="header", size=3),
+            Layout(name="body"),
+            Layout(name="footer", size=3)
+        )
+
+        if current is not None and total:
+            pct = min(100, max(0, int((current / max(total, 1)) * 100)))
+            filled = max(1, int(pct / 4)) if pct else 0
+            bar = "█" * filled + "░" * (25 - filled)
+            progress = f"[cyan]{bar}[/] [bold]{current}/{total}[/] brains ({pct}%)"
+        else:
+            progress = "[yellow]Waiting for first boot progress signal[/]"
+
+        body = "\n".join(lines[-18:])
+        layout["header"].update(Panel(
+            "[bold cyan]CONVERGENCE ENGINE[/] │ [yellow]Booting full facility[/]",
+            style="bold white on dark_blue",
+            box=box.DOUBLE
+        ))
+        layout["body"].update(Panel(
+            f"{progress}\n\n[dim]Waiting for:[/] {self.data_path}\n"
+            f"[dim]Engine log:[/] {self.engine_log_path}\n"
+            f"[dim]Elapsed:[/] {elapsed}s\n\n{body}",
+            title="Boot Monitor",
+            border_style="yellow"
+        ))
+        layout["footer"].update(Panel(
+            "[dim]Dashboard will switch automatically when live_report.json is created.[/]",
+            style="dim"
+        ))
+        return layout
     
     def make_header(self):
         """Create header panel"""
@@ -238,7 +311,8 @@ class LiveDashboard:
     
     def make_dashboard(self):
         """Assemble the full dashboard"""
-        self.load_data()
+        if not self.load_data():
+            return self.make_boot_dashboard()
         
         # Build layout
         layout = Layout()
@@ -287,8 +361,10 @@ class LiveDashboard:
     def run(self):
         """Run the live dashboard"""
         console.clear()
-        
-        with Live(self.make_dashboard(), refresh_per_second=0.5, screen=True) as live:
+
+        use_screen = os.environ.get("CONVERGENCE_DASHBOARD_SCREEN", "").strip().lower()
+        screen_mode = use_screen not in {"0", "false", "no", "off"} and console.is_terminal
+        with Live(self.make_dashboard(), refresh_per_second=0.5, screen=screen_mode) as live:
             try:
                 while self.running:
                     time.sleep(2)
@@ -301,12 +377,6 @@ class LiveDashboard:
 
 def main():
     dashboard = LiveDashboard()
-    
-    if not dashboard.data_path.exists():
-        console.print("[red]No live_report.json found![/]")
-        console.print("Start the simulation first.")
-        return
-    
     dashboard.run()
 
 
