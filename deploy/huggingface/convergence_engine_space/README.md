@@ -27,3 +27,4 @@ GitHub: https://github.com/Yufok1/Convergence_Engine
 5. Open the tunnel URL written to `data/tunnel_url.txt`.
 
 See `docs/guides/HUGGINGFACE_JUPYTER_TUNNEL.md` in the GitHub repo for the canonical notebook cells.
+
