@@ -4750,54 +4750,6 @@
             /* Match filter panel height */
         }
 
-        .graph-container.graph-minimized {
-            flex: 0 0 auto;
-            min-height: 58px;
-            height: 58px;
-            margin-top: 20px;
-            margin-bottom: 12px;
-            border: 1px solid #0ff;
-            background: linear-gradient(90deg, #020808 0%, #071818 50%, #020808 100%);
-            overflow: hidden;
-        }
-
-        .graph-minimize-toggle {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 12;
-            background: #111;
-            color: #0ff;
-            border: 1px solid #0ff;
-            box-shadow: 0 0 12px rgba(0, 255, 255, 0.3);
-        }
-
-        .graph-minimize-toggle:hover {
-            background: #0ff;
-            color: #000;
-        }
-
-        .graph-minimized-status {
-            display: none;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: #0ff;
-            font-size: 0.92em;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-        }
-
-        .graph-container.graph-minimized .graph-controls,
-        .graph-container.graph-minimized #graphLoadingIndicator,
-        .graph-container.graph-minimized #graph {
-            display: none !important;
-        }
-
-        .graph-container.graph-minimized .graph-minimized-status {
-            display: flex;
-        }
-
         .graph-controls {
             position: absolute;
             top: 10px;
@@ -6440,12 +6392,6 @@
 
             <!-- Graph Container -->
             <div class="graph-container">
-                <button class="graph-minimize-toggle" id="graphMinimizeToggle" onclick="toggleGraphContainer()"
-                    aria-controls="graph" aria-expanded="true"
-                    title="Hide or restore the entire graph surface">Hide Graph</button>
-                <div class="graph-minimized-status" id="graphMinimizedStatus">
-                    Graph hidden - event stream and compiler controls remain active
-                </div>
                 <div class="graph-controls" id="graphControls">
                     <button class="graph-controls-toggle" id="graphControlsToggle" onclick="toggleGraphControls()">⎯
                         Minimize Navigation</button>
@@ -7706,7 +7652,6 @@
 
             // Graph controls collapse state
             let graphControlsCollapsed = false;
-            let graphContainerMinimized = false;
 
             // Calculate activity score (0.0 = static, 1.0 = maximum change)
             function calculateActivityScore() {
@@ -13079,55 +13024,6 @@
                 graphControlsCollapsed = !graphControlsCollapsed;
                 controls.classList.toggle('collapsed', graphControlsCollapsed);
                 toggleBtn.textContent = graphControlsCollapsed ? '＋ Show Navigation' : '⎯ Minimize Navigation';
-            }
-
-            function setGraphContainerMinimized(minimized) {
-                const graphElement = document.getElementById('graph');
-                const container = graphElement
-                    ? graphElement.closest('.graph-container')
-                    : document.querySelector('.graph-container');
-                const toggleBtn = document.getElementById('graphMinimizeToggle');
-                if (!container || !toggleBtn) return;
-
-                graphContainerMinimized = Boolean(minimized);
-                container.classList.toggle('graph-minimized', graphContainerMinimized);
-                toggleBtn.textContent = graphContainerMinimized ? 'Show Graph' : 'Hide Graph';
-                toggleBtn.setAttribute('aria-expanded', graphContainerMinimized ? 'false' : 'true');
-                toggleBtn.title = graphContainerMinimized
-                    ? 'Restore the graph surface'
-                    : 'Hide the entire graph surface';
-
-                try {
-                    localStorage.setItem('causationExplorer_graphContainerMinimized', graphContainerMinimized ? '1' : '0');
-                } catch (e) {
-                    // Ignore storage failures in private/incognito contexts.
-                }
-
-                if (!graphContainerMinimized) {
-                    setTimeout(() => {
-                        try {
-                            if (typeof renderGraph === 'function' && allNodes && allNodes.length > 0) {
-                                renderGraph();
-                            }
-                            window.dispatchEvent(new Event('resize'));
-                        } catch (e) {
-                            console.warn('[GraphMinimize] Restore refresh failed:', e);
-                        }
-                    }, 80);
-                }
-            }
-
-            function toggleGraphContainer() {
-                setGraphContainerMinimized(!graphContainerMinimized);
-            }
-
-            function restoreGraphContainerState() {
-                try {
-                    const saved = localStorage.getItem('causationExplorer_graphContainerMinimized');
-                    setGraphContainerMinimized(saved === '1');
-                } catch (e) {
-                    setGraphContainerMinimized(false);
-                }
             }
 
             // CRITICAL: Store event listener references for cleanup
@@ -29027,7 +28923,6 @@
                 setupChatListeners();
                 restoreCRAChatPanelState();
                 restoreHeaderControlsState();
-                restoreGraphContainerState();
                 
                 // Snapshot count display
                 const snapshotCountDisplay = document.getElementById('snapshotCountDisplay');
