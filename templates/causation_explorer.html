@@ -27228,20 +27228,26 @@
                 updateReplayProgress();
             }, 1000);
 
-            // ALWAYS default to stopped - don't check API, just set it to stopped
-            updateSimulationStatus(false); // ALWAYS start stopped, no exceptions
-            // DON'T load graph automatically - user must click "Load Full Graph" or start simulation
-
-            // Also ensure backend control file is set to stopped on page load
-            fetch('/api/simulation/stop', { method: 'POST' })
+            // Mirror backend state on page load instead of forcing it stopped.
+            // Hosted demos can boot with CONVERGENCE_AUTO_START=1; local sessions
+            // still default to stopped until the operator presses Start.
+            fetch('/api/simulation/status')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.success) {
-                        console.log('Backend control file set to stopped on page load');
+                    const backendRunning = data.running === true || data.status === 'running';
+                    updateSimulationStatus(backendRunning);
+                    if (backendRunning) {
+                        console.log('[SIM] Backend is already running on page load');
+                    } else {
+                        console.log('[SIM] Backend is stopped on page load');
+                    }
+                    if (data.auto_start) {
+                        console.log('[SIM] Cloud auto-start mode is enabled');
                     }
                 })
                 .catch(err => {
-                    console.error('Error setting backend to stopped:', err);
+                    console.error('Error checking backend simulation status:', err);
+                    updateSimulationStatus(false);
                 });
 
             // DON'T auto-enable live mode - user must manually enable it

@@ -12450,22 +12450,41 @@ def get_simulation_status():
     try:
         control_file = project_root / 'data' / '.simulation_control.json'
         control_file.parent.mkdir(parents=True, exist_ok=True)
+        auto_start = os.environ.get('CONVERGENCE_AUTO_START', '').strip().lower() in {
+            '1', 'true', 'yes', 'on', 'running', 'auto'
+        }
         
-        # Create control file with default STOPPED state if it doesn't exist
+        # Create control file with a cloud-aware default if it doesn't exist.
+        # Local/operator sessions still default to stopped; hosted demos can opt
+        # into a live backend without the browser immediately stopping it.
         if not control_file.exists():
+            running = bool(auto_start)
             with open(control_file, 'w') as f:
-                json.dump({'running': False, 'paused': True, 'timestamp': time.time()}, f, indent=2)
-            return jsonify({'running': False, 'paused': True})
+                json.dump({
+                    'running': running,
+                    'paused': not running,
+                    'timestamp': time.time(),
+                    'source': 'auto_start' if running else 'default_stopped'
+                }, f, indent=2)
+            return jsonify({
+                'running': running,
+                'paused': not running,
+                'status': 'running' if running else 'stopped',
+                'auto_start': auto_start
+            })
         
         with open(control_file, 'r') as f:
             control = json.load(f)
+            running = bool(control.get('running', False))
             return jsonify({
-                'running': control.get('running', False),
-                'paused': control.get('paused', True)
+                'running': running,
+                'paused': control.get('paused', not running),
+                'status': 'running' if running else 'stopped',
+                'auto_start': auto_start
             })
     except Exception as e:
         logger.error(f"Error getting simulation status: {e}", exc_info=True)
-        return jsonify({'running': False, 'paused': True, 'error': str(e)}), 500
+        return jsonify({'running': False, 'paused': True, 'status': 'stopped', 'error': str(e)}), 500
 
 
 @app.route('/api/simulation/start', methods=['POST'])
