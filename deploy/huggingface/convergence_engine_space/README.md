@@ -23,7 +23,7 @@ Set this in `Settings -> Variables and secrets`:
 
 `JUPYTER_TOKEN=<strong password>`
 
-If `JUPYTER_TOKEN` is not set, the container refuses to start. This avoids exposing an executable notebook with a weak default password.
+If `JUPYTER_TOKEN` is not set, the container falls back to `huggingface`, which is not appropriate for a public executable notebook.
 
 ## Runtime Shape
 
