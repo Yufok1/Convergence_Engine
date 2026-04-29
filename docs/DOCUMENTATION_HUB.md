@@ -46,6 +46,7 @@ pip install pywin32
 - **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - One-page quick reference
 - **[CHANGELOG.md](./CHANGELOG.md)** - Version history and changes
 - **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Common issues and solutions
+- **[QUINE_TEMPLATE_EDIT_PROTOCOL_2026-04-22.md](./reference/QUINE_TEMPLATE_EDIT_PROTOCOL_2026-04-22.md)** - Safe edit protocol for compiler, cocoon, and quine-like source templates
 
 ### System Architecture
 
@@ -180,6 +181,7 @@ Export trained agents as portable, standalone packages for deployment.
 ### 🦋 Cocoon System (Single-File Deployment) ⭐ NEW
 
 - **[COCOON_SYSTEM.md](./COCOON_SYSTEM.md)** - Complete cocoon documentation
+- **[QUINE_TEMPLATE_EDIT_PROTOCOL_2026-04-22.md](./reference/QUINE_TEMPLATE_EDIT_PROTOCOL_2026-04-22.md)** - Required guardrail before editing generated cocoon/compiler templates
 - **Purpose:** Compile trained organisms into standalone, single-file Python agents
 - **Features:**
   - Single `.py` file with all dependencies embedded

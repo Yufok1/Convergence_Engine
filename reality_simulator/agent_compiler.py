@@ -1343,7 +1343,8 @@ class AgentCompiler:
                 input_names=['input'],
                 output_names=output_names,
                 dynamic_axes=dynamic_axes,
-                opset_version=11 # A commonly supported opset version
+                opset_version=18,
+                dynamo=False,
             )
             head_info = " (with language head)" if wrapper.has_language_head else ""
             logger.info(f"Successfully exported brain to ONNX{head_info}: {model_path}")
@@ -5889,6 +5890,7 @@ if __name__ == '__main__':
                 if extracted is not None:
                     fitness = extracted
 
+            hopfield_layer = getattr(brain, 'hopfield', None)
             config = {
                 'organism_id': name,
                 'input_dim': brain.input_dim,
@@ -5904,9 +5906,9 @@ if __name__ == '__main__':
                 'fitness': fitness,  # Include organism fitness for decision matrix
                 # Hopfield layer params
                 'use_hopfield': getattr(brain, 'use_hopfield', False),
-                'hopfield_patterns': getattr(brain, 'hopfield_patterns', 32),
-                'hopfield_iterations': getattr(brain, 'hopfield_iterations', 5),
-                'hopfield_beta': getattr(brain, 'hopfield_beta', 1.0),
+                'hopfield_patterns': getattr(brain, 'hopfield_patterns', getattr(hopfield_layer, 'num_patterns', 32)),
+                'hopfield_iterations': getattr(brain, 'hopfield_iterations', getattr(hopfield_layer, 'max_iterations', 5)),
+                'hopfield_beta': getattr(brain, 'hopfield_beta', getattr(hopfield_layer, 'beta', 1.0)),
             }
             brain_configs.append(config)
 
@@ -6166,6 +6168,7 @@ if __name__ == '__main__':
                         do_constant_folding=True,
                         input_names=['state'],
                         output_names=['action_probs', 'language_logits'] if brain.use_language_head else ['action_probs'],
+                        dynamo=False,
                     )
                     onnx_buffer.seek(0)
                     zf.writestr('brain.onnx', onnx_buffer.read())
@@ -6397,7 +6400,8 @@ if __name__ == '__main__':
                         output_names=output_names,
                         dynamic_axes={'state': {0: 'batch_size'}},
                         opset_version=14,
-                        do_constant_folding=True
+                        do_constant_folding=True,
+                        dynamo=False
                     )
                     onnx_buffer.seek(0)
                     onnx_bytes = onnx_buffer.read()
@@ -9516,6 +9520,7 @@ pygame>=2.5.0        # Visual rendering
                 dynamic_axes={'observation': {0: 'batch_size'}, 'action': {0: 'batch_size'}},
                 opset_version=14,
                 do_constant_folding=True,
+                dynamo=False,
             )
             spawned.append(onnx_path)
             print(f"[OK] Unpacked ONNX: {onnx_path} ({len(agent.brains)} brains unified)")
@@ -10284,6 +10289,15 @@ if TORCH_AVAILABLE:
         
         def _iterate(self, xi: torch.Tensor, beta: float) -> torch.Tensor:
             keys = self.key_proj(self.patterns)
+            export_mode = False
+            try:
+                export_mode = bool(torch.onnx.is_in_onnx_export())
+            except Exception:
+                export_mode = False
+            try:
+                export_mode = export_mode or bool(torch.jit.is_tracing())
+            except Exception:
+                pass
             
             converged = False
             delta = 0.0
@@ -10296,13 +10310,14 @@ if TORCH_AVAILABLE:
                 xi = xi + self.dropout(self.out_proj(retrieved))
                 xi = self.norm(xi)
                 
-                delta = (xi - xi_prev).abs().mean().item()
-                if delta < self.convergence_threshold:
-                    converged = True
-                    self._last_iterations = i + 1
-                    self._last_converged = True
-                    self._last_delta = delta
-                    break
+                if not export_mode:
+                    delta = (xi - xi_prev).abs().mean().item()
+                    if delta < self.convergence_threshold:
+                        converged = True
+                        self._last_iterations = i + 1
+                        self._last_converged = True
+                        self._last_delta = delta
+                        break
             
             if not converged:
                 self._last_iterations = self.max_iterations
@@ -11894,7 +11909,8 @@ class CocoonAgent:
                 dynamic_axes={
                     'state': {0: 'batch_size'},
                     'action_probs': {0: 'batch_size'},
-                }
+                },
+                dynamo=False,
             )
             print(f"[OK] Exported ONNX model to: {output_path}")
             print(f"     View at: https://netron.app/")
@@ -11965,7 +11981,8 @@ class CocoonAgent:
                 input_names=['input'],
                 output_names=output_names,
                 dynamic_axes={'input': {0: 'batch_size'}},
-                opset_version=11
+                opset_version=18,
+                dynamo=False,
             )
             print(f"[OK] Exported ENSEMBLE ONNX ({len(self.brains)} brains) to: {output_path}")
             print(f"     Outputs: {output_names}")
@@ -12035,8 +12052,8 @@ class CocoonAgent:
     def export_package(self, output_dir: str):
         """
         Export a complete Netron-viewable package:
-        - brain_ensemble.onnx (combined model with all organisms)
-        - brain_*.onnx (individual brains)
+        - brain_ensemble.onnx or brain_ensemble.pt (combined model with all organisms)
+        - brain_*.onnx (individual brains, when export succeeds)
         - README.md with model card
         - vocabulary.json
         - metadata.json
@@ -12044,16 +12061,32 @@ class CocoonAgent:
         import os
         os.makedirs(output_dir, exist_ok=True)
         
-        # Export combined ensemble as single ONNX
+        model_files = []
+        export_status = {}
+
+        # Export combined ensemble as single ONNX, with TorchScript fallback.
         ensemble_path = os.path.join(output_dir, "brain_ensemble.onnx")
-        self.export_ensemble_onnx(ensemble_path)
+        if self.export_ensemble_onnx(ensemble_path) and os.path.exists(ensemble_path):
+            model_files.append("brain_ensemble.onnx")
+            export_status["brain_ensemble.onnx"] = "ok"
+        else:
+            export_status["brain_ensemble.onnx"] = "failed"
+            ensemble_ts_path = os.path.join(output_dir, "brain_ensemble.pt")
+            if self.export_ensemble_torchscript(ensemble_ts_path) and os.path.exists(ensemble_ts_path):
+                model_files.append("brain_ensemble.pt")
+                export_status["brain_ensemble.pt"] = "ok"
+            else:
+                export_status["brain_ensemble.pt"] = "failed"
         
-        # Export each brain as ONNX
-        onnx_files = ["brain_ensemble.onnx"]
+        # Export each brain as ONNX. Only list files that actually exist.
         for i, (brain, name) in enumerate(zip(self.brains, self.organism_names)):
             onnx_path = os.path.join(output_dir, f"brain_{name}.onnx")
-            if self.export_onnx(onnx_path, organism_idx=i):
-                onnx_files.append(f"brain_{name}.onnx")
+            onnx_name = f"brain_{name}.onnx"
+            if self.export_onnx(onnx_path, organism_idx=i) and os.path.exists(onnx_path):
+                model_files.append(onnx_name)
+                export_status[onnx_name] = "ok"
+            else:
+                export_status[onnx_name] = "failed"
         
         # Export vocabulary
         vocab_path = os.path.join(output_dir, "vocabulary.json")
@@ -12070,6 +12103,9 @@ class CocoonAgent:
             'vocab_size': len(self.vocabulary.get('word_to_id', {})),
             'architecture': self.architecture,
             'training_config': self.config,
+            'model_files': model_files,
+            'export_status': export_status,
+            'package_complete': bool(model_files),
         }
         meta_path = os.path.join(output_dir, "metadata.json")
         
@@ -12090,16 +12126,23 @@ class CocoonAgent:
         print(f"[OK] Exported metadata to: {meta_path}")
         
         # Generate README
-        readme = self._generate_readme(onnx_files, metadata)
+        readme = self._generate_readme(model_files, metadata)
         readme_path = os.path.join(output_dir, "README.md")
         with open(readme_path, 'w', encoding='utf-8') as f:
             f.write(readme)
         print(f"[OK] Generated README to: {readme_path}")
         
-        print(f"\n✅ Package exported to: {output_dir}")
-        print(f"   Open .onnx files at https://netron.app/ to visualize")
+        if model_files:
+            print(f"\n✅ Package exported to: {output_dir}")
+            print(f"   Model files: {', '.join(model_files)}")
+            print(f"   Open .onnx/.pt files at https://netron.app/ to visualize")
+            return True
 
-    def _generate_readme(self, onnx_files: List[str], metadata: Dict[str, Any]) -> str:
+        print(f"\n[!] Package exported metadata only: {output_dir}")
+        print("    No neural model file was produced; see metadata.json export_status.")
+        return False
+
+    def _generate_readme(self, model_files: List[str], metadata: Dict[str, Any]) -> str:
         """Generate a model card README for the cocoon package."""
         import datetime
         
@@ -12172,8 +12215,12 @@ This allows organisms to modulate their attention based on resource availability
 | `vocabulary.json` | Token vocabulary (word ↔ ID mapping) |
 """
         
-        for onnx_file in onnx_files:
-            readme += f"| `{onnx_file}` | ONNX model - open at [netron.app](https://netron.app/) |\n"
+        for model_file in model_files:
+            kind = "TorchScript model" if model_file.endswith(".pt") else "ONNX model"
+            readme += f"| `{model_file}` | {kind} - open at [netron.app](https://netron.app/) |\n"
+
+        if not model_files:
+            readme += "| *(none)* | Neural model export failed; this package contains metadata only. See `metadata.json` `export_status`. |\n"
         
         readme += f"""
 ---

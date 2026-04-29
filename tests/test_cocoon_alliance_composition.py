@@ -1,4 +1,9 @@
 from reality_simulator.agent_compiler import AgentCompiler
+import base64
+import json
+import pytest
+import re
+import zlib
 
 
 class DummyCapsule:
@@ -81,3 +86,45 @@ def test_selected_alliance_can_include_unallied_by_opt_in():
     assert [compiler._get_organism_id(cap) for cap in filtered] == ["o1", "o2", "o4"]
     assert receipt["include_unallied"] is True
     assert receipt["unallied_organisms"] == ["o4"]
+
+
+def test_cocoon_compiler_preserves_non_default_hopfield_config():
+    pytest.importorskip("torch")
+
+    from reality_simulator.neural.brain import OrganismBrain
+
+    class DummyOrganism:
+        organism_id = "hopfield_probe"
+        fitness = 0.7
+
+        def __init__(self):
+            self.brain = OrganismBrain(
+                input_dim=30,
+                hidden_dim=64,
+                output_dim=6,
+                use_attention=True,
+                use_language_head=False,
+                use_world_model=False,
+                use_hopfield=True,
+                hopfield_patterns=8,
+                hopfield_iterations=3,
+                hopfield_beta=1.5,
+            )
+
+    compiler = AgentCompiler()
+    source, _readme, _topology = compiler.compile_cocoon(
+        [DummyOrganism()],
+        export_format="cocoon",
+        include_gym=False,
+        include_http=False,
+    )
+
+    match = re.search(r'_ARCHITECTURE_B64 = "([^"]+)"', source)
+    assert match, "generated cocoon source should embed architecture payload"
+    architecture = json.loads(zlib.decompress(base64.b64decode(match.group(1))).decode("utf-8"))
+    config = architecture["brain_configs"][0]
+
+    assert config["use_hopfield"] is True
+    assert config["hopfield_patterns"] == 8
+    assert config["hopfield_iterations"] == 3
+    assert config["hopfield_beta"] == 1.5
