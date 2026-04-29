@@ -33,10 +33,8 @@ COPY README_RUNTIME.md /app/README_RUNTIME.md
 COPY notebooks /app/notebooks
 COPY jupyter-settings /app/jupyter-settings
 
-RUN sed -i 's/\r$//' /app/start_server.sh \
-    && chmod +x /app/start_server.sh \
-    && mkdir -p /data
+RUN chmod +x /app/start_server.sh && mkdir -p /data
 
 EXPOSE 7860
 
-CMD ["/bin/bash", "/app/start_server.sh"]
+CMD ["/app/start_server.sh"]
