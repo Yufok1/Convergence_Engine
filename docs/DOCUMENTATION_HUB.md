@@ -47,7 +47,6 @@ pip install pywin32
 - **[CHANGELOG.md](./CHANGELOG.md)** - Version history and changes
 - **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Common issues and solutions
 - **[QUINE_TEMPLATE_EDIT_PROTOCOL_2026-04-22.md](./reference/QUINE_TEMPLATE_EDIT_PROTOCOL_2026-04-22.md)** - Safe edit protocol for compiler, cocoon, and quine-like source templates
-- **[HUGGINGFACE_JUPYTER_TUNNEL.md](./guides/HUGGINGFACE_JUPYTER_TUNNEL.md)** - Hugging Face/Jupyter control-plane workflow for running `unified_entry.py` and opening the Convergence web UI through a tunnel
 
 ### System Architecture
 
