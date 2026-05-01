@@ -1697,6 +1697,8 @@ class RealitySimulator:
                 force_checkpoint = False
                 signal = None
                 if os.path.exists(checkpoint_signal_file):
+                    # Signal must always be cleared once read; otherwise a save failure,
+                    # corrupt JSON, or unknown action retriggers every step (loop).
                     try:
                         with open(checkpoint_signal_file, 'r') as f:
                             signal = json.load(f)
@@ -1710,8 +1712,12 @@ class RealitySimulator:
                             else:
                                 print("[NEURAL CHECKPOINT] Restore signal could not be resolved")
                             self._clear_checkpoint_signal()
+                        else:
+                            print(f"[NEURAL CHECKPOINT] Unknown signal action: {signal.get('action')!r}; clearing")
+                            self._clear_checkpoint_signal()
                     except Exception as e:
                         logger.debug(f"Could not read checkpoint signal: {e}")
+                        self._clear_checkpoint_signal()
                 
                 # Check for checkpointing (time-based, generation-based, or manual trigger)
                 checkpoint_saved = False
@@ -1732,6 +1738,10 @@ class RealitySimulator:
                             self.neural_trainer.checkpoint_dir,
                             self.neural_trainer.checkpoint_max_count
                         )
+                    else:
+                        # Save failed — clear signal so the failed save doesn't retry every step
+                        logger.warning("[NEURAL CHECKPOINT] Manual save failed; clearing signal to prevent retry loop")
+                        self._clear_checkpoint_signal()
                 else:
                     # Normal interval-based checkpointing
                     checkpoint_saved = self.neural_trainer.maybe_checkpoint(
