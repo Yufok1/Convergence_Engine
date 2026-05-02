@@ -6410,18 +6410,65 @@
                 </div>
 
                 <div class="filter-section" style="border-top: 2px solid #0ff; margin-top: 20px; padding-top: 15px;">
-                    <h4 style="color: #ff0;">⚙️ Ollama Settings</h4>
+                    <h4 style="color: #ff0;">⚙️ AI Provider Settings</h4>
                     <div class="filter-item" style="margin-bottom: 10px;">
-                        <label style="display: block; margin-bottom: 5px; color: #0ff;">
+                        <label style="display: block; margin-bottom: 4px; color: #0ff; font-size: 0.85em;">Chat
+                            Provider:</label>
+                        <select id="craProviderSelect" onchange="onCRAProviderChange()"
+                            style="width: 100%; background: #111; color: #0f0; border: 1px solid #0ff; padding: 4px; font-size: 0.85em; margin-bottom: 8px;">
+                            <option value="ollama" selected>Ollama</option>
+                            <option value="huggingface">HuggingFace Inference</option>
+                        </select>
+                        <div id="hfSettings"
+                            style="display: none; margin-bottom: 8px; padding: 8px; background: #001016; border: 1px dashed #0ff;">
+                            <label
+                                style="color: #0ff; display: block; margin-bottom: 4px; font-size: 0.8em;">HF
+                                Token <span style="color: #fa0;">(session only)</span>:</label>
+                            <input type="password" id="hfApiKey" placeholder="hf_..." autocomplete="off"
+                                oninput="onHfApiKeyChange()"
+                                style="width: 100%; padding: 4px; background: #111; border: 1px solid #0aa; color: #0ff; font-size: 0.8em; margin-bottom: 4px;">
+                            <div id="hfTokenStatus" style="font-size: 0.72em; color: #888; margin-bottom: 6px;">
+                                ⚪ token empty
+                            </div>
+                            <label style="color: #0ff; display: block; margin-bottom: 4px; font-size: 0.8em;">Inference
+                                Provider:</label>
+                            <select id="hfInferenceProvider" onchange="onHfInferenceProviderChange()"
+                                style="width: 100%; background: #111; color: #0f0; border: 1px solid #0aa; padding: 4px; font-size: 0.8em; margin-bottom: 6px;">
+                                <option value="">Auto (HF picks)</option>
+                                <option value="together">Together AI</option>
+                                <option value="fireworks-ai">Fireworks</option>
+                                <option value="replicate">Replicate</option>
+                                <option value="nebius">Nebius</option>
+                                <option value="novita">Novita</option>
+                                <option value="sambanova">SambaNova</option>
+                                <option value="hyperbolic">Hyperbolic</option>
+                                <option value="cerebras">Cerebras</option>
+                                <option value="hf-inference">HF Inference</option>
+                            </select>
+                            <button id="hfFetchProviderModelsBtn" onclick="fetchHfProviderModels()"
+                                style="width: 100%; padding: 4px; background: #044; border: 1px solid #0aa; color: #0ff; cursor: pointer; font-size: 0.78em; margin-bottom: 4px;">
+                                ⬇ Load this provider's catalog
+                            </button>
+                            <div id="hfProviderCatalogStatus"
+                                style="font-size: 0.7em; color: #888; margin-top: 2px; margin-bottom: 4px;"></div>
+                            <div style="font-size: 0.7em; color: #fa0;">
+                                Token held in tab memory only. Closes-tab clears it. Never stored.
+                            </div>
+                            <div style="font-size: 0.7em; color: #888; margin-top: 4px;">
+                                <a href="https://huggingface.co/settings/tokens" target="_blank"
+                                    style="color: #0ff;">Get HF token →</a>
+                            </div>
+                        </div>
+                        <label id="ollamaCloudLabel" style="display: block; margin-bottom: 5px; color: #0ff;">
                             <input type="checkbox" id="ollamaCloudMode" onchange="toggleCloudMode()"
                                 style="margin-right: 5px;">
                             <span>Use Ollama Cloud</span>
                         </label>
                         <div id="cloudSettings"
                             style="display: none; margin-top: 10px; padding: 10px; background: #000; border: 1px solid #0aa;">
-                            <label style="display: block; margin-bottom: 5px; color: #0ff; font-size: 0.9em;">API
+                            <label style="display: block; margin-bottom: 5px; color: #0ff; font-size: 0.9em;">Ollama API
                                 Key:</label>
-                            <input type="password" id="ollamaApiKey" placeholder="Enter your API key"
+                            <input type="password" id="ollamaApiKey" placeholder="Enter your Ollama API key"
                                 style="width: 100%; padding: 5px; background: #111; border: 1px solid #0aa; color: #0ff; font-size: 0.85em; margin-bottom: 10px;">
                             <button onclick="saveOllamaConfig()"
                                 style="width: 100%; padding: 5px; background: #0aa; border: 1px solid #0ff; color: #0ff; cursor: pointer; font-size: 0.85em;">
@@ -6429,9 +6476,9 @@
                             </button>
                             <div id="configStatus" style="margin-top: 5px; font-size: 0.8em; color: #0aa;"></div>
                         </div>
-                        <div style="margin-top: 10px; font-size: 0.75em; color: #0aa;">
-                            <a href="https://ollama.com/settings/keys" target="_blank" style="color: #0ff;">Get API Key
-                                →</a>
+                        <div id="ollamaGetKeyLink" style="margin-top: 10px; font-size: 0.75em; color: #0aa;">
+                            <a href="https://ollama.com/settings/keys" target="_blank" style="color: #0ff;">Get Ollama
+                                API Key →</a>
                         </div>
                     </div>
                     <div id="ollamaConnectionStatus"
@@ -6673,60 +6720,16 @@
                     <div id="chatTabContent" style="display: block;">
                         <div style="margin-bottom: 10px;">
                             <div style="margin-bottom: 8px;">
-                                <label style="color: #0ff; display: block; margin-bottom: 5px; font-size: 0.9em;">Chat
-                                    Provider:</label>
-                                <select id="craProviderSelect" onchange="onCRAProviderChange()"
-                                    style="width: 100%; background: #111; color: #0f0; border: 1px solid #0ff; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
-                                    <option value="ollama" selected>Ollama (default)</option>
-                                    <option value="huggingface">HuggingFace Inference</option>
-                                </select>
-                                <div id="hfSettings"
-                                    style="display: none; margin-top: 8px; padding: 8px; background: #001016; border: 1px dashed #0ff;">
-                                    <label
-                                        style="color: #0ff; display: block; margin-bottom: 4px; font-size: 0.85em;">HF
-                                        Token <span style="color: #fa0;">(session only, never saved)</span>:</label>
-                                    <input type="password" id="hfApiKey" placeholder="hf_..." autocomplete="off"
-                                        oninput="onHfApiKeyChange()"
-                                        style="width: 100%; padding: 5px; background: #111; border: 1px solid #0aa; color: #0ff; font-size: 0.85em; margin-bottom: 8px;">
-                                    <label
-                                        style="color: #0ff; display: block; margin-bottom: 4px; font-size: 0.85em;">Inference
-                                        Provider:</label>
-                                    <select id="hfInferenceProvider" onchange="onHfInferenceProviderChange()"
-                                        style="width: 100%; background: #111; color: #0f0; border: 1px solid #0aa; padding: 5px; font-size: 0.85em; margin-bottom: 4px;">
-                                        <option value="">Auto (HF picks)</option>
-                                        <option value="together">Together AI</option>
-                                        <option value="fireworks-ai">Fireworks</option>
-                                        <option value="replicate">Replicate</option>
-                                        <option value="nebius">Nebius</option>
-                                        <option value="novita">Novita</option>
-                                        <option value="sambanova">SambaNova</option>
-                                        <option value="hyperbolic">Hyperbolic</option>
-                                        <option value="cerebras">Cerebras</option>
-                                        <option value="hf-inference">HF Inference</option>
-                                    </select>
-                                    <div style="font-size: 0.72em; color: #fa0; margin-top: 4px;">
-                                        Token lives in this browser tab only. Closing the tab clears it. It is sent
-                                        with each chat request and is not stored on the server.
-                                    </div>
-                                    <div style="font-size: 0.72em; color: #888; margin-top: 4px;">
-                                        <a href="https://huggingface.co/settings/tokens" target="_blank"
-                                            style="color: #0ff;">Get HF token →</a>
-                                    </div>
-                                </div>
-                                <div style="font-size: 0.75em; color: #888; margin-top: 4px;">
-                                    Ollama is the default; HuggingFace adds 30+ inference providers (Together,
-                                    Fireworks, etc.) routed through one OpenAI-compatible API.
-                                </div>
-                            </div>
-                            <div style="margin-bottom: 8px;">
                                 <label style="color: #0ff; display: block; margin-bottom: 5px; font-size: 0.9em;">Research
                                     Model:</label>
-                                <select id="researchModelSelect"
+                                <input id="researchModelSelect" list="hubModelDatalist" autocomplete="off"
+                                    placeholder="type to search HF Hub catalog or pick from suggestions..."
+                                    oninput="onResearchModelInput()" onfocus="onResearchModelInput()"
                                     style="width: 100%; background: #111; color: #0f0; border: 1px solid #0ff; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
-                                    <option value="">Loading models...</option>
-                                </select>
+                                <datalist id="hubModelDatalist"></datalist>
                                 <div style="font-size: 0.75em; color: #888; margin-top: 3px;" id="researchModelHint">
-                                    Text model for answering questions about the system
+                                    Type a model id (e.g. <code>Qwen/Qwen2.5-7B-Instruct</code>) or search the live HF
+                                    catalog. Provider settings live in the sidebar under "AI Provider Settings".
                                 </div>
                             </div>
                             <div style="margin-bottom: 8px;">
@@ -24556,33 +24559,162 @@
             const craSession = {
                 provider: 'ollama',
                 hfApiKey: '',
-                hfInferenceProvider: ''
+                hfInferenceProvider: '',
+                hubSearchTimer: null,
+                lastHubResults: []
             };
 
             function onCRAProviderChange() {
                 const sel = document.getElementById('craProviderSelect');
                 if (!sel) return;
                 craSession.provider = sel.value;
+                const isHF = sel.value === 'huggingface';
+
                 const hfPanel = document.getElementById('hfSettings');
-                if (hfPanel) {
-                    hfPanel.style.display = (sel.value === 'huggingface') ? 'block' : 'none';
-                }
+                if (hfPanel) hfPanel.style.display = isHF ? 'block' : 'none';
+
+                // Hide Ollama cloud controls when HF is active so we don't clutter
+                const olCloudLabel = document.getElementById('ollamaCloudLabel');
+                const olCloudPanel = document.getElementById('cloudSettings');
+                const olGetKey = document.getElementById('ollamaGetKeyLink');
+                if (olCloudLabel) olCloudLabel.style.display = isHF ? 'none' : 'block';
+                if (olGetKey) olGetKey.style.display = isHF ? 'none' : 'block';
+                if (olCloudPanel && isHF) olCloudPanel.style.display = 'none';
+
                 const hint = document.getElementById('researchModelHint');
                 if (hint) {
-                    hint.textContent = (sel.value === 'huggingface')
-                        ? 'For HuggingFace, type a HF model id (e.g. meta-llama/Llama-3.3-70B-Instruct, Qwen/Qwen2.5-72B-Instruct)'
-                        : 'Text model for answering questions about the system';
+                    hint.innerHTML = isHF
+                        ? 'HuggingFace mode: type to search the live HF Hub catalog (or load this provider\'s models with the button under Inference Provider).'
+                        : 'Type a model id (e.g. <code>Qwen/Qwen2.5-7B-Instruct</code>) or search the live HF catalog. Provider settings live in the sidebar under "AI Provider Settings".';
                 }
+
+                // Re-trigger search to repopulate datalist for the selected mode
+                onResearchModelInput();
             }
 
             function onHfApiKeyChange() {
                 const inp = document.getElementById('hfApiKey');
-                if (inp) craSession.hfApiKey = inp.value || '';
+                const status = document.getElementById('hfTokenStatus');
+                const val = inp ? (inp.value || '') : '';
+                craSession.hfApiKey = val;
+                if (status) {
+                    if (val.length === 0) {
+                        status.textContent = '⚪ token empty';
+                        status.style.color = '#888';
+                    } else if (val.startsWith('hf_') && val.length >= 20) {
+                        status.textContent = `🟢 token captured (${val.length} chars, hf_…${val.slice(-4)})`;
+                        status.style.color = '#0f0';
+                    } else {
+                        status.textContent = `🟡 ${val.length} chars — HF tokens usually start with "hf_" and are 30+ chars`;
+                        status.style.color = '#fa0';
+                    }
+                }
             }
 
             function onHfInferenceProviderChange() {
                 const sel = document.getElementById('hfInferenceProvider');
                 if (sel) craSession.hfInferenceProvider = sel.value || '';
+            }
+
+            // Search-as-you-type against HF Hub catalog. Debounced so we only
+            // fire one request per ~300ms of typing. Populates the datalist
+            // attached to the Research Model input.
+            function onResearchModelInput() {
+                const input = document.getElementById('researchModelSelect');
+                if (!input) return;
+                const query = (input.value || '').trim();
+                if (craSession.hubSearchTimer) clearTimeout(craSession.hubSearchTimer);
+                craSession.hubSearchTimer = setTimeout(() => {
+                    runHubSearch(query);
+                }, 300);
+            }
+
+            async function runHubSearch(query) {
+                try {
+                    const params = new URLSearchParams({
+                        pipeline: 'text-generation',
+                        sort: 'downloads',
+                        direction: '-1',
+                        limit: '40',
+                    });
+                    if (query) params.set('q', query);
+                    const r = await fetch(`/api/cra/hub/search?${params.toString()}`);
+                    const data = await r.json();
+                    if (!data || !data.success) return;
+                    craSession.lastHubResults = data.models || [];
+                    renderHubDatalist(craSession.lastHubResults);
+                } catch (e) {
+                    console.warn('[HubSearch] failed:', e);
+                }
+            }
+
+            function renderHubDatalist(models) {
+                const dl = document.getElementById('hubModelDatalist');
+                if (!dl) return;
+                dl.innerHTML = '';
+                models.forEach(m => {
+                    if (!m || !m.id) return;
+                    const opt = document.createElement('option');
+                    opt.value = m.id;
+                    const dl_count = m.downloads != null ? m.downloads.toLocaleString() : '?';
+                    const lk_count = m.likes != null ? m.likes : '?';
+                    opt.label = `${m.id} — ${dl_count} downloads, ${lk_count} likes`;
+                    dl.appendChild(opt);
+                });
+            }
+
+            // Per-provider model fetch (Together / Fireworks / etc.) via HF Router /v1/models.
+            // Augments the datalist with this provider's own catalog.
+            async function fetchHfProviderModels() {
+                const status = document.getElementById('hfProviderCatalogStatus');
+                const provider = craSession.hfInferenceProvider || 'auto';
+                const token = craSession.hfApiKey;
+                if (!token) {
+                    if (status) {
+                        status.textContent = '⚠ paste an HF token above first';
+                        status.style.color = '#fa0';
+                    }
+                    return;
+                }
+                if (status) {
+                    status.textContent = `⏳ fetching ${provider} catalog...`;
+                    status.style.color = '#0aa';
+                }
+                try {
+                    const url = `/api/cra/hub/providers/${encodeURIComponent(provider)}/models?hf_api_key=${encodeURIComponent(token)}`;
+                    const r = await fetch(url);
+                    const data = await r.json();
+                    if (!data || !data.success) {
+                        const msg = (data && data.error) ? data.error : 'unknown error';
+                        if (status) {
+                            status.textContent = `⚠ ${msg}`;
+                            status.style.color = '#f44';
+                        }
+                        return;
+                    }
+                    const merged = [
+                        ...(data.models || []).map(m => ({ id: m.id, downloads: null, likes: null })),
+                        ...craSession.lastHubResults
+                    ];
+                    const seen = new Set();
+                    const dedup = [];
+                    merged.forEach(m => {
+                        if (m && m.id && !seen.has(m.id)) {
+                            seen.add(m.id);
+                            dedup.push(m);
+                        }
+                    });
+                    renderHubDatalist(dedup);
+                    if (status) {
+                        status.textContent = `✓ ${data.count} models from ${provider} loaded into picker`;
+                        status.style.color = '#0f0';
+                    }
+                } catch (e) {
+                    if (status) {
+                        status.textContent = `⚠ fetch failed: ${e}`;
+                        status.style.color = '#f44';
+                    }
+                }
             }
 
             async function sendChatMessage() {

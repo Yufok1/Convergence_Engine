@@ -12881,6 +12881,137 @@ def get_chat_history_endpoint():
         return jsonify({'error': str(e), 'history': []}), 500
 
 
+@app.route('/api/cra/hub/search', methods=['GET'])
+def cra_hub_search():
+    """Proxy HuggingFace Hub's public model search.
+
+    Query params:
+      q          - free-text search
+      pipeline   - pipeline_tag filter (default 'text-generation')
+      sort       - 'downloads' | 'likes' | 'lastModified' (default 'downloads')
+      direction  - '-1' descending | '1' ascending (default '-1')
+      limit      - max results (default 30, max 100)
+      library    - optional library filter (e.g. 'transformers', 'gguf')
+
+    No auth required for public listing. Returns array of {id, downloads,
+    likes, tags, lastModified, library_name} entries — enough to render a
+    browsable catalog without overloading the response.
+    """
+    try:
+        q = request.args.get('q', '').strip()
+        pipeline = request.args.get('pipeline', 'text-generation')
+        sort = request.args.get('sort', 'downloads')
+        direction = request.args.get('direction', '-1')
+        try:
+            limit = max(1, min(100, int(request.args.get('limit', 30))))
+        except (TypeError, ValueError):
+            limit = 30
+        library = request.args.get('library')
+
+        params = {
+            'pipeline_tag': pipeline,
+            'sort': sort,
+            'direction': direction,
+            'limit': limit,
+        }
+        if q:
+            params['search'] = q
+        if library:
+            params['library'] = library
+
+        url = 'https://huggingface.co/api/models'
+        r = requests.get(url, params=params, timeout=30.0)
+        r.raise_for_status()
+        models = r.json() or []
+
+        slim = [{
+            'id': m.get('modelId') or m.get('id'),
+            'downloads': m.get('downloads'),
+            'likes': m.get('likes'),
+            'tags': m.get('tags', []),
+            'pipeline_tag': m.get('pipeline_tag'),
+            'library_name': m.get('library_name'),
+            'lastModified': m.get('lastModified') or m.get('last_modified'),
+        } for m in models if (m.get('modelId') or m.get('id'))]
+
+        return jsonify({
+            'success': True,
+            'query': q,
+            'pipeline': pipeline,
+            'sort': sort,
+            'count': len(slim),
+            'models': slim,
+        })
+    except Exception as e:
+        logger.error(f"hub search failed: {e}")
+        return jsonify({'success': False, 'error': str(e), 'models': []}), 500
+
+
+@app.route('/api/cra/hub/providers/<provider>/models', methods=['GET'])
+def cra_hub_provider_models(provider):
+    """Fetch the per-provider model catalog from HF Inference Router.
+
+    Requires a session HF token in the request header `X-HF-Token` or the
+    query param `hf_api_key`. Public-demo posture: token is per-request,
+    not stored. Returns whatever the provider exposes via its /v1/models.
+    """
+    try:
+        provider_slug = (provider or '').strip().lower()
+        valid = {
+            'together', 'fireworks-ai', 'replicate', 'nebius', 'novita',
+            'sambanova', 'hyperbolic', 'cerebras', 'hf-inference', 'auto'
+        }
+        if provider_slug not in valid:
+            return jsonify({
+                'success': False,
+                'error': f"unknown provider '{provider}'. allowed: {sorted(valid)}",
+                'models': []
+            }), 400
+
+        token = request.headers.get('X-HF-Token') or request.args.get('hf_api_key')
+        if not token:
+            return jsonify({
+                'success': False,
+                'error': 'HF token required (header X-HF-Token or query hf_api_key). Public-demo: token is per-request, not stored.',
+                'models': []
+            }), 400
+
+        if provider_slug == 'auto':
+            url = 'https://router.huggingface.co/v1/models'
+        else:
+            url = f'https://router.huggingface.co/{provider_slug}/v1/models'
+
+        headers = {'Authorization': f'Bearer {token}'}
+        r = requests.get(url, headers=headers, timeout=30.0)
+        if r.status_code in (401, 403):
+            return jsonify({
+                'success': False,
+                'error': f"HF Router rejected token for provider '{provider_slug}' (HTTP {r.status_code}). Token may need provider-specific permission.",
+                'models': []
+            }), r.status_code
+        r.raise_for_status()
+        data = r.json() or {}
+        items = data.get('data') if isinstance(data, dict) else data
+        if not isinstance(items, list):
+            items = []
+
+        slim = [{
+            'id': m.get('id') if isinstance(m, dict) else str(m),
+            'object': m.get('object') if isinstance(m, dict) else None,
+            'owned_by': m.get('owned_by') if isinstance(m, dict) else None,
+        } for m in items if (isinstance(m, dict) and m.get('id')) or isinstance(m, str)]
+
+        return jsonify({
+            'success': True,
+            'provider': provider_slug,
+            'count': len(slim),
+            'models': slim,
+        })
+    except Exception as e:
+        logger.error(f"provider model list failed for '{provider}': {e}")
+        return jsonify({'success': False, 'error': str(e), 'models': []}), 500
+
+
 @app.route('/api/chat/history', methods=['POST'])
 def post_chat_history_endpoint():
     """Append a chat message externally (shadow-CRA / Champion Council / agent bridge).
