@@ -499,11 +499,13 @@ DQN training hyperparameters.
 | `epsilon_start` | float | 0.8 | Initial exploration rate | 0.85 |
 | `epsilon_end` | float | 0.01 | Final exploration rate | 0.02 |
 | `epsilon_decay` | float | 0.99 | Epsilon decay per step | 0.992 |
-| `memory_size` | int | 300000 | Replay buffer size | 50000 |
+| `memory_size` | int | 50000 | DQN replay buffer cap (per-buffer). Was historically set to 1,000,000,000 (effectively unlimited) — that caused unbounded RAM growth and periodic OOM-driven simulator resets. 50,000 is generous for DQN (typical 10K–100K) and bounds the buffer to ~250MB at ~5KB/experience. | 50000 |
 | `update_frequency` | int | 1 | Steps between updates | 1 |
 | `language_reward_scaling` | float | 0.4 | Language reward weight | 0.4 |
 
 **⚠️ Genesis Warning:** With 5 organisms, experience accumulates slowly. If `batch_size` > total experiences, training never triggers. Rule: `batch_size` ≤ `population × 10` for first training step.
+
+**⚠️ Memory Warning — `memory_size`:** Setting this to a very large value (`>1,000,000`) effectively makes the replay buffer unbounded. Combined with checkpointing's `include_experience_buffer: true`, this is the primary cause of long-run RAM exhaustion (HF Space at 95.7%, local at 86.6%). If you see periodic generation resets (e.g., gen climbs to 100-130 then drops to 50-90 every 30-60 min), this is almost certainly the cause. Cap at 10K-100K and disable `include_experience_buffer` in checkpoints.
 
 ### `neural.training.lr_scheduler` ⭐
 
@@ -938,9 +940,14 @@ Violation Pressure monitoring and stabilization.
 - Increase `neural.training.batch_size` (128)
 
 ### Memory Issues
-- Reduce `neural.training.memory_size` (10000)
+- Reduce `neural.training.memory_size` to 10000–50000 (default 50000; legacy configs may have 1,000,000,000 which is unbounded — fix that first)
+- Set `neural.checkpointing.include_experience_buffer` to `false` (saves both checkpoint disk and the memory spike during checkpoint serialization)
+- Set `neural.checkpointing.compression` to `true` (gzip the .pt files)
+- Lower `neural.checkpointing.max_checkpoints` to 3–5 (default 5; was 10)
 - Lower `network.max_organisms` (300)
 - Enable `ray.memory_management.cleanup_on_organism_death`
+
+**Symptom:** generation counter climbs to 100–130 then resets to 50–90 every 30–60 minutes, RAM at 86–95%. **Root cause:** unbounded replay buffer + `include_experience_buffer: true` in checkpoints. **Fix:** cap `memory_size` at 50000, set `include_experience_buffer: false`.
 
 ### Performance Issues
 - Set `rendering.render_quality` to "low"
@@ -994,9 +1001,9 @@ See `reality_simulator/hardware_governor.py` for implementation details.
     "enabled": true,
     "auto_save_interval_generations": 100,
     "auto_save_interval_minutes": 30,
-    "max_checkpoints": 10,
+    "max_checkpoints": 5,
     "checkpoint_dir": "data/neural_checkpoints",
-    "include_experience_buffer": true,
+    "include_experience_buffer": false,
     "include_optimizer_states": true,
     "compression": true,
     "auto_resume": true
@@ -1009,9 +1016,9 @@ See `reality_simulator/hardware_governor.py` for implementation details.
 | `enabled` | bool | true | Master toggle for auto-checkpointing |
 | `auto_save_interval_generations` | int | 100 | Save checkpoint every N generations |
 | `auto_save_interval_minutes` | int | 30 | Save checkpoint every N minutes |
-| `max_checkpoints` | int | 10 | Maximum checkpoints to retain (older deleted) |
+| `max_checkpoints` | int | 5 | Maximum checkpoints to retain (older deleted). Was 10 — lowered to 5 because each checkpoint is heavy. |
 | `checkpoint_dir` | string | "data/neural_checkpoints" | Directory for checkpoint storage |
-| `include_experience_buffer` | bool | true | Save experience replay buffer (large!) |
+| `include_experience_buffer` | bool | false | **Default flipped to `false`** — saving the experience replay buffer with each checkpoint was the second-largest contributor to memory pressure (the first being the unbounded `memory_size`). Disable unless you have a specific reason to persist replay state. |
 | `include_optimizer_states` | bool | true | Save optimizer momentum/velocity |
 | `compression` | bool | true | Compress .pt files to save space |
 | `auto_resume` | bool | true | Load latest checkpoint on startup |
