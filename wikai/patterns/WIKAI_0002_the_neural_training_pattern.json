@@ -1,0 +1,52 @@
+{
+  "id": "WIKAI_0002",
+  "name": "The Neural Training Pattern",
+  "discovery_timestamp": "2026-04-26T13:56:44.121882Z",
+  "status": "OBSERVED",
+  "origin": {
+    "experiment_id": "convergence_auto_20260426_135644",
+    "agents_involved": [
+      "convergence_engine"
+    ],
+    "observer_agent": "wikai_observer",
+    "source_project": "convergence_engine"
+  },
+  "abstract": {
+    "problem": "Challenge observed in neural_training",
+    "solution": "Resolution achieved with stability 1.00",
+    "axiom": "Stable patterns propagate; unstable patterns dissolve"
+  },
+  "reasoning_chain": [
+    "Trigger: neural_training observed",
+    "Pattern observed 4 times over 40.4s",
+    "Stability stable: 1.00 \u2192 1.00",
+    "Pattern crystallized with avg stability 1.00"
+  ],
+  "tokens": {
+    "dominant_tokens": [
+      "neural training"
+    ],
+    "emergent_tokens": []
+  },
+  "mechanism": {
+    "synthesis": {
+      "stability_score": 1.0,
+      "fitness_delta": 0.0
+    }
+  },
+  "metrics": {
+    "state_delta": 0.0,
+    "cycles_to_convergence": 4,
+    "avg_stability": 1.0,
+    "avg_fitness": 0.0,
+    "duration_seconds": 40.392812
+  },
+  "tags": [
+    "neural_training",
+    "highly_stable",
+    "auto_captured",
+    "convergence_engine"
+  ],
+  "related_patterns": [],
+  "raw_logs": null
+}

@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__champion-ouroboros-self-deploy__get_about",
+      "mcp__champion-ouroboros-self-deploy__get_identity",
+      "mcp__champion-ouroboros-self-deploy__get_status",
+      "mcp__champion-ouroboros-self-deploy__get_genesis",
+      "mcp__champion-ouroboros-self-deploy__council_status",
+      "mcp__champion-ouroboros-self-deploy__get_capabilities",
+      "mcp__champion-ouroboros-self-deploy__skill_search",
+      "mcp__champion-ouroboros-self-deploy__workflow_list",
+      "mcp__champion-ouroboros-self-deploy__bag_search",
+      "mcp__champion-ouroboros-self-deploy__bag_search_docs",
+      "mcp__champion-ouroboros-space__council_status",
+      "mcp__champion-ouroboros-self-deploy__bag_read_doc",
+      "mcp__champion-ouroboros-self-deploy__bag_get",
+      "mcp__champion-ouroboros-self-deploy__verify_integrity",
+      "mcp__champion-ouroboros-self-deploy__get_provenance",
+      "mcp__champion-ouroboros-space__verify_integrity",
+      "mcp__champion-ouroboros-space__get_provenance",
+      "mcp__champion-ouroboros-self-deploy__save_state",
+      "mcp__champion-ouroboros-space__save_state",
+      "mcp__champion-ouroboros-self-deploy__env_read",
+      "mcp__champion-ouroboros-self-deploy__get_help",
+      "mcp__champion-ouroboros-self-deploy__hub_download",
+      "Bash(pip show *)",
+      "Bash(gh api *)",
+      "Bash(python -c \"import sys,json; data=json.load\\(sys.stdin\\); [print\\(f\\\\\"{x['type'][:1]} {x['name']} \\({x.get\\('size',0\\)} bytes\\)\\\\\"\\) for x in data]\")",
+      "Bash(grep -iv \"^.*=.*\\\\\"\\\\\\\\\\\\\\\\x\")",
+      "mcp__champion-ouroboros-self-deploy__bag_list_docs",
+      "mcp__champion-ouroboros-self-deploy__bag_induct",
+      "mcp__champion-ouroboros-self-deploy__facility_create",
+      "Bash(pip index *)",
+      "WebSearch",
+      "WebFetch(domain:pypi.org)",
+      "PowerShell(Get-Clipboard *)"
+    ]
+  }
+}

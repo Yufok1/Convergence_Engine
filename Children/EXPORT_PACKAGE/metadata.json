@@ -1,0 +1,71 @@
+{
+  "mode": "ENSEMBLE",
+  "num_organisms": 2,
+  "organism_names": [
+    "0db033662ad0d27b",
+    "e558dea105f5f8f2"
+  ],
+  "organism_fitness": [
+    0.776950064,
+    0.77996496
+  ],
+  "vocab_size": 62293,
+  "architecture": {
+    "brain_configs": [
+      {
+        "organism_id": "0db033662ad0d27b",
+        "input_dim": 30,
+        "hidden_dim": 64,
+        "output_dim": 6,
+        "vocab_size": 10000,
+        "use_attention": true,
+        "use_language_head": true,
+        "use_concept_head": true,
+        "num_attention_heads": 4,
+        "num_key_compositions": 30,
+        "dropout": 0.1,
+        "fitness": 0.755788,
+        "use_hopfield": true,
+        "hopfield_patterns": 32,
+        "hopfield_iterations": 5,
+        "hopfield_beta": 1.0
+      },
+      {
+        "organism_id": "e558dea105f5f8f2",
+        "input_dim": 30,
+        "hidden_dim": 64,
+        "output_dim": 6,
+        "vocab_size": 10000,
+        "use_attention": true,
+        "use_language_head": true,
+        "use_concept_head": true,
+        "num_attention_heads": 4,
+        "num_key_compositions": 30,
+        "dropout": 0.1,
+        "fitness": 0.75578,
+        "use_hopfield": true,
+        "hopfield_patterns": 32,
+        "hopfield_iterations": 5,
+        "hopfield_beta": 1.0
+      }
+    ],
+    "organism_names": [
+      "0db033662ad0d27b",
+      "e558dea105f5f8f2"
+    ],
+    "ensemble_size": 2,
+    "is_ensemble": true
+  },
+  "training_config": {
+    "learning_rate": 0.001,
+    "batch_size": 32,
+    "gamma": 0.99,
+    "epsilon": 0.1,
+    "epsilon_decay": 0.995,
+    "epsilon_min": 0.01,
+    "rl_loss_weight": 0.8,
+    "language_loss_weight": 0.1,
+    "concept_loss_weight": 0.1,
+    "buffer_size": 10000
+  }
+}

@@ -54,7 +54,7 @@ pygame>=2.5.0,<3.0       # PyGame for PLE games rendering
 
 # Drone Warfare Arena (8 game modes with NASA JSBSim 6-DOF physics)
 # matplotlib is already included above for visualization
-PyFlyt==0.29.0        # Pin exact - requires gymnasium 0.29.x
+# PyFlyt==0.29.0      # DISABLED - pulls pybullet which needs MSVC Build Tools on Windows. Re-enable if you need the drone arena.
 
 # P2P Networking (OPTIONAL - for cocoon link mode)
 websockets>=12.0,<16.0    # WebSocket client/server for CocoonHatch P2P battles

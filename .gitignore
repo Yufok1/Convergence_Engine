@@ -13,6 +13,11 @@ highlander_capsules/
 # Neural checkpoints (training state - can be large)
 data/neural_checkpoints/
 
+# Children/ training artifacts that exceed GitHub's file size limit
+# Keep CHIEFCO.py, EXPORT_PACKAGE/, smaller cocoon zips; exclude oversized .py snapshots
+Children/18.py
+Children/cocoon_ensemble_*.py
+
 # Semantic datasets and generated knowledge webs (large, user-installed)
 data/knowledge/**
 data/expanded_knowledge_web.json

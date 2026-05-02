@@ -29,6 +29,18 @@
       "enabled": true,
       "bias_strength": 0.3,
       "expectation_window_seconds": 10.0
+    },
+    "organism_learning_berth": {
+      "_help": "Bounded lane for learning from human-selected suggestions and operation-sequence prompts. Inside-game only; no outside command authority.",
+      "enabled": true,
+      "space_window_seconds": 3600,
+      "config_window_seconds": 1200,
+      "max_interaction_context_words": 64,
+      "human_choice_reward_bonus": 0.08,
+      "operation_sequence_reward_bonus": 0.05,
+      "allowed_operation_axes": ["inside", "around", "above", "below", "between", "through"],
+      "inside_boundary": "inside_game_only",
+      "forbidden_outside_actions": ["deployment", "money", "identity", "safety_systems", "authority_override"]
     }
   },
   "agency": {

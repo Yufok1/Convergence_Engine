@@ -116,7 +116,8 @@ class ButterflyChatRouter:
             "max_organisms": max_organisms,
             "vocabulary_available": self.vocabulary is not None,
             "organisms_count": len(self.organisms),
-            "network_state_available": network_state is not None
+            "network_state_available": network_state is not None,
+            "interaction_context": network_state.get('interaction_context') if network_state else None
         })
 
         # Extract context_memory early so tokenization and generation use the same instance
@@ -607,7 +608,8 @@ class ButterflyChatRouter:
             "max_organisms": max_organisms,
             "vocabulary_available": self.vocabulary is not None,
             "organisms_count": len(self.organisms),
-            "network_state_available": network_state is not None
+            "network_state_available": network_state is not None,
+            "interaction_context": network_state.get('interaction_context') if network_state else None
         })
 
         # Extract context_memory
@@ -879,7 +881,8 @@ class ButterflyChatRouter:
                                           organism: Any, 
                                           message: str,
                                           context_memory: Any = None,
-                                          vp_value: Optional[float] = None) -> Dict[str, Any]:
+                                          vp_value: Optional[float] = None,
+                                          network_state: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Process a message through a single specific organism.
         
@@ -918,6 +921,21 @@ class ButterflyChatRouter:
             except Exception as e:
                 self._log_error("TOKENIZATION_ERROR", str(e), {"words": words})
         
+        if network_state is None and context_memory is not None:
+            network_state = {
+                'context_memory': context_memory,
+                'vp_value': vp_value
+            }
+
+        knowledge_web = None
+        if network_state:
+            cm = network_state.get('context_memory')
+            if cm and hasattr(cm, 'knowledge_web'):
+                knowledge_web = cm.knowledge_web
+        if knowledge_web is None and context_memory and hasattr(context_memory, 'knowledge_web'):
+            knowledge_web = context_memory.knowledge_web
+
+
         # BOOTSTRAP: Teach organism user's words BEFORE generation so they have vocab to work with
         # This solves the chicken-and-egg: can't generate without vocab, can't learn without generating
         # MASTERY CHECK: Only attempt if organism can acquire new vocabulary
@@ -929,9 +947,19 @@ class ButterflyChatRouter:
                 for word in words:
                     if word not in organism.atomic_language.atoms:
                         try:
+                            semantic_frame = 'unknown'
+
+                            if knowledge_web and hasattr(knowledge_web, 'concepts') and word in knowledge_web.concepts:
+
+                                concept = knowledge_web.concepts[word]
+
+                                semantic_frame = getattr(concept, 'semantic_frame', 'unknown')
+
                             organism.atomic_language.acquire_concept(
                                 word, 
                                 source='chat_heard',
+                                semantic_frame=semantic_frame,
+                                initial_strength=0.2,
                                 reason=f"heard in user message"
                             )
                             words_taught += 1
@@ -1092,7 +1120,7 @@ class ButterflyChatRouter:
                 organism_tokens=response_tokens,
                 confidence=confidence,
                 fitness=getattr(organism, 'fitness', 0.0),
-                network_state=None
+                network_state=network_state
             )
         
         self._log_debug("DIRECT_CHAT", "Single organism chat complete", {
@@ -1256,6 +1284,51 @@ class ButterflyChatRouter:
             'step_data': step_data
         })
     
+    def _apply_interaction_berth_reward(self,
+                                        reward: float,
+                                        network_state: Optional[Dict[str, Any]] = None) -> float:
+        """Reward human-selected suggestions and bounded operation prompts without granting authority."""
+        try:
+            if not network_state:
+                return reward
+            context = network_state.get('interaction_context')
+            if not isinstance(context, dict) or not context:
+                return reward
+
+            lang_config = self.config.get('language', {}) if isinstance(self.config, dict) else {}
+            berth_config = lang_config.get('organism_learning_berth', {}) if isinstance(lang_config, dict) else {}
+            if berth_config.get('enabled', True) is False:
+                return reward
+
+            bonus = 0.0
+            reasons = []
+            if context.get('human_choice') or context.get('selected_suggestion'):
+                bonus += float(berth_config.get('human_choice_reward_bonus', 0.08))
+                reasons.append('human_choice')
+
+            allowed_axes = set(berth_config.get('allowed_operation_axes') or ['inside', 'around', 'above', 'below', 'between', 'through'])
+            operation_axis = str(context.get('operation_axis') or '').lower().strip()
+            if operation_axis and operation_axis in allowed_axes:
+                bonus += float(berth_config.get('operation_sequence_reward_bonus', 0.05))
+                reasons.append(f'operation_axis:{operation_axis}')
+
+            if bonus <= 0.0:
+                return reward
+
+            adjusted = max(-1.0, min(1.0, float(reward) + bonus))
+            self._log_debug("INTERACTION_BERTH_REWARD", "Applied bounded human-choice/operation reward", {
+                "base_reward": reward,
+                "bonus": bonus,
+                "adjusted_reward": adjusted,
+                "reasons": reasons,
+                "interaction_context": context,
+                "inside_boundary": berth_config.get('inside_boundary', 'inside_game_only')
+            })
+            return adjusted
+        except Exception as e:
+            logger.debug(f"Interaction berth reward skipped: {e}")
+            return reward
+
     def _store_chat_experience(self,
                                organism: Any,
                                user_message: str,
@@ -1311,6 +1384,9 @@ class ButterflyChatRouter:
             elif reward == 0.0:
                 reward = 0.2
                 self._log_debug("REWARD_ZERO_ADJUST", "Reward was 0.0, adjusted to 0.2", {})
+
+            reward = self._apply_interaction_berth_reward(reward, network_state)
+            interaction_context = network_state.get('interaction_context') if network_state else None
             
             # Record experience for mastery advancement tracking
             if hasattr(organism, 'atomic_language') and organism.atomic_language:
@@ -1399,7 +1475,8 @@ class ButterflyChatRouter:
                 "response_length": len(organism_response),
                 "input_tokens_length": len(user_tokens),
                 "target_tokens_length": len(organism_tokens),
-                "experience_buffer_size": len(organism.experience_buffer) if hasattr(organism.experience_buffer, '__len__') else 'unknown'
+                "experience_buffer_size": len(organism.experience_buffer) if hasattr(organism.experience_buffer, '__len__') else 'unknown',
+                "interaction_context": interaction_context if interaction_context else None
             })
             
             # Track chat experiences
