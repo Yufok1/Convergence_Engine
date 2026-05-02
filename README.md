@@ -434,7 +434,16 @@ python reality_simulator/language/expand_knowledge_web.py --concepts 50000 --min
 
 ### Optional: AI Features (Ollama)
 
-For AI-assisted features (CRA, vision analysis):
+Ollama is only required for the Ollama-backed CRA narration and vision-analysis paths. It is not required for direct organism interaction.
+
+Provider-free organism chat:
+```bash
+python cra_cli.py standin-chat "cooperate" --max-organisms 1
+python cra_cli.py butterfly-chat "cooperate" --max-organisms 1
+python cra_cli.py organism-chat <organism_id> "cooperate"
+```
+
+For Ollama-assisted features (CRA chat synthesis, vision analysis):
 
 1. **Install Ollama**: Download from https://ollama.ai/
 2. **Start Ollama**: Run `ollama serve` (or use Ollama Cloud)

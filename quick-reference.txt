@@ -15,7 +15,8 @@ git clone https://github.com/Yufok1/Convergence_Engine.git
 cd Convergence_Engine
 
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate    
+.\.venv\Scripts\Activate.ps1
 
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
@@ -61,6 +62,9 @@ python causation_web_ui.py
 python cra_cli.py status
 python cra_cli.py sitrep
 python cra_cli.py repl --model llama3.2
+python cra_cli.py standin-chat "cooperate" --max-organisms 1
+python cra_cli.py butterfly-chat "cooperate" --max-organisms 1
+python cra_cli.py organism-chat <organism_id> "cooperate"
 python cra_cli.py training-status
 python cra_cli.py exporter-status
 python cra_cli.py organisms --limit 10

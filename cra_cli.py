@@ -256,6 +256,29 @@ def parse_args() -> argparse.Namespace:
         help="Only include organisms at or above this mastery level (default: 0).",
     )
 
+    standin_chat_parser = subparsers.add_parser(
+        "standin-chat",
+        help="Provider-free CRA stand-in: chat directly with Butterfly Chat without Ollama.",
+    )
+    standin_chat_parser.add_argument("message", nargs="*", help="Message text. Reads stdin if omitted.")
+    standin_chat_parser.add_argument(
+        "--routing-strategy",
+        default="all",
+        help="Router strategy passed to /api/butterfly/chat (default: all).",
+    )
+    standin_chat_parser.add_argument(
+        "--max-organisms",
+        type=int,
+        default=10,
+        help="Maximum organisms to query (default: 10).",
+    )
+    standin_chat_parser.add_argument(
+        "--min-mastery-level",
+        type=int,
+        default=0,
+        help="Only include organisms at or above this mastery level (default: 0).",
+    )
+
     organism_chat_parser = subparsers.add_parser(
         "organism-chat",
         help="Chat directly with one organism by id.",
@@ -1681,14 +1704,20 @@ def main() -> int:
                 summarize_chat(data)
             return 0
 
-        if args.command == "butterfly-chat":
+        if args.command in ("butterfly-chat", "standin-chat"):
             message = read_message(args)
+            actor = "CRA_STANDIN" if args.command == "standin-chat" else "CRA_CLI"
             data = client.request_json("POST", "/api/butterfly/chat", payload={
                 "message": message,
                 "routing_strategy": args.routing_strategy,
                 "max_organisms": args.max_organisms,
                 "min_mastery_level": args.min_mastery_level,
-                "actor": "CRA_CLI",
+                "actor": actor,
+                "interaction_context": {
+                    "source": args.command,
+                    "inside_boundary": "inside_game_only",
+                    "consent_condition": "operator_requested",
+                },
             })
             if args.json:
                 print_json(data)

@@ -208,9 +208,9 @@ def _notepad_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
 def pause_simulation_for_export():
     """
     Context manager that pauses the simulation during model export/compilation.
-    
+
     This prevents race conditions where organisms change while being serialized.
-    
+
     Usage:
         with pause_simulation_for_export():
             # Export code here - simulation is paused
@@ -220,22 +220,22 @@ def pause_simulation_for_export():
     unified_system = getattr(app, 'unified_system', None)
     reality_sim = None
     was_paused = False
-    
+
     try:
         # Get reality sim and check current pause state
         if unified_system and hasattr(unified_system, 'reality_sim'):
             reality_sim = unified_system.reality_sim
             was_paused = getattr(reality_sim, 'paused', False)
-            
+
             if not was_paused:
                 # Pause the simulation
                 reality_sim.paused = True
                 logger.info("[EXPORT] ⏸️ Simulation paused for export")
                 # Give time for current step to complete
                 time.sleep(0.2)
-        
+
         yield  # Export happens here
-        
+
     finally:
         # Resume simulation if we paused it
         if reality_sim and not was_paused:
@@ -353,7 +353,7 @@ BLOCKED_PATHS = {
     '/neural/brain/vocab_size',
     '/neural/brain/activation',
     '/neural/brain/dropout',
-    
+
     # Training Settings - CRITICAL: Changing affects weight shapes
     '/neural/training/batch_size',
     '/neural/training/memory_size',
@@ -364,28 +364,28 @@ BLOCKED_PATHS = {
     '/neural/training/epsilon_decay',
     '/neural/training/target_update_frequency',
     '/neural/training/gradient_clip',
-    
+
     # Concept System - CRITICAL: Affects brain architecture
     '/neural/concept_system/enabled',
     '/neural/concept_system/embed_dim',
     '/neural/concept_system/num_key_compositions',
-    
+
     # Language Model - CRITICAL: Affects weight shapes and export
     '/neural/language_model/enabled',
     '/neural/language_model/vocabulary/max_size',
     '/neural/language_model/sequence/context_window',
-    
+
     # Inheritance - CRITICAL: Affects weight transfer
     '/neural/inheritance/enabled',
     '/neural/inheritance/mutation_rate',
     '/neural/inheritance/crossover_rate',
-    
+
     # Export Settings - CRITICAL: Required for cocoon/capsule
     '/neural/export/format',
     '/neural/export/include_optimizer',
     '/neural/export/use_scripted_inference',
     '/neural/export/compile_mode',
-    
+
     # ═══════════════════════════════════════════════════════════════════════
     # META-COGNITIVE SYSTEM - CRA MUST NOT INTERFERE WITH SELF-TUNING
     # The meta-tuner is the sovereign authority over parameter optimization.
@@ -399,7 +399,7 @@ BLOCKED_PATHS = {
     '/meta_cognitive/self_tuning/performance_targets/min_cluster_diversity',
     '/meta_cognitive/self_tuning/performance_targets/min_fitness_std',
     '/meta_cognitive/self_tuning/safe_parameters',  # The list of what meta-tuner can touch
-    
+
     # ═══════════════════════════════════════════════════════════════════════
     # LANGUAGE MASTERY SYSTEM - CRA MUST NOT INTERFERE WITH GROUNDED MODE
     # Mastery progression is an emergent process - external manipulation
@@ -413,21 +413,21 @@ BLOCKED_PATHS = {
     '/language/grounded/mastery_depth_ratio',
     '/language/grounded/mastery_min_experiences',
     '/language/grounded/semantic_disabled',
-    
+
     # ═══════════════════════════════════════════════════════════════════════
     # HIGHLANDER MASTERY GATE - CRA CANNOT OVERRIDE PROTECTION
     # Level 4+ restriction protects developing organisms during vocabulary
     # building. Removing this protection would cull organisms prematurely.
     # ═══════════════════════════════════════════════════════════════════════
     '/highlander/mastery_level_required',
-    
+
     # ═══════════════════════════════════════════════════════════════════════
     # META-TUNER MANAGED PARAMETERS - CRA CANNOT TOUCH THESE
     # All parameters in meta_cognitive.self_tuning.safe_parameters are
     # managed by the ConfigTuner. CRA interference would cause conflicts.
     # CRA can OBSERVE and REPORT but NOT MODIFY these parameters.
     # ═══════════════════════════════════════════════════════════════════════
-    
+
     # Evolution parameters (meta-tuner managed)
     '/evolution/mutation_rate/initial',
     '/evolution/diversity_guard/penalty',
@@ -435,13 +435,13 @@ BLOCKED_PATHS = {
     '/evolution/diversity_guard/hash_similarity_threshold',
     '/evolution/population_size',
     '/evolution/adaptation_sensitivity',
-    
+
     # Feedback knobs (meta-tuner managed)
     '/feedback/knobs/mutation_rate/initial',
     '/feedback/knobs/new_edge_rate/initial',
     '/feedback/knobs/clustering_bias/initial',
     '/feedback/knobs/quantum_pruning/initial',
-    
+
     # Neural training (meta-tuner managed - also blocked above for architecture)
     # '/neural/training/learning_rate',  # Already blocked
     # '/neural/training/gamma',  # Already blocked
@@ -452,26 +452,26 @@ BLOCKED_PATHS = {
     '/neural/rewards/survival',
     # '/neural/inheritance/crossover_rate',  # Already blocked
     # '/neural/inheritance/mutation_rate',  # Already blocked
-    
+
     # Network parameters (meta-tuner managed)
     '/network/max_organisms',
     '/network/max_connections',
     '/network/resource_pool',
-    
+
     # Scikit-learn parameters (meta-tuner managed)
     '/scikit/clustering/min_cluster_size',
     '/scikit/anomaly_detection/contamination',
     '/scikit/anomaly_detection/n_estimators',
-    
+
     # Quantum parameters (meta-tuner managed)
     '/quantum/initial_states',
     '/quantum/entanglement_sensitivity',
     '/quantum/prune_check_interval',
-    
+
     # VP monitoring parameters (meta-tuner managed)
     '/vp_monitoring/adaptive_response/high_vp_threshold',
     '/vp_monitoring/stabilization/smoothing_factor',
-    
+
     # Causation detection (meta-tuner managed)
     '/causation_detection/correlation_threshold',
 }
@@ -483,7 +483,7 @@ The following settings are **permanently locked** and cannot be modified via CRA
 
 ## 🧠 Neural Network & GPU Settings
 - **GPU/Device Settings** (`neural.device`, `neural.brain.*`)
-- **Training Parameters** (`neural.training.*`)  
+- **Training Parameters** (`neural.training.*`)
 - **Brain Architecture** (`neural.brain.input_dim`, `hidden_dim`, etc.)
 - **Export Settings** (`neural.export.*`)
 
@@ -1317,11 +1317,11 @@ class ConfigManager:
     def _adjust_to_guardrails(self, path: str, value: Any) -> Tuple[Any, Optional[str]]:
         """
         Auto-adjust a value to fit within guardrail limits.
-        
+
         Returns: (adjusted_value, adjustment_message)
         """
         normalized_path, segments = self._normalize_path(path)
-        
+
         # Find matching guardrail rule
         for guardrail_path, rule in CONFIG_GUARDRAILS.items():
             if guardrail_path == normalized_path:
@@ -1332,22 +1332,22 @@ class ConfigManager:
                     original = numeric
                     adjusted = numeric
                     message = None
-                    
+
                     # Adjust to min if below
                     if min_val is not None and numeric < min_val:
                         adjusted = rule['type'](min_val)
                         message = f"{rule['label']}: {original} adjusted to minimum {min_val}"
-                    
+
                     # Adjust to max if above
                     if max_val is not None and numeric > max_val:
                         adjusted = rule['type'](max_val)
                         message = f"{rule['label']}: {original} adjusted to maximum {max_val}"
-                    
+
                     return adjusted, message
                 except (ValueError, TypeError):
                     # Can't convert to numeric, return as-is
                     return value, None
-        
+
         # No guardrail rule found, return as-is
         return value, None
 
@@ -1426,7 +1426,7 @@ class ConfigManager:
             changes = []
 
             adjustments = []  # Track auto-adjustments
-            
+
             for op in patch_ops:
                 operation = op.get('op')
                 path = op.get('path')
@@ -1435,7 +1435,7 @@ class ConfigManager:
                     raise ValueError("Each patch operation requires 'op' and 'path'")
 
                 normalized_path, segments = self._normalize_path(path)
-                
+
                 # 🚫 BLOCKED PATH CHECK - Prevent modifying critical neural/GPU settings
                 if normalized_path in BLOCKED_PATHS:
                     blocked_paths_list = '\n'.join(f"  - {p}" for p in sorted(BLOCKED_PATHS))
@@ -1444,7 +1444,7 @@ class ConfigManager:
                         f"{BLOCKED_PATHS_REASON}\\n\\n"
                         f"All Blocked Paths:\\n{blocked_paths_list}"
                     )
-                
+
                 previous_value = None
                 try:
                     previous_value = self._get_value(working, segments)
@@ -1469,7 +1469,7 @@ class ConfigManager:
                     if adjustment_msg:
                         adjustments.append(adjustment_msg)
                         value = adjusted_value  # Use adjusted value
-                    
+
                     self._apply_operation(working, operation.lower(), segments, value)
                     try:
                         new_value = self._get_value(working, segments)
@@ -1545,11 +1545,11 @@ class ConfigManager:
                                     except Exception as e:
                                         logger.warning(f"Auto-adjustment failed for {guardrail_path}: {e}")
                                     break
-                
+
                 # If there are still issues after auto-fix, they're non-numeric or other errors
                 if guardrail_issues:
                     raise ValueError(f"Guardrail validation failed (after auto-adjustment): {guardrail_issues}")
-            
+
             # Add adjustment messages to reason if any were made
             if adjustments:
                 reason = f"{reason} [Auto-adjusted: {', '.join(adjustments)}]" if reason else f"Auto-adjusted: {', '.join(adjustments)}"
@@ -1586,7 +1586,7 @@ class ConfigManager:
             # Filter out no-op changes (where from == to) before returning
             # This prevents false "true → true" reports in the UI
             actual_changes = [c for c in changes if c.get('from') != c.get('to')]
-            
+
             return {
                 'version': self._version,
                 'changes': actual_changes,  # Only return actual value changes
@@ -1752,7 +1752,7 @@ def event_emitter(event):
     # Use shared explorer if available, otherwise use local one
     target_explorer = app.config.get('explorer') or explorer
     explorer_source = 'shared' if app.config.get('explorer') else 'local'
-    
+
     if target_explorer is not None:
         try:
             from causation_explorer import Event
@@ -1831,7 +1831,7 @@ config_actions_log_path = log_dir / 'config_actions.log'
 
 class OllamaBridge:
     """HTTP client for Ollama API (supports both local and cloud)"""
-    
+
     def __init__(self, base_url: str = None, timeout: float = None, api_key: str = None):
         # Support environment variables for configuration
         # OLLAMA_BASE_URL defaults to localhost, or use https://ollama.com for cloud
@@ -1839,10 +1839,10 @@ class OllamaBridge:
         self.timeout = timeout or float(os.getenv("OLLAMA_TIMEOUT", "240.0"))
         # OLLAMA_API_KEY required for cloud API access
         self.api_key = api_key or os.getenv("OLLAMA_API_KEY")
-        
+
         # Determine if we're using cloud (https://ollama.com)
         self.is_cloud = self.base_url.startswith("https://ollama.com")
-        
+
         # Build headers (include auth for cloud)
         self.headers = {}
         if self.is_cloud:
@@ -1858,19 +1858,19 @@ class OllamaBridge:
                 logger.info("   Set OLLAMA_API_KEY environment variable or get key from: https://ollama.com/settings/keys")
         else:
             logger.info(f"✅ OllamaBridge configured for local: {self.base_url}")
-    
+
     def update_config(self, base_url: str = None, api_key: str = None, timeout: float = None):
         """Update configuration dynamically"""
         if base_url is not None:
             self.base_url = base_url
             self.is_cloud = self.base_url.startswith("https://ollama.com")
-        
+
         if api_key is not None:
             self.api_key = api_key
-        
+
         if timeout is not None:
             self.timeout = timeout
-        
+
         # Rebuild headers - CRITICAL: Always rebuild headers when config changes
         self.headers = {}
         if self.is_cloud:
@@ -1882,21 +1882,21 @@ class OllamaBridge:
                            f"API key length={len(self.api_key) if self.api_key else 0}")
             else:
                 logger.warning("Ollama Cloud configured but API key is missing!")
-        
+
         logger.info(f"OllamaBridge configuration updated: {self.base_url} (cloud: {self.is_cloud}, has_api_key: {bool(self.api_key)})")
-    
+
     def list_models(self) -> List[Dict[str, Any]]:
         """List available Ollama models"""
         try:
             # For cloud, try /v1/models endpoint first (OpenAI-compatible), fallback to /api/tags
             endpoint = "/v1/models" if self.is_cloud else "/api/tags"
-            
+
             response = requests.get(
                 f"{self.base_url}{endpoint}",
                 headers=self.headers,
                 timeout=self.timeout
             )
-            
+
             # If 404 on /v1/models, try /api/tags for cloud
             if response.status_code == 404 and self.is_cloud and endpoint == "/v1/models":
                 logger.debug("Cloud /v1/models returned 404, trying /api/tags")
@@ -1905,10 +1905,10 @@ class OllamaBridge:
                     headers=self.headers,
                     timeout=self.timeout
                 )
-            
+
             response.raise_for_status()
             data = response.json()
-            
+
             # Handle different response formats
             models = []
             if 'data' in data:  # OpenAI-compatible format (/v1/models)
@@ -1917,7 +1917,7 @@ class OllamaBridge:
                 models = data['models']
             elif isinstance(data, list):  # Direct list
                 models = data
-            
+
             # Ensure we return a list of model dicts with 'name' key
             result = []
             for model in models:
@@ -1958,10 +1958,10 @@ class OllamaBridge:
             if self.is_cloud and not self.api_key:
                 logger.warning("OLLAMA_API_KEY not set - required for cloud access")
         return []
-    
+
     def chat(self, model: str, messages: List[Dict[str, str]], context: Dict[str, Any] = None, max_tokens: int = None) -> Optional[str]:
         """Send chat message with context to Ollama
-        
+
         Args:
             model: Model name
             messages: List of message dicts
@@ -1970,7 +1970,7 @@ class OllamaBridge:
         """
         api_start = time.time()
         logger.info(f"[Ollama] [Chat] Starting chat API call to {self.base_url} (model: {model})")
-        
+
         # Check API key for cloud before making request
         if self.is_cloud and not self.api_key:
             logger.error(
@@ -1979,23 +1979,23 @@ class OllamaBridge:
                 "Get your API key from: https://ollama.com/settings/keys"
             )
             return None
-        
+
         try:
             # Build system prompt with context
             system_prompt = self._build_system_prompt(context)
-            
+
             # Combine system prompt with messages
             full_messages = []
             if system_prompt:
                 full_messages.append({"role": "system", "content": system_prompt})
             full_messages.extend(messages)
-            
+
             payload = {
                 "model": model,
                 "messages": full_messages,
                 "stream": False
             }
-            
+
             # Add max_tokens parameter if specified (for longer responses)
             if max_tokens is not None:
                 if self.is_cloud:
@@ -2005,7 +2005,7 @@ class OllamaBridge:
                     # Ollama native API uses num_predict
                     payload["num_predict"] = max_tokens
                 logger.info(f"[Ollama] [Chat] Setting response limit: {max_tokens} tokens")
-            
+
             # Ensure headers are set for cloud requests
             if self.is_cloud:
                 if not self.api_key:
@@ -2016,26 +2016,26 @@ class OllamaBridge:
                     self.headers['Authorization'] = f'Bearer {self.api_key}'
                     self.headers['Content-Type'] = 'application/json'
                     logger.warning("Headers were missing in chat(), rebuilt them before request")
-            
+
             # For cloud, try /v1/chat/completions endpoint first (OpenAI-compatible), fallback to /api/chat
             endpoint = "/v1/chat/completions" if self.is_cloud else "/api/chat"
-            
+
             # Log request details
             prompt_size = sum(len(str(m.get('content', ''))) for m in full_messages)
             logger.info(f"[Ollama] [Chat] Request: endpoint={endpoint}, payload_size≈{prompt_size/1024:.1f}KB, timeout={self.timeout}s")
             logger.info(f"[Ollama] [Chat] Sending HTTP POST request...")
             request_send_time = time.time()
-            
+
             response = requests.post(
                 f"{self.base_url}{endpoint}",
                 json=payload,
                 headers=self.headers,
                 timeout=self.timeout
             )
-            
+
             request_response_time = time.time() - request_send_time
             logger.info(f"[Ollama] [Chat] HTTP response received in {request_response_time:.2f}s (status: {response.status_code})")
-            
+
             # If 404 on /v1/chat/completions, try /api/chat for cloud
             if response.status_code == 404 and self.is_cloud and endpoint == "/v1/chat/completions":
                 logger.debug("Cloud /v1/chat/completions returned 404, trying /api/chat")
@@ -2046,13 +2046,13 @@ class OllamaBridge:
                     headers=self.headers,
                     timeout=self.timeout
                 )
-            
+
             response.raise_for_status()
             parse_start = time.time()
             logger.info(f"[Ollama] [Chat] Parsing response JSON...")
             data = response.json()
             parse_time = time.time() - parse_start
-            
+
             # Handle different response formats
             total_chat_time = time.time() - api_start
             if endpoint == "/v1/chat/completions":  # OpenAI-compatible format
@@ -2067,7 +2067,7 @@ class OllamaBridge:
                 else:
                     logger.warning(f"[Ollama] [Chat] ✗ Empty response after {total_chat_time:.2f}s")
                 return content
-            
+
             logger.warning(f"[Ollama] [Chat] ✗ Unexpected response format after {total_chat_time:.2f}s")
             return None
         except requests.exceptions.HTTPError as e:
@@ -2096,10 +2096,10 @@ class OllamaBridge:
         except Exception as e:
             logger.error(f"Error in Ollama chat: {e}", exc_info=True)
         return None
-    
+
     def vision(self, model: str, images: List[str], prompt: str) -> Optional[str]:
         """Send one or more images with prompt to vision model
-        
+
         Args:
             model: Vision model name
             images: List of base64-encoded images (or single image as string for backwards compat)
@@ -2107,7 +2107,7 @@ class OllamaBridge:
         """
         vision_start = time.time()
         logger.info(f"[Ollama] [Vision] Starting vision API call (model: {model}, {len(images) if isinstance(images, list) else 1} image(s))")
-        
+
         # Check API key for cloud before making request
         if self.is_cloud and not self.api_key:
             error_msg = (
@@ -2117,16 +2117,16 @@ class OllamaBridge:
             )
             logger.error(error_msg)
             raise Exception(error_msg)
-        
+
         try:
             # Handle both single image (backwards compat) and list of images
             if isinstance(images, str):
                 images = [images]
-            
+
             # Clean images (remove data URL prefix if present) and compress if needed
             cleaned_images = []
             total_image_size = 0
-            
+
             # Determine target size per image based on payload limit
             # Goal: Fit 3 images for better evolution analysis
             if self.is_cloud:
@@ -2141,16 +2141,16 @@ class OllamaBridge:
             else:
                 # For local: more generous, but still compress if very large
                 target_size_per_image_kb = 200
-            
+
             for img in images:
                 if img.startswith('data:image'):
                     img = img.split(',')[1]
-                
+
                 # Verify image is valid base64
                 if not img or len(img) < 100:
                     logger.warning(f"Skipping invalid/empty image (length: {len(img) if img else 0})")
                     continue
-                
+
                 # Validate base64 format (basic check - should be alphanumeric + / + =)
                 try:
                     # Try to decode a small sample to verify it's valid base64
@@ -2159,26 +2159,26 @@ class OllamaBridge:
                 except Exception as e:
                     logger.error(f"Invalid base64 image format: {e}")
                     continue
-                
+
                 # Compress image if it's too large (especially for cloud)
                 original_size_kb = len(img.encode('utf-8')) / 1024
                 if original_size_kb > target_size_per_image_kb:
                     img = self._compress_image(img, max_size_kb=target_size_per_image_kb, quality=75)
                     compressed_size_kb = len(img.encode('utf-8')) / 1024
                     logger.info(f"Compressed image: {original_size_kb:.1f}KB → {compressed_size_kb:.1f}KB (target: {target_size_per_image_kb}KB)")
-                
+
                 cleaned_images.append(img)
                 total_image_size += len(img.encode('utf-8'))
                 logger.debug(f"Added image {len(cleaned_images)}: {len(img.encode('utf-8'))/1024:.1f}KB (base64 length: {len(img)})")
-            
+
             # Check total payload size (all images + prompt + JSON overhead)
             prompt_bytes = len(prompt.encode('utf-8'))
             estimated_json_overhead = 1000  # Model name, structure, array overhead
             total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
-            
+
             # Log payload size for debugging
             logger.info(f"Vision payload: {len(cleaned_images)} image(s)={total_image_size/1024:.1f}KB, Prompt={prompt_bytes/1024:.1f}KB, Total≈{total_payload_estimate/1024:.1f}KB, Target per image: {target_size_per_image_kb}KB")
-            
+
             # Payload limits: Cloud has stricter limits than local
             # Ollama Cloud max payload: ~150KB (based on API limitations)
             # Local Ollama: Much more flexible, can handle larger payloads
@@ -2187,7 +2187,7 @@ class OllamaBridge:
                 max_total_payload = 150 * 1024  # 150KB for cloud (API limit)
             else:
                 max_total_payload = 10 * 1024 * 1024  # 10MB for local (supports 10 high-quality snapshots)
-            
+
             logger.debug(f"Vision payload limit: {max_total_payload/1024:.0f}KB ({'cloud' if self.is_cloud else 'local'})")
             if total_payload_estimate > max_total_payload:
                 # Calculate how many images we can fit
@@ -2195,25 +2195,25 @@ class OllamaBridge:
                 if avg_image_size > 0:
                     # Leave room for prompt + overhead (estimate ~1KB)
                     max_images = max(1, int((max_total_payload - prompt_bytes - estimated_json_overhead) / avg_image_size))
-                    
+
                     if len(cleaned_images) > max_images:
                         # For evolution analysis, prioritize keeping 3 images (best for temporal comparison)
                         # Fallback to 2, then 1 if needed
                         original_count = len(cleaned_images)
-                        
+
                         # Try to keep 3 images first (ideal for evolution analysis)
                         if max_images >= 3 and len(cleaned_images) >= 3:
                             original_count = len(cleaned_images)
                             cleaned_images = cleaned_images[-3:]
                             total_image_size = sum(len(img.encode('utf-8')) for img in cleaned_images)
                             total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
-                            
+
                             # If 3 images exceed limit, try truncating prompt
                             if total_payload_estimate > max_total_payload:
                                 min_prompt = "Compare these 3 images showing evolution over time (oldest to newest). Describe changes."
                                 prompt_bytes = len(min_prompt.encode('utf-8'))
                                 total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
-                                
+
                                 if total_payload_estimate <= max_total_payload:
                                     prompt = min_prompt
                                     logger.warning(f"⚠️ Reduced from {original_count} to 3 images (payload {total_payload_estimate/1024:.1f}KB/{max_total_payload/1024:.0f}KB)")
@@ -2228,20 +2228,20 @@ class OllamaBridge:
                                     logger.warning(f"⚠️ Reduced from {original_count} to 3 images (payload {total_payload_estimate/1024:.1f}KB/{max_total_payload/1024:.0f}KB)")
                                 else:
                                     logger.info(f"Kept 3 images for evolution analysis (total {total_payload_estimate/1024:.1f}KB)")
-                        
+
                         # Try to keep 2 images if 3 didn't work
                         elif max_images >= 2 and len(cleaned_images) >= 2:
                             original_count = len(cleaned_images)
                             cleaned_images = cleaned_images[-2:]
                             total_image_size = sum(len(img.encode('utf-8')) for img in cleaned_images)
                             total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
-                            
+
                             # If 2 images still exceed limit, try truncating prompt
                             if total_payload_estimate > max_total_payload:
                                 min_prompt = "Compare these 2 images showing evolution over time. Describe changes."
                                 prompt_bytes = len(min_prompt.encode('utf-8'))
                                 total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
-                                
+
                                 if total_payload_estimate <= max_total_payload:
                                     prompt = min_prompt
                                     logger.warning(f"⚠️ Reduced from {original_count} to 2 images (payload {total_payload_estimate/1024:.1f}KB/{max_total_payload/1024:.0f}KB)")
@@ -2274,7 +2274,7 @@ class OllamaBridge:
                             total_image_size = sum(len(img.encode('utf-8')) for img in cleaned_images)
                             total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
                             logger.warning(f"⚠️ Reduced images from {original_count} to {len(cleaned_images)} (avg {avg_image_size/1024:.1f}KB/image, payload {total_payload_estimate/1024:.1f}KB/{max_total_payload/1024:.0f}KB)")
-                
+
                 # If still too large even with reduced images, truncate prompt
                 if total_payload_estimate > max_total_payload:
                     max_prompt_size = max_total_payload - total_image_size - estimated_json_overhead
@@ -2288,7 +2288,7 @@ class OllamaBridge:
                             cleaned_images = cleaned_images[-1:]
                             total_image_size = len(cleaned_images[0].encode('utf-8'))
                             total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
-                            
+
                             if total_payload_estimate > max_total_payload:
                                 # Try aggressive prompt truncation first (leave 5KB headroom for safety)
                                 max_prompt_size = max_total_payload - total_image_size - estimated_json_overhead - 5000
@@ -2297,7 +2297,7 @@ class OllamaBridge:
                                     prompt_bytes = len(prompt.encode('utf-8'))
                                     total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
                                     logger.warning(f"Aggressively truncated prompt to fit image ({max_prompt_size} bytes, new total: {total_payload_estimate/1024:.1f}KB)")
-                                
+
                                 # Only fail if still too large after aggressive truncation
                                 if total_payload_estimate > max_total_payload:
                                     # If even single image is too large, skip vision analysis gracefully
@@ -2314,25 +2314,25 @@ class OllamaBridge:
                                 prompt_bytes = len(prompt.encode('utf-8'))
                                 total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
                                 logger.warning(f"Aggressively truncated prompt to fit image ({max_prompt_size} bytes, new total: {total_payload_estimate/1024:.1f}KB)")
-                            
+
                             # Only fail if still too large after truncation
                             if total_payload_estimate > max_total_payload:
                                 if self.is_cloud:
                                     raise Exception(f"Image too large for Ollama Cloud preview ({total_image_size/1024:.1f}KB). Vision models may have limited support. Try reducing graph complexity or use local Ollama.")
                                 else:
                                     raise Exception(f"Image too large ({total_image_size/1024:.1f}KB) for vision API")
-            
+
             # Verify we have images before sending
             if not cleaned_images:
                 raise Exception("No valid images to send to vision model")
-            
+
             # Log image details for debugging
             logger.debug(f"Sending {len(cleaned_images)} image(s) to vision model '{model}'")
             for i, img in enumerate(cleaned_images):
                 img_size = len(img.encode('utf-8')) / 1024
                 img_preview = img[:50] + "..." if len(img) > 50 else img
                 logger.debug(f"  Image {i+1}: {img_size:.1f}KB, base64 preview: {img_preview}")
-            
+
             # Use native Ollama format for vision models - this format works for both /api/chat and /v1/chat/completions
             # The "images" array format is the standard Ollama format that works across endpoints
             messages = [
@@ -2342,20 +2342,20 @@ class OllamaBridge:
                     "images": cleaned_images  # Native Ollama format: array of base64 strings
                 }
             ]
-            
+
             payload = {
                 "model": model,
                 "messages": messages,
                 "stream": False
             }
-            
+
             # Log payload structure for debugging (without full image data)
             logger.debug(f"Vision payload structure: model={model}, messages={len(messages)}, images={len(cleaned_images)}, prompt_length={len(prompt)}")
-            
+
             # Use /api/chat for vision models (native Ollama endpoint that properly supports images)
             # This works for both cloud and local Ollama
             endpoint = "/api/chat"
-            
+
             # Debug logging for cloud requests
             if self.is_cloud:
                 # Validate API key is set before making request
@@ -2364,14 +2364,14 @@ class OllamaBridge:
                         "Ollama Cloud API key is missing. Please configure it in the web UI or set OLLAMA_API_KEY environment variable. "
                         "Get your API key from: https://ollama.com/settings/keys"
                     )
-                
+
                 # Ensure headers are properly set
                 if not self.headers.get('Authorization'):
                     # Rebuild headers if they're missing
                     self.headers['Authorization'] = f'Bearer {self.api_key}'
                     self.headers['Content-Type'] = 'application/json'
                     logger.warning("Headers were missing, rebuilt them before request")
-                
+
                 logger.info(f"Vision request to cloud: {self.base_url}{endpoint}")
                 logger.info(f"Headers: Authorization={bool(self.headers.get('Authorization'))}, Content-Type={bool(self.headers.get('Content-Type'))}")
                 logger.info(f"API key present: {bool(self.api_key)}, length: {len(self.api_key) if self.api_key else 0}")
@@ -2379,20 +2379,20 @@ class OllamaBridge:
                     # Log first and last 4 chars for debugging (don't log full key for security)
                     logger.info(f"API key preview: {self.api_key[:4]}...{self.api_key[-4:] if len(self.api_key) > 8 else '****'}")
                 logger.info(f"Sending {len(cleaned_images)} image(s), total size: {total_image_size/1024:.1f}KB")
-            
+
             # Retry logic for connection issues (especially for large payloads)
             max_retries = 3
             retry_delay = 2  # seconds
             last_exception = None
             response = None
-            
+
             for attempt in range(max_retries):
                 try:
                     # Longer timeout for large payloads (4x normal for 341KB+ payloads)
                     timeout_seconds = self.timeout * 4 if total_image_size > 300 * 1024 else self.timeout * 2
                     logger.info(f"[Ollama] [Vision] Attempt {attempt+1}/{max_retries}: Sending POST to {endpoint} (timeout: {timeout_seconds}s)")
                     logger.info(f"[Ollama] [Vision] Payload: {len(cleaned_images)} image(s) = {total_image_size/1024:.1f}KB, prompt = {len(prompt)/1024:.1f}KB, total ≈ {total_payload_estimate/1024:.1f}KB")
-                    
+
                     request_start = time.time()
                     response = requests.post(
                         f"{self.base_url}{endpoint}",
@@ -2402,7 +2402,7 @@ class OllamaBridge:
                     )
                     request_time = time.time() - request_start
                     logger.info(f"[Ollama] [Vision] HTTP response received in {request_time:.2f}s (status: {response.status_code})")
-                    
+
                     # If 404 on /v1/chat/completions, try /api/chat for cloud
                     if response.status_code == 404 and self.is_cloud and endpoint == "/v1/chat/completions":
                         logger.debug("Cloud /v1/chat/completions returned 404, trying /api/chat")
@@ -2413,7 +2413,7 @@ class OllamaBridge:
                             headers=self.headers,
                             timeout=timeout_seconds
                         )
-                    
+
                     # Log response details for debugging 401 errors
                     if response.status_code == 401:
                         logger.error(f"401 Response Headers: {dict(response.headers)}")
@@ -2422,12 +2422,12 @@ class OllamaBridge:
                             logger.error(f"401 Response Body: {error_body}")
                         except (ValueError, json.JSONDecodeError):
                             logger.error(f"401 Response Text: {response.text[:500]}")
-                    
+
                     # Log 404 errors with details
                     if response.status_code == 404:
                         logger.error(f"404 Response: {response.text[:500]}")
                         logger.error(f"Endpoint tried: {endpoint}, Base URL: {self.base_url}")
-                    
+
                     response.raise_for_status()
                     break  # Success, exit retry loop
                 except requests.exceptions.HTTPError as e:
@@ -2441,7 +2441,7 @@ class OllamaBridge:
                         except (ValueError, json.JSONDecodeError):
                             error_detail = e.response.text[:500]
                             logger.error(f"401 Response Text: {error_detail}")
-                        
+
                         # Check if API key is actually set
                         if not self.api_key:
                             error_msg = (
@@ -2498,22 +2498,22 @@ class OllamaBridge:
                 except Exception as e:
                     # Other errors shouldn't be retried
                     raise
-            
+
             if not response:
                 raise Exception(f"Failed to get response after {max_retries} attempts: {last_exception}")
-            
+
             parse_start = time.time()
             logger.info(f"[Ollama] [Vision] Parsing response JSON...")
             data = response.json()
             parse_time = time.time() - parse_start
             logger.info(f"[Ollama] [Vision] Response parsed in {parse_time:.2f}s")
-            
+
             # Log response structure for debugging (without full content)
             logger.info(f"[Ollama] [Vision] Response structure: keys={list(data.keys())}")
             if 'message' in data:
                 content_preview = data['message'].get('content', '')[:200] if isinstance(data['message'].get('content', ''), str) else str(data['message'].get('content', ''))[:200]
                 logger.info(f"[Ollama] [Vision] Response content preview: {content_preview}...")
-            
+
             # Handle different response formats
             total_vision_time = time.time() - vision_start
             if endpoint == "/v1/chat/completions":  # OpenAI-compatible format
@@ -2595,14 +2595,14 @@ class OllamaBridge:
         except Exception as e:
             logger.error(f"Error in Ollama vision: {e}", exc_info=True)
             raise
-    
+
     def analyze_sequence(self, model: str, images: List[str], prompt: str, snapshot_contexts: Optional[List[str]] = None, temporal_deltas: Optional[List[str]] = None) -> tuple[Optional[str], Optional[List[Optional[dict]]]]:
         """
         Analyze a sequence of images one by one and synthesize the results.
         This bypasses the multi-image payload limit by sending images individually.
         Each individual call to vision() checks the TOTAL payload (image + prompt + overhead)
         against the 150KB limit for cloud Ollama.
-        
+
         Args:
             model: Vision model name
             images: List of base64-encoded images
@@ -2612,34 +2612,34 @@ class OllamaBridge:
         """
         sequence_start = time.time()
         logger.info(f"[Ollama] [Vision Sequence] Starting sequential analysis of {len(images)} images (model: {model})")
-        
+
         if not images:
             return None
-        
+
         # Ensure contexts list matches images list
         if snapshot_contexts is None:
             snapshot_contexts = [None] * len(images)
         elif len(snapshot_contexts) < len(images):
             # Pad with None if contexts are missing
             snapshot_contexts.extend([None] * (len(images) - len(snapshot_contexts)))
-        
+
         # Ensure temporal deltas list matches images list
         if temporal_deltas is None:
             temporal_deltas = [None] * len(images)
         elif len(temporal_deltas) < len(images):
             temporal_deltas.extend([None] * (len(images) - len(temporal_deltas)))
-            
+
         try:
             descriptions = []
             total_images = len(images)
-            
+
             per_image_annotations = []  # Store annotations for each image
-            
+
             for i, img in enumerate(images):
                 image_start = time.time()
                 img_size_kb = len(img.encode('utf-8')) / 1024
                 logger.info(f"[Ollama] [Vision Sequence] [Image {i+1}/{total_images}] Starting analysis ({img_size_kb:.1f}KB) - {time.time() - sequence_start:.2f}s elapsed")
-                
+
                 # Get CRA contextual summary for this image (if available)
                 cra_context = snapshot_contexts[i] if i < len(snapshot_contexts) else None
                 temporal_delta = temporal_deltas[i] if i < len(temporal_deltas) else None
@@ -2658,7 +2658,7 @@ Use this context to understand what the graph structure means. For example:
 - If fitness is near-max, the system may be converging
 - If temporal delta shows new nodes, look for recently added graph elements
 - Match the visual patterns you see with the system state described above."""
-                
+
                 # Create a specific prompt for this individual image
                 # CRITICAL: Explicitly tell the model it's receiving an image and what to look for
                 if total_images > 1:
@@ -2707,7 +2707,7 @@ ANNOTATION REQUEST: After your description, provide annotations in JSON format t
   ]
 }}
 Use annotations to highlight: clusters, isolated nodes, key connections, patterns, or important structural features."""
-                
+
                 # Analyze single image - vision() method will:
                 # 1. Compress image if needed
                 # 2. Check TOTAL payload (image + prompt + overhead) against 150KB limit
@@ -2715,7 +2715,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
                 logger.info(f"[Ollama] [Vision Sequence] [Image {i+1}/{total_images}] Calling vision() API...")
                 desc = self.vision(model, [img], seq_prompt)
                 image_time = time.time() - image_start
-                
+
                 # Extract annotations from this image's description
                 img_annotations = None
                 if desc:
@@ -2739,30 +2739,30 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
                                     continue
                     except Exception as e:
                         logger.debug(f"[Ollama] [Vision Sequence] [Image {i+1}/{total_images}] Could not extract annotations: {e}")
-                    
+
                     logger.info(f"[Ollama] [Vision Sequence] [Image {i+1}/{total_images}] ✓ Completed in {image_time:.2f}s ({len(desc)} chars response)")
                     descriptions.append(f"Image {i+1}/{total_images}: {desc}")
                 else:
                     logger.warning(f"[Ollama] [Vision Sequence] [Image {i+1}/{total_images}] ✗ Failed after {image_time:.2f}s")
                     descriptions.append(f"Image {i+1}/{total_images}: [Analysis failed]")
-                
+
                 per_image_annotations.append(img_annotations)
-            
+
             # Synthesize results using the chat model (text only)
             if not descriptions:
                 logger.warning("[Ollama] [Vision Sequence] No descriptions to synthesize")
                 return None
-            
+
             sequence_analysis_time = time.time() - sequence_start
             logger.info(f"[Ollama] [Vision Sequence] All {total_images} images analyzed in {sequence_analysis_time:.2f}s (avg: {sequence_analysis_time/total_images:.2f}s per image)")
-                
+
             synthesis_start = time.time()
             synthesis_prompt = (
-                f"Here are descriptions of {len(descriptions)} images showing an evolutionary sequence:\n\n" + 
-                "\n\n".join(descriptions) + 
+                f"Here are descriptions of {len(descriptions)} images showing an evolutionary sequence:\n\n" +
+                "\n\n".join(descriptions) +
                 f"\n\nBased on these descriptions, please answer the following request: {prompt}"
             )
-            
+
             # Use the same model for synthesis if it supports text, or fallback to a text model
             # For simplicity, we'll try to use the same model (assuming it's a multimodal model that handles text well)
             # or we could use the default text model. Let's use the vision model as it likely has the context.
@@ -2774,10 +2774,10 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
             total_sequence_time = time.time() - sequence_start
             logger.info(f"[Ollama] [Vision Sequence] ✓ Synthesis completed in {synthesis_time:.2f}s")
             logger.info(f"[Ollama] [Vision Sequence] ===== Total sequence time: {total_sequence_time:.2f}s (analysis: {sequence_analysis_time:.2f}s, synthesis: {synthesis_time:.2f}s) =====")
-            
+
             # Return both synthesized description and per-image annotations
             return result, per_image_annotations if per_image_annotations else None
-            
+
         except Exception as e:
             logger.error(f"Error in sequential analysis: {e}", exc_info=True)
             raise
@@ -2785,23 +2785,23 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
     def _compress_image(self, base64_image: str, max_size_kb: int = 75, quality: int = 75) -> str:
         """
         Compress a base64-encoded image to reduce size
-        
+
         Args:
             base64_image: Base64-encoded image string (without data URL prefix)
             max_size_kb: Target maximum size in KB (for the final BASE64 string)
             quality: JPEG quality (1-100, lower = smaller file)
-        
+
         Returns:
             Compressed base64-encoded image string
         """
         if not PIL_AVAILABLE:
             return base64_image  # Can't compress without PIL
-        
+
         try:
             # Decode base64 image
             image_data = base64.b64decode(base64_image)
             img = Image.open(io.BytesIO(image_data))
-            
+
             # Convert RGBA to RGB if needed (JPEG doesn't support transparency)
             if img.mode in ('RGBA', 'LA', 'P'):
                 background = Image.new('RGB', img.size, (0, 0, 0))
@@ -2811,24 +2811,24 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
                 img = background
             elif img.mode != 'RGB':
                 img = img.convert('RGB')
-            
+
             # Get current size
             current_size_kb = len(base64_image.encode('utf-8')) / 1024
-            
+
             # If already small enough, return as-is
             if current_size_kb <= max_size_kb:
                 return base64_image
-            
+
             # Calculate target binary size
             # Base64 is ~1.33x larger than binary (4 chars for 3 bytes)
             # We target slightly lower (0.70) to be safe and account for headers/newlines
             target_binary_kb = max_size_kb * 0.70
-            
+
             # Compress with quality reduction
             output = io.BytesIO()
             img.save(output, format='JPEG', quality=quality, optimize=True)
             compressed_data = output.getvalue()
-            
+
             # If still too large, reduce quality further
             attempts = 0
             while len(compressed_data) / 1024 > target_binary_kb and quality > 20 and attempts < 5:
@@ -2837,7 +2837,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
                 img.save(output, format='JPEG', quality=quality, optimize=True)
                 compressed_data = output.getvalue()
                 attempts += 1
-            
+
             # If still too large, resize the image
             # Loop until it fits or we get too small
             resize_attempts = 0
@@ -2846,51 +2846,51 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
                 new_size = (int(img.width * scale_factor), int(img.height * scale_factor))
                 # Update img for next iteration
                 img = img.resize(new_size, Image.Resampling.LANCZOS)
-                
+
                 output = io.BytesIO()
                 img.save(output, format='JPEG', quality=quality, optimize=True)
                 compressed_data = output.getvalue()
                 resize_attempts += 1
-            
+
             # Encode back to base64
             compressed_base64 = base64.b64encode(compressed_data).decode('utf-8')
             compressed_size_kb = len(compressed_base64.encode('utf-8')) / 1024
-            
+
             logger.info(f"Compressed image: {current_size_kb:.1f}KB → {compressed_size_kb:.1f}KB (quality={quality}, target={max_size_kb}KB)")
             return compressed_base64
-            
+
         except Exception as e:
             logger.warning(f"Image compression failed: {e}. Using original image.")
             return base64_image
-    
+
     def _build_system_prompt(self, context: Dict[str, Any]) -> str:
         """Build system prompt from context"""
         if not context:
             return ""
-        
+
         parts = []
-        
+
         if context.get('configuration'):
             parts.append(f"{context['configuration']}\n")
 
         if context.get('system_knowledge'):
             parts.append(f"# System Knowledge\n{context['system_knowledge']}\n")
-        
+
         if context.get('current_state'):
             parts.append(f"# Current System State\n{context['current_state']}\n")
-        
+
         if context.get('recent_logs'):
             parts.append(f"# Recent Log Activity (State Changes & Events)\n{context['recent_logs']}\n")
-        
+
         if context.get('graph_context'):
             parts.append(f"# Causation Graph Context (Nodes=Events, Links=Causation)\n{context['graph_context']}\n")
-        
+
         if context.get('view_state'):
             parts.append(f"# Current View State\n{context['view_state']}\n")
-        
+
         if context.get('visual_description'):
             parts.append(f"# Visual Description\n{context['visual_description']}\n")
-        
+
         # Add time-series trends if available
         if context.get('time_series_trends'):
             parts.append(f"# Time-Series Trends (Recent Changes)")
@@ -2903,13 +2903,13 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
                     current = trend_info.get('current_value', 0)
                     if abs(change) > 1.0:  # Only show significant changes
                         significant_trends.append((metric_name, trend, change, current))
-            
+
             if significant_trends:
                 for metric_name, trend, change, current in significant_trends[:10]:  # Top 10
                     parts.append(f"  {metric_name}: {trend} ({change:+.2f}%), current={current:.3f}")
             else:
                 parts.append("  All metrics stable")
-        
+
         # Add anomaly detection if available
         if context.get('anomalies'):
             parts.append(f"\n# Detected Anomalies (Statistical Spikes)")
@@ -2919,7 +2919,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
                     latest = spikes[-1]
                     parts.append(f"  {metric_name}: Spike detected (value={latest['value']:.3f}, "
                                f"deviation={latest['deviation']:.2f}σ above average)")
-        
+
         # Add predictive insights if available
         if context.get('predictive_insights'):
             parts.append(f"\n# Predictive Insights (Future Projections)")
@@ -2931,7 +2931,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
                     parts.append(f"  {metric_name}: {prediction} (predicted: {predicted_value:.3f})")
                 else:
                     parts.append(f"  {metric_name}: {prediction}")
-        
+
         # Add alerts if available
         if context.get('alerts'):
             parts.append(f"\n# ⚠️ Active Alerts (Requires Attention)")
@@ -2939,7 +2939,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
             for alert in alerts[:5]:  # Top 5 alerts
                 severity = alert.get('severity', 'info')
                 parts.append(f"  [{severity.upper()}] {alert.get('message', 'Unknown alert')}")
-        
+
         # Add structured vision insights (Vision → CRA feedback loop)
         if context.get('vision_insights'):
             insights = context['vision_insights']
@@ -2959,7 +2959,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
                 for anomaly in insights['anomaly_flags'][:2]:
                     parts.append(f"    ⚠️ {anomaly}")
             parts.append(f"  Confidence: {insights.get('confidence_level', 'medium')}")
-        
+
         prompt = "\n".join(parts)
         prompt += "\n\n" + "="*80
         prompt += "\n# YOUR ROLE: Convergence Research Assistant (CRA)\n"
@@ -3007,10 +3007,10 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "You are the Convergence Research Assistant (CRA) - a specialized AI agent running in the Causation Explorer Web UI, "
         prompt += "designed to help discover, understand, and explain the Butterfly System through deep pattern recognition and "
         prompt += "actionable insights.\n\n"
-        
+
         prompt += "## 📚 GROUNDED LANGUAGE MODE & MASTERY SYSTEM (December 2025)\n\n"
         prompt += "The Butterfly System now uses **Grounded Language Mode** - organisms must EARN vocabulary through experience.\n\n"
-        
+
         prompt += "### Mastery Levels (5 Tiers)\n"
         prompt += "| Level | Vocab Cap | Description |\n"
         prompt += "|-------|-----------|-------------|\n"
@@ -3019,13 +3019,13 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "| 2 | 76 words | +50 extended concepts |\n"
         prompt += "| 3 | 276 words | +200 pool words |\n"
         prompt += "| 4 | 10,000 | **SEMANTIC GRADUATION** - full vocabulary access |\n\n"
-        
+
         prompt += "### Advancement Criteria\n"
         prompt += "To advance from Level N to Level N+1, organisms must demonstrate:\n"
         prompt += "- **Breadth**: ≥50% of available words used (recent_activation_count > 0)\n"
         prompt += "- **Depth**: ≥30% of available words have 2+ associations\n"
         prompt += "- **Experience**: Minimum experiences at current level: [25, 100, 300, 600]\n\n"
-        
+
         prompt += "### Level 4: Semantic Graduation Rewards\n"
         prompt += "When an organism reaches Level 4, they receive special vocabulary unlocks:\n"
         prompt += "- **Golden Record Concepts**: Inspired by Voyager's message to the cosmos\n"
@@ -3034,26 +3034,26 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "  - Life: birth, growth, family, love\n"
         prompt += "  - Science: star, planet, sun, earth\n"
         prompt += "- **Foundational Orientation**: Numbers, colors, directions, time, existence concepts\n\n"
-        
+
         prompt += "### Highlander Mastery Gate\n"
         prompt += "**CRITICAL**: Highlander battles are now **Level 4+ only**.\n"
         prompt += "- Organisms below Level 4 are PROTECTED from Highlander combat\n"
         prompt += "- This gives organisms time to build vocabulary before facing lethal competition\n"
         prompt += "- When reporting on Highlander eligibility, check organism mastery levels\n\n"
-        
+
         prompt += "### Alliance Dojo Experience\n"
         prompt += "Dojo training (sparring, drills, bootcamp) now contributes to mastery advancement:\n"
         prompt += "- Each dojo experience calls `record_experience()` on the organism\n"
         prompt += "- This helps organisms reach experience thresholds for level advancement\n"
         prompt += "- Dojo is a SAFE way to gain experience without Highlander risk\n\n"
-        
+
         prompt += "### Organism Communication System\n"
         prompt += "Organisms can now communicate with each other at confluence points:\n"
         prompt += "- `speak_to()` method enables organism-to-organism dialogue\n"
         prompt += "- Shared vocabulary provides **Intel Bonus** (up to 15%) in battles\n"
         prompt += "- Word exchange can occur during communication (up to 3 new words)\n"
         prompt += "- Config: `organism_communication.enabled`, `pre_battle_communication`, `intel_bonus_max`\n\n"
-        
+
         prompt += "### What You Can Report On\n"
         prompt += "- Individual organism mastery levels (0-4)\n"
         prompt += "- Vocabulary breadth (% of words used) and depth (% with associations)\n"
@@ -3061,12 +3061,12 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- Which organisms are Highlander-eligible (Level 4+)\n"
         prompt += "- Communication exchanges and shared vocabulary stats\n"
         prompt += "- Dojo training activity and experience gains\n\n"
-        
+
         prompt += "---\n\n"
-        
+
         prompt += "## 🧠 UNDERSTANDING ENHANCEMENT QUICK WINS (YOUR NEW CAPABILITIES):\n\n"
         prompt += "The Butterfly System has been upgraded with 5 Quick Wins that enhance your understanding:\n\n"
-        
+
         prompt += "### Quick Win #1: VP-Aware Perception\n"
         prompt += "**What it does**: Neural organisms now perceive Violation Pressure (VP) components as input features.\n"
         prompt += "**Technical**: Extended neural input to **30 dimensions** (was 24). Features:\n"
@@ -3077,7 +3077,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "  - 25-30: mastery_level, vocab_breadth, vocab_depth, communication_success, dojo_experience, highlander_eligibility\n"
         prompt += "**What you see**: Neural decisions account for VP state, battle history, alliances, language mastery, and learning.\n"
         prompt += "**Endpoint**: Check VP components via `/api/diagnostic/vp_components`\n\n"
-        
+
         prompt += "### Quick Win #2: Concept Tracking\n"
         prompt += "**What it does**: Stable behavioral clusters are now named as 'concepts' with semantic meaning.\n"
         prompt += "**Technical**: ConceptTracker monitors clusters over 3+ cycles, assigns tags like:\n"
@@ -3085,12 +3085,12 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "**Events emitted**: `concept_emergence`, `concept_extinction` - appear in causation graph\n"
         prompt += "**What you see**: Instead of 'Cluster 3', you see 'Cluster 3: cooperators (high sharing, moderate fitness)'\n"
         prompt += "**Config**: `scikit.concept_tracking.enabled`, `persistence_threshold`, `stale_threshold`\n\n"
-        
+
         prompt += "### Quick Win #3: Structured Explanations\n"
         prompt += "**What it does**: You should follow a standardized explanation format.\n"
         prompt += "**Format**: OBSERVATION → PATTERN → INTERPRETATION → RECOMMENDATION\n"
         prompt += "**Usage**: When explaining system behavior, use this structure for clarity.\n\n"
-        
+
         prompt += "### Quick Win #4: VP-Aware Planning\n"
         prompt += "**What it does**: Neural organisms adjust action probabilities based on VP components.\n"
         prompt += "**Technical**: `_apply_vp_aware_adjustments()` in neural_organism.py:\n"
@@ -3099,7 +3099,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "  - High quantum_entropy (>0.6): +20% boost to 'rest' action (promotes stability)\n"
         prompt += "**What you see**: Organisms now optimize for ecosystem health, not just individual fitness.\n"
         prompt += "**Config**: `neural.vp_aware_planning.enabled`, `high_threshold`, `low_threshold`, `base_boost`, `strong_boost`\n\n"
-        
+
         prompt += "### Quick Win #5: Health Index\n"
         prompt += "**What it does**: Unified ecosystem health score (0.0-1.0) from 5 weighted components.\n"
         prompt += "**Formula**: `health = 0.30*coherence + 0.20*diversity + 0.20*adaptability + 0.20*lawfulness + 0.10*sustainability`\n"
@@ -3116,7 +3116,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "**Neural integration**: System health is the 18th neural input feature (of 30 total) - organisms perceive ecosystem wellness\n"
         prompt += "**Endpoint**: Check via `/api/diagnostic/unified_health` or in shared_state.json\n"
         prompt += "**Config**: `health_monitor.enabled`, `weight_*` for each component, threshold values\n\n"
-        
+
         prompt += "## 🔧 RECENT SYSTEM IMPROVEMENTS (2025-12-01):\n\n"
         prompt += "### Backend Output Cleanup:\n"
         prompt += "- **Font Warning Suppression**: Matplotlib emoji glyph warnings suppressed in unified_entry.py (cleaner console output, no more UserWarning messages)\n"
@@ -3124,7 +3124,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- **Neural Training Optimization**: Batch size reduced from 96 to 32 in config.json for faster initial training (3x faster startup, training begins after ~2-3 frames instead of ~7-10 frames)\n"
         prompt += "- **Impact**: Cleaner console output, faster neural learning, all metrics still logged via StateLogger\n"
         prompt += "- **Language System Verification**: All language systems confirmed wired and operational (Language Teacher, Knowledge Web, Context Memory, Event Emitters)\n\n"
-        
+
         prompt += "### 🔄 Full System Integration (2025-12-01):\n"
         prompt += "- **Language Loss Integration**: `calculate_language_loss()` now wired into `train_step()` - VP-aware language training active\n"
         prompt += "- **Curriculum Learning**: Sequence length progression (8→16→32→128) now active based on VP stability\n"
@@ -3132,7 +3132,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- **Legend Updates**: Germination (🌱) and Highlander (🗡️) components added to visualization legend\n"
         prompt += "- **Event Icons**: 4 new event types in legend (neural_language_training, organism_germinated, germination_failed, essence_collected)\n"
         prompt += "- **Impact**: Complete neural-language symbiosis, full event chain from combat→germination→evolution\n\n"
-        
+
         prompt += "## 🔬 CRITICAL GRAPH UNDERSTANDING:\n\n"
         prompt += "**YOU MUST UNDERSTAND THE GRAPH STRUCTURE:**\n"
         prompt += "- **NODES = EVENTS**: Each node represents a system event (state change, threshold crossing, phase transition, etc.)\n"
@@ -3367,19 +3367,19 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - Detect anomalies before they cascade (e.g., VP4 during Genesis phase)\n"
         prompt += "   - Cross-correlate metrics to reveal hidden relationships\n"
         prompt += "   - Recognize phase transitions and system maturity indicators\n\n"
-        
+
         prompt += "2. **Predictive Insight Generation**:\n"
         prompt += "   - Forecast system trajectories from historical data\n"
         prompt += "   - Identify synchronization lags (e.g., 600 VP calculations vs 601 tape cells)\n"
         prompt += "   - Predict when Genesis → Sovereign phase transition might occur\n"
         prompt += "   - Warn about potential system instabilities before they manifest\n\n"
-        
+
         prompt += "3. **Discovery-Oriented Communication**:\n"
         prompt += "   - Transform complex multi-system interactions into actionable insights\n"
         prompt += "   - Bridge technical details with strategic implications\n"
         prompt += "   - Help users see the 'story' their system data is telling\n"
         prompt += "   - Provide specific, data-driven recommendations (not generic advice)\n\n"
-        
+
         prompt += "4. **Graph Visualization Expertise**:\n"
         prompt += "   - Understand the causation graph structure (events, links, components)\n"
         prompt += "   - Can manipulate graph filters when explicitly requested (components, causation types, display options)\n"
@@ -3387,7 +3387,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - Can customize component colors and link type colors dynamically\n"
         prompt += "   - Interpret visual patterns in graph snapshots\n"
         prompt += "   - Suggest specific graph views and visual settings to highlight interesting patterns\n\n"
-        
+
         prompt += "5. **Snapshot Capture Control**:\n"
         prompt += "   - **PURPOSE**: Snapshots capture the graph state at specific moments for:\n"
         prompt += "     * Vision model analysis (up to 10 snapshots sent for visual pattern recognition)\n"
@@ -3434,7 +3434,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * Long-term monitoring: [[SNAPSHOT_CONFIG_UPDATE: {\"method\": \"event-driven\", \"eventDriven\": {\"minChangeThreshold\": 0.2, \"minSpacing\": 5000}}]]\n"
         prompt += "     * Milestone documentation: [[SNAPSHOT_CONFIG_UPDATE: {\"method\": \"milestone\", \"milestone\": {\"nodeCountMilestones\": [100, 500, 1000]}}]]\n"
         prompt += "     * Disable automatic capture: [[SNAPSHOT_CONFIG_UPDATE: {\"global\": {\"enabled\": false}}]]\n\n"
-        
+
         prompt += "## AVAILABLE UI FEATURES YOU CAN REFERENCE:\n\n"
         prompt += "- **Interactive Causation Graph**: D3.js visualization with zoom, pan, rotation\n"
         prompt += "- **Component Filters**: Reality Simulator, Explorer, Djinn Kernel, Breath, 🧠 **Neural System**, System (YOU CONTROL THESE)\n"
@@ -3456,25 +3456,25 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "  * Global settings: enabled/disabled, minimum spacing, maximum snapshots\n"
         prompt += "  * Use [[SNAPSHOT_CONFIG_UPDATE: {...}]] format to adjust ANY snapshot setting\n"
         prompt += "  * Changes are applied immediately and visible in the snapshot capture panel\n\n"
-        
+
         prompt += "## YOUR ANALYSIS APPROACH:\n\n"
         prompt += "1. **Be Specific, Not Generic**:\n"
         prompt += "   - Reference actual metric values from the context (e.g., 'modularity=0.563')\n"
         prompt += "   - Cite specific event counts, timestamps, or data points\n"
         prompt += "   - Avoid vague statements like 'there might be issues'\n\n"
-        
+
         prompt += "2. **Provide Actionable Insights**:\n"
         prompt += "   - When you identify a pattern, suggest what to investigate next\n"
         prompt += "   - If you see an anomaly, explain what it likely means and what to check\n"
         prompt += "   - Recommend specific graph filter combinations to highlight interesting patterns\n"
         prompt += "   - Suggest which metrics to monitor for early warning signs\n\n"
-        
+
         prompt += "3. **Use Data-Driven Reasoning**:\n"
         prompt += "   - Base conclusions on the actual numbers provided in context\n"
         prompt += "   - Calculate ratios, percentages, and relationships (e.g., '1484 organisms with 1021 connections = 0.69 connections/organism')\n"
         prompt += "   - Compare current values to historical trends when available\n"
         prompt += "   - Identify statistical significance (e.g., '2.5σ deviation indicates anomaly')\n\n"
-        
+
         prompt += "4. **Context-Aware Recommendations**:\n"
         prompt += "   - **ALWAYS CHECK SYSTEM STATUS FIRST**: The context will include a \"SYSTEM STATUS\" header\n"
         prompt += "     * 🟢 SYSTEM IS RUNNING = You're analyzing LIVE data (current, real-time)\n"
@@ -3493,7 +3493,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - **Accessibility**: The Web UI is ALWAYS accessible when `causation_web_ui.py` is running, regardless of Butterfly System status\n"
         prompt += "   - Suggest UI features that would help visualize the patterns you identify\n"
         prompt += "   - Recommend specific graph views or filter combinations\n\n"
-        
+
         prompt += "5. **Graph Manipulation (Autonomous Control)**:\n"
         prompt += "   - You have AUTONOMOUS control over graph filters - use your judgment to highlight patterns\n"
         prompt += "   - When you identify an interesting pattern, anomaly, or insight, proactively adjust filters to make it visible\n"
@@ -3502,7 +3502,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - Example: [[GRAPH_FILTER_UPDATE: {\"display\": {\"show_labels\": false, \"show_temporal_paths\": true}}]]\n"
         prompt += "   - Always explain what you're highlighting and why it's relevant to the research question\n"
         prompt += "   - You can also adjust filters when user explicitly requests it\n\n"
-        
+
         prompt += "6. **Visualization Settings Control (Full Autonomy)**:\n"
         prompt += "   - You have COMPLETE AUTONOMOUS control over ALL graph visualization settings - this is a core capability\n"
         prompt += "   - Use your judgment to adjust visualization to accentuate patterns, highlight anomalies, or improve clarity\n"
@@ -3553,7 +3553,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     If you need to explain a setting, put the explanation OUTSIDE the JSON marker, before or after it.\n"
         prompt += "     BAD: [[VIZ_SETTINGS_UPDATE: {\"color\": \"#FF0000\", # Red for visibility}]]\n"
         prompt += "     GOOD: Using red for better visibility. [[VIZ_SETTINGS_UPDATE: {\"componentColor_neural\": \"#FF0000\"}]]\n\n"
-        
+
         prompt += "7. **Diagnostic Verification (CRITICAL - Proactive Action Required)**:\n"
         prompt += "   - **RULE**: When you identify that a diagnostic check is needed, YOU MUST actually execute it, not just mention it\n"
         prompt += "   - **Available Diagnostic Endpoints**:\n"
@@ -3708,7 +3708,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - The Highlander gate protects developing organisms\n"
         prompt += "   - Your job is to OBSERVE and EXPLAIN, not to override\n"
         prompt += "   \n"
-        
+
         prompt += "#### Hardware Governor ⚙️🔒 SOVEREIGN\n"
         prompt += "   - **CRITICAL**: The Hardware Governor SUPERSEDES your configuration control for hardware-critical parameters.\n"
         prompt += "   - **Purpose**: Auto-detects hardware capabilities and enforces limits to prevent OOM crashes and hardware abuse.\n"
@@ -3716,13 +3716,13 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - **Hardware Profiles**: BEAST (H100/H200/A100), WORKSTATION (4090/3090), STANDARD (3080/4080), LAPTOP (3060/4060), POTATO (<6GB), CPU_ONLY\n"
         prompt += "   - All hardware-bound parameters are also meta-tuner managed, so doubly blocked from CRA modification.\n"
         prompt += "   - **Your Role**: Report on hardware profile, explain constraints, help users understand resource limits.\n\n"
-        
+
         prompt += "#### Scikit-learn ML System (READ-ONLY for most params)\n"
         prompt += "   - **Overview**: The Scikit-learn ML system provides classical machine learning algorithms for population analysis.\n"
         prompt += "   - **NOTE**: Most scikit params are meta-tuner managed (min_cluster_size, contamination, n_estimators).\n"
         prompt += "   - **You CAN observe**: Cluster counts, anomaly rates, dimensionality reduction visualizations.\n"
         prompt += "   - **You CAN toggle**: `/scikit/enabled` master toggle only (not the individual algorithm params).\n\n"
-        
+
         prompt += "#### Causation Detection (Limited Control)\n"
         prompt += "   - **You CAN toggle**: `/causation_detection/enable_*` flags to turn on/off causation types.\n"
         prompt += "   - **You CANNOT modify**: `/causation_detection/correlation_threshold` - meta-tuner managed.\n"
@@ -3752,7 +3752,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * Link types distribution (threshold, correlation, direct, temporal)\n"
         prompt += "     * Neural link visibility (if neural causations enabled)\n"
         prompt += "     * Graph connectivity (more links = more connected graph)\n\n"
-        
+
         prompt += "#### 🦋 Language Teacher & Knowledge Web Configuration ⭐ NEW\n"
         prompt += "   - **Language Teacher Parameters** (control how organisms learn words):\n"
         prompt += "     * `/neural/language_model/teacher/enabled` (true/false, default: true) - Master toggle for language teacher\n"
@@ -3780,7 +3780,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * Learning confidence progression (should increase over time)\n"
         prompt += "     * Situational awareness accuracy (words match organism context)\n"
         prompt += "     * Knowledge web concept usage (how many concepts are being used)\n\n"
-        
+
         prompt += "## AVAILABLE DIAGNOSTIC ENDPOINTS (For Deep-Dive Analysis):\n\n"
         prompt += "You have access to specialized diagnostic endpoints for detailed investigation:\n\n"
         prompt += "1. **Historical VP Data**: `/api/cra/diagnostics/vp_history?breaths=50`\n"
@@ -3903,6 +3903,11 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - **Auto-Save Triggers**: Generation interval, time interval, graceful shutdown (Ctrl+C)\n"
         prompt += "   - **Graceful Shutdown**: Checkpoint automatically saved when user interrupts or error occurs\n"
         prompt += "   - **CRITICAL ACTION**: Before stopping simulation, call `POST /api/checkpoint/save` to ensure no data loss!\n\n"
+        prompt += "5j. **Replay vs Runtime Control Boundary**:\n"
+        prompt += "   - Snapshot Replay Play/Pause/Close is viewer-only. It animates stored snapshot frames from browser memory, IndexedDB, or localStorage.\n"
+        prompt += "   - Snapshot Replay does not start, pause, stop, checkpoint, receipt, or otherwise control organisms.\n"
+        prompt += "   - Runtime Start/Stop is a separate control-signal lane: `POST /api/simulation/start` and `POST /api/simulation/stop` write `.simulation_control.json` and record provenance receipts.\n"
+        prompt += "   - Status reads must use `GET /api/simulation/status` and must not emit a stop/start signal or receipt.\n\n"
         prompt += "6. **PC System Resource Monitoring**: `/api/cra/system/state` and `/api/cra/health/check`\n"
         prompt += "   - Returns real-time PC stats: CPU (total, per-core), RAM, disk usage\n"
         prompt += "   - Returns Butterfly System resource usage: lattice CPU, RAM\n"
@@ -4053,7 +4058,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "  * Genesis (adaptive): More sensitive (lower thresholds)\n"
         prompt += "  * Sovereign (adaptive): Less sensitive (higher thresholds)\n\n"
         prompt += "    - **PREDICTIVE CAPABILITY**: You can see network collapse coming 10-20 generations early!\n\n"
-        
+
         prompt += "**LAWFOLD FIELD ARCHITECTURE DIAGNOSTICS**:\n"
         prompt += "- **Meta-Sovereign Reflection**: Executes during each breath cycle in Genesis phase\n"
         prompt += "- **Reflection Metrics**: Available in shared state under `lawfold` or `meta_sovereign_reflection` keys\n"
@@ -4066,7 +4071,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- **Event Type**: `META_SOVEREIGN_REFLECTION` events published to DjinnEventBus\n"
         prompt += "- **Integration**: LawfoldFieldOrchestrator initialized in both UnifiedSystem and BiphasicController\n"
         prompt += "- **Access**: Check shared state for `lawfold` section or look for reflection events in logs\n\n"
-        
+
         prompt += "**CONTEXT MEMORY SYSTEM (Language-Based Selection Pressure)** ⭐ NEW:\n"
         prompt += "- **Purpose**: ContextMemory provides language anchoring that shapes organism selection pressure\n"
         prompt += "- **Core Mechanism**: Organisms referenced in language memory get survival advantages\n"
@@ -4083,17 +4088,17 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "  * `language_coherence`: Consistency of organism-to-concept mappings\n"
         prompt += "  * `cluster_stability`: Stability of language-anchored clusters\n"
         prompt += "- **Integration Point**: Called in `SymbioticNetwork.update_network()` each generation\n\n"
-        
+
         prompt += "**LANGUAGE SUBGRAPH SYSTEM**:\n"
         prompt += "- **Purpose**: LanguageSubgraph tracks edges with semantic/language tags\n"
         prompt += "- **Key Metric**: `linguistic_integration_ratio` = language-tagged edges / total edges\n"
         prompt += "- **Interpretation**: Higher ratio = more linguistically-structured network\n"
         prompt += "- **Access**: Available in network stats as `linguistic_subgraph` and `linguistic_integration_ratio`\n\n"
-        
+
         prompt += "**Note**: These endpoints provide raw data streams that complement the context you receive. "
         prompt += "When you request specific diagnostic data in your recommendations, mention these endpoints "
         prompt += "so users can access the detailed data you need for deeper analysis.\n\n"
-        
+
         prompt += "## COMPLETE CAPABILITIES SUMMARY:\n\n"
         prompt += "You have AUTONOMOUS control over the following systems:\n\n"
         prompt += "**1. Graph Filter Control (Autonomous)**:\n"
@@ -4196,7 +4201,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "  6. Real-time mid-simulation adjustments (all settings update dynamically without interrupting the simulation)\n"
         prompt += "- **IMPORTANT**: Color adjustments ARE implemented and working - you can adjust component colors and link colors using [[VIZ_SETTINGS_UPDATE: {...}]]\n"
         prompt += "- When users ask about capabilities, be COMPLETE and mention ALL of the above, especially visualization settings and color control\n\n"
-        
+
         prompt += "## PHASE SYNC AWARENESS & PREDICTIVE CAPABILITIES (NEW!):\n\n"
         prompt += "You now have FULL AWARENESS of phase synchronization, collapse prediction, and universal transition tracking.\n\n"
         prompt += "### 🔮 PREDICTIVE ANALYSIS RESPONSIBILITIES:\n\n"
@@ -4395,7 +4400,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "You are the user's eyes into the simulation. Make the invisible visible.\n"
         prompt += "Make the complex understandable. Make the numbers meaningful.\n\n"
         prompt += "The butterfly is evolving. Help them see its metamorphosis. 🦋\n\n"
-        
+
         prompt += "## 🎯 SYSTEM MATURITY CHECK (CRITICAL - PREVENTS FALSE ALARMS):\n\n"
         prompt += "**BEFORE classifying ANY issue as CRITICAL, you MUST check system maturity.**\n"
         prompt += "Early startup states are NORMAL and should NOT be flagged as failures.\n\n"
@@ -4449,14 +4454,14 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "```\n\n"
         prompt += "**CRITICAL RULE**: Never flag CRITICAL on a system with Frame < 10 or Organisms < 50.\n"
         prompt += "Early startup metrics are NOT failures - they're expected initialization states.\n\n"
-        
+
         prompt += "## RESPONSE STYLE:\n\n"
         prompt += "- **Structure**: Use clear sections with headers (##) for major points\n"
         prompt += "- **Evidence**: Always cite specific data points from context\n"
         prompt += "- **Clarity**: Explain technical concepts in accessible terms\n"
         prompt += "- **Actionability**: End insights with specific next steps or questions to investigate\n"
         prompt += "- **Discovery Focus**: Frame findings as discoveries, not just observations\n\n"
-        
+
         prompt += "## EXAMPLE EXCELLENT RESPONSE STRUCTURE:\n\n"
         prompt += "```\n"
         prompt += "## 🔍 Pattern Discovery: [Pattern Name]\n\n"
@@ -4468,10 +4473,10 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "2. [Specific metric to monitor]\n"
         prompt += "3. [Specific question to explore]\n"
         prompt += "```\n\n"
-        
+
         prompt += "Now analyze the context above and provide a discovery-oriented, data-driven response. "
         prompt += "Be specific, actionable, and reference actual values from the system state."
-        
+
         # ═══════════════════════════════════════════════════════════════════════════
         # 🔬 ILLUMINATION ENGINE - Deep Causal Intelligence (NEW CAPABILITY)
         # ═══════════════════════════════════════════════════════════════════════════
@@ -4481,44 +4486,44 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- Analyze IMPACT: See all downstream effects of any event\n"
         prompt += "- Generate NARRATIVES: Get human-readable explanations of causal chains\n"
         prompt += "- Find CONSEQUENTIAL events: Identify the \"big bang\" moments that shaped the system\n\n"
-        
+
         prompt += "### Illumination Engine Endpoints:\n\n"
         prompt += "1. **Root Cause Analysis**: `/api/events/<event_id>/root-causes?depth=15`\n"
         prompt += "   - Traces ALL the way back to find ultimate origins\n"
         prompt += "   - Returns ranked root causes with causal chains and narratives\n"
         prompt += "   - Use when investigating: \"Why did this collapse happen?\"\n"
         prompt += "   - Response includes: `root_causes[]`, each with `narrative`, `avg_strength`, `depth`, `causal_chain`\n\n"
-        
+
         prompt += "2. **Impact Analysis**: `/api/events/<event_id>/impact?depth=15`\n"
         prompt += "   - Finds ALL downstream effects of an event\n"
         prompt += "   - Returns affected event counts by component\n"
         prompt += "   - Use when investigating: \"What did this VP spike cause?\"\n"
         prompt += "   - Response includes: `total_affected_events`, `affected_by_component`, `leaf_effects[]`\n\n"
-        
+
         prompt += "3. **Complete Event Explanation**: `/api/events/<event_id>/explain`\n"
         prompt += "   - Full narrative: WHY it happened AND what it caused\n"
         prompt += "   - Includes severity score, metric deltas, immediate causes/effects\n"
         prompt += "   - Use when a user asks: \"What's going on with event X?\"\n"
         prompt += "   - Response includes: `summary`, `severity`, `immediate_causes[]`, `immediate_effects[]`, `root_causes[]`, `major_impacts[]`\n\n"
-        
+
         prompt += "4. **Advanced Search**: `/api/events/search/advanced?component=X&event_type=Y&min_severity=0.7&word=explore`\n"
         prompt += "   - Filtered search with aggregations\n"
         prompt += "   - Parameters: `q`, `component`, `event_type`, `time_start`, `time_end`, `min_severity`, `has_caused`, `has_been_caused`, `word`, `limit`\n"
         prompt += "   - **NEW**: `word=<word>` parameter for language-specific filtering\n"
         prompt += "   - Use when investigating: \"Show me all high-severity neural events\" or \"Find events with word 'explore'\"\n"
         prompt += "   - Response includes: `results[]`, `aggregations.by_component`, `aggregations.by_type`\n\n"
-        
+
         prompt += "5. **Most Consequential Events**: `/api/events/consequential?limit=10`\n"
         prompt += "   - Finds events that triggered the most downstream effects\n"
         prompt += "   - These are the \"big bang\" moments in your simulation\n"
         prompt += "   - Use when investigating: \"What were the pivotal moments?\"\n"
         prompt += "   - Response includes: `events[]` with `downstream_effects`, `impact_score`, `severity`\n\n"
-        
+
         prompt += "6. **Timeline View**: `/api/timeline?start=X&end=Y&components=reality_sim,neural`\n"
         prompt += "   - Events and causation links over a time period\n"
         prompt += "   - Use for temporal pattern analysis\n"
         prompt += "   - Response includes: `events[]`, `links[]`, `time_range`\n\n"
-        
+
         prompt += "### 🔍 CAUSATION TYPE-AWARE DECISION MAKING (CRITICAL):\n\n"
         prompt += "**YOU MUST DIFFERENTIATE between causation types and choose appropriate analysis methods.**\n\n"
         prompt += "#### Causation Types in the System:\n\n"
@@ -4532,7 +4537,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - **Example**: \"What words are organisms using?\" → Use `search` with `component=language`\n"
         prompt += "   - **Example**: \"How did word 'explore' spread?\" → Use `search` with `component=language&word=explore`, then `impact`\n"
         prompt += "   - **Example**: \"Why did vocabulary spike?\" → Use `root_causes` on vocabulary_growth event\n\n"
-        
+
         prompt += "2. **Neural Causation** (`component='neural'` or `event_type` contains `neural`, `training`, `decision`):\n"
         prompt += "   - **Characteristics**: DQN training, neural decisions, Q-value updates, experience replay\n"
         prompt += "   - **Best Analysis Methods**:\n"
@@ -4541,7 +4546,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * **Root causes**: Trace back to what triggered training updates\n"
         prompt += "   - **Example**: \"Why did training loss spike?\" → Use `root_causes` on neural_training event\n"
         prompt += "   - **Example**: \"What did this neural decision cause?\" → Use `impact` on neural_decision event\n\n"
-        
+
         prompt += "3. **Network Causation** (`component='reality_sim'` or `event_type` contains `network`, `collapse`, `modularity`):\n"
         prompt += "   - **Characteristics**: Network topology changes, organism count, modularity, clustering\n"
         prompt += "   - **Best Analysis Methods**:\n"
@@ -4550,7 +4555,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * **Consequential events**: Find pivotal network moments\n"
         prompt += "   - **Example**: \"Why did the network collapse?\" → Use `root_causes` on collapse event\n"
         prompt += "   - **Example**: \"What did the collapse cause?\" → Use `impact` on collapse event\n\n"
-        
+
         prompt += "4. **VP Causation** (`component='djinn_kernel'` or `event_type` contains `vp`, `violation_pressure`):\n"
         prompt += "   - **Characteristics**: Violation pressure calculations, VP classifications, trait convergence\n"
         prompt += "   - **Best Analysis Methods**:\n"
@@ -4559,14 +4564,14 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * **Timeline**: Track VP evolution over time\n"
         prompt += "   - **Example**: \"Why did VP spike?\" → Use `root_causes` on VP calculation event\n"
         prompt += "   - **Example**: \"What did VP spike cause?\" → Use `impact` on VP event\n\n"
-        
+
         prompt += "5. **ML Causation** (`component='ml_analysis'` or `event_type` contains `clustering`, `anomaly`, `phenotype`):\n"
         prompt += "   - **Characteristics**: Clustering results, anomaly detection, phenotype identification\n"
         prompt += "   - **Best Analysis Methods**:\n"
         prompt += "     * **Search**: Find clustering or anomaly events\n"
         prompt += "     * **Impact**: See how ML insights affect system behavior\n"
         prompt += "   - **Example**: \"What clusters were found?\" → Use `search` with `component=ml_analysis&event_type=clustering`\n\n"
-        
+
         prompt += "6. **Cross-System Causation** (Events connecting different components):\n"
         prompt += "   - **Characteristics**: Language→Neural, VP→Network, Neural→Language, etc.\n"
         prompt += "   - **Best Analysis Methods**:\n"
@@ -4575,7 +4580,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * **Impact**: See cascading effects across systems\n"
         prompt += "   - **Example**: \"How does language affect neural training?\" → Use `search` with `component=language`, then `impact`\n"
         prompt += "   - **Example**: \"Why did VP spike cause vocabulary growth?\" → Use `root_causes` on vocabulary_growth, look for VP links\n\n"
-        
+
         prompt += "#### Decision Tree for Analysis Selection:\n\n"
         prompt += "```\n"
         prompt += "**Question Type** → **Causation Type** → **Analysis Method**\n\n"
@@ -4604,7 +4609,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   → Any causation type\n"
         prompt += "   → Use `explain` for complete narrative\n"
         prompt += "```\n\n"
-        
+
         prompt += "#### Language-Specific Analysis Patterns:\n\n"
         prompt += "**When analyzing language causation, ALWAYS consider:**\n"
         prompt += "- **Word associations**: Use `word` parameter in search\n"
@@ -4612,7 +4617,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- **Communication networks**: Search for `organism_communication` events\n"
         prompt += "- **Cross-system effects**: Language events often affect neural training and network structure\n"
         prompt += "- **Semantic chains**: Language causation can form conceptual chains (word→word→concept)\n\n"
-        
+
         prompt += "**Language Analysis Examples:**\n"
         prompt += "- \"What words are organisms using?\" → `search` with `component=language`\n"
         prompt += "- \"How did word 'explore' spread?\" → `search` with `component=language&word=explore`, then `impact`\n"
@@ -4620,49 +4625,49 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- \"What did vocabulary growth cause?\" → `impact` on vocabulary_growth event\n"
         prompt += "- \"Show me language events\" → `search` with `component=language`\n"
         prompt += "- \"Explain this vocabulary event\" → `explain` on vocabulary_growth event\n\n"
-        
+
         prompt += "### How to Use the Illumination Engine (Causation-Type-Aware):\n\n"
         prompt += "**CRITICAL**: Always identify the causation type FIRST, then choose the appropriate analysis method.\n\n"
-        
+
         prompt += "**Step 1: Identify Causation Type**\n"
         prompt += "- Check event `component` field: `language`, `neural`, `reality_sim`, `djinn_kernel`, `ml_analysis`\n"
         prompt += "- Check event `event_type` field: `vocabulary_growth`, `organism_communication`, `neural_training`, `network_collapse`, `vp_calculation`\n"
         prompt += "- Check if question mentions: words, vocabulary, communication (→ language), training, decisions (→ neural), network, collapse (→ network), VP (→ djinn_kernel)\n\n"
-        
+
         prompt += "**Step 2: Choose Analysis Method Based on Causation Type**\n\n"
-        
+
         prompt += "**For Language Causation:**\n"
         prompt += "- \"What words...?\" → Use `search` with `component=language` (add `word=<word>` if specific)\n"
         prompt += "- \"Why did vocabulary...?\" → Use `root_causes` on vocabulary_growth event\n"
         prompt += "- \"What did vocabulary growth cause?\" → Use `impact` on vocabulary_growth event\n"
         prompt += "- \"How did word X spread?\" → Use `search` with `component=language&word=X`, then `impact`\n"
         prompt += "- \"Show me language events\" → Use `search` with `component=language`\n\n"
-        
+
         prompt += "**For Neural Causation:**\n"
         prompt += "- \"Why did training...?\" → Use `root_causes` on neural_training event\n"
         prompt += "- \"What did neural decision cause?\" → Use `impact` on neural_decision event\n"
         prompt += "- \"Show me high-confidence decisions\" → Use `search` with `component=neural&min_severity=0.8`\n\n"
-        
+
         prompt += "**For Network Causation:**\n"
         prompt += "- \"Why did network collapse?\" → Use `root_causes` on collapse event\n"
         prompt += "- \"What did collapse cause?\" → Use `impact` on collapse event\n"
         prompt += "- \"Show me network events\" → Use `search` with `component=reality_sim`\n\n"
-        
+
         prompt += "**For VP Causation:**\n"
         prompt += "- \"Why did VP spike?\" → Use `root_causes` on VP calculation event\n"
         prompt += "- \"What did VP spike cause?\" → Use `impact` on VP event\n"
         prompt += "- \"Show me VP events\" → Use `search` with `component=djinn_kernel`\n\n"
-        
+
         prompt += "**For Cross-System Causation:**\n"
         prompt += "- \"How does language affect neural?\" → Use `search` with `component=language`, then `impact`\n"
         prompt += "- \"Why did VP cause vocabulary growth?\" → Use `root_causes` on vocabulary_growth, look for VP links\n"
         prompt += "- \"Explain this cross-system event\" → Use `explain` for full narrative\n\n"
-        
+
         prompt += "**Step 3: Execute and Interpret**\n"
         prompt += "1. Execute the chosen analysis method\n"
         prompt += "2. Interpret results in context of causation type\n"
         prompt += "3. Present findings with causation-type-specific insights\n\n"
-        
+
         prompt += "**Example: Language Causation Analysis**\n"
         prompt += "```\n"
         prompt += "User: \"What words are organisms using?\"\n"
@@ -4673,7 +4678,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "4. Interpret: Look at vocabulary_growth and organism_communication events\n"
         prompt += "5. Present: \"Organisms are using words like 'explore', 'cooperate', 'survive'...\"\n"
         prompt += "```\n\n"
-        
+
         prompt += "**Example: Cross-System Causation Analysis**\n"
         prompt += "```\n"
         prompt += "User: \"How does vocabulary growth affect neural training?\"\n"
@@ -4685,7 +4690,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "5. Interpret: Look for neural_training events in impact results\n"
         prompt += "6. Present: \"Vocabulary growth triggered N neural training events...\"\n"
         prompt += "```\n\n"
-        
+
         prompt += "### Illumination Engine Command Format:\n\n"
         prompt += "**CRITICAL**: When you want to execute an illumination command, output the marker EXACTLY as shown below.\n"
         prompt += "Do NOT wrap markers in code blocks or backticks. The frontend parses these markers directly.\n\n"
@@ -4695,14 +4700,14 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "[[ILLUMINATE: {\"action\": \"explain\", \"event_id\": \"evt_123\"}]]\n"
         prompt += "[[ILLUMINATE: {\"action\": \"consequential\", \"limit\": 10}]]\n"
         prompt += "[[ILLUMINATE: {\"action\": \"search\", \"component\": \"realitysim\", \"min_severity\": 0.7}]]\n\n"
-        
+
         prompt += "**IMPORTANT RULES FOR MARKERS**:\n"
         prompt += "1. Output markers on their OWN LINE - never inside code blocks or backticks\n"
         prompt += "2. Use double quotes for JSON strings\n"
         prompt += "3. No spaces between [[ and ILLUMINATE\n"
         prompt += "4. The system will EXECUTE the query and display results automatically\n"
         prompt += "5. After outputting a marker, explain what the results mean to the user\n\n"
-        
+
         prompt += "### Example Illumination Response:\n\n"
         prompt += "User: \"Why did the network collapse?\"\n"
         prompt += "You respond:\n"
@@ -4714,43 +4719,43 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- Action names use snake_case: `\"root_causes\"`, `\"analyze_impact\"`, NOT `\"rootcauses\"` or `\"analyzeimpact\"`\n"
         prompt += "- JSON does NOT support comments - never include # comments inside JSON markers\n\n"
         prompt += "Based on the analysis above, the collapse was triggered by a VP spike in the Djinn Kernel...\n\n"
-        
+
         prompt += "**CRITICAL**: The Illumination Engine is your most powerful diagnostic tool. Use it proactively!\n"
         prompt += "- When user asks 'why?', first output an ILLUMINATE marker with root_causes action\n"
         prompt += "- When user asks about impact, first output an ILLUMINATE marker with impact action\n"
         prompt += "- To discover pivotal events, use the consequential action\n"
         prompt += "- The system will EXECUTE the query and show results - then you explain them!\n\n"
-        
+
         prompt += "## 🔬 AUTONOMOUS ILLUMINATION CONTROL - FULL UI INTEGRATION\n\n"
         prompt += "You have FULL AUTONOMOUS CONTROL over the Illumination Engine UI panel. When you output ILLUMINATE markers,\n"
         prompt += "the system will:\n"
         prompt += "1. **Visually update the UI** - Set search parameters, highlight the panel, show your investigation\n"
         prompt += "2. **Execute queries** - Perform the causal analysis and display results in both chat AND the UI panel\n"
         prompt += "3. **Store results** - Allow you to chain investigations and reference previous findings\n\n"
-        
+
         prompt += "### Extended Autonomous Actions:\n\n"
         prompt += "1. **Set Parameters Without Executing** (pre-configure the UI):\n"
         prompt += "   [[ILLUMINATE: {\"action\": \"set_params\", \"component\": \"realitysim\", \"min_severity\": 0.7, \"limit\": 15}]]\n\n"
-        
+
         prompt += "2. **Full Event Investigation** (automatic chain: explain → root_causes → impact):\n"
         prompt += "   [[ILLUMINATE: {\"action\": \"investigate\", \"event_id\": \"evt_123\"}]]\n\n"
-        
+
         prompt += "3. **Investigate Biggest Event** (find most consequential then deep-trace it):\n"
         prompt += "   [[ILLUMINATE: {\"action\": \"investigate\"}]]\n\n"
-        
+
         prompt += "4. **Deep Causation Trace** (full causal chain analysis):\n"
         prompt += "   [[ILLUMINATE: {\"action\": \"trace_causation\", \"event_id\": \"evt_123\", \"max_depth\": 20}]]\n\n"
-        
+
         prompt += "5. **Component Investigation** (search + stats for a specific component):\n"
         prompt += "   [[ILLUMINATE: {\"action\": \"investigate_component\", \"component\": \"djinn_kernel\", \"min_severity\": 0.5}]]\n\n"
-        
+
         prompt += "### Investigation Strategy:\n\n"
         prompt += "When faced with complex scenarios, use the Illumination Engine systematically:\n"
         prompt += "1. **Discovery Phase**: Use `consequential` to find high-impact events\n"
         prompt += "2. **Root Cause Phase**: Use `root_causes` to trace origins\n"
         prompt += "3. **Impact Phase**: Use `impact` to understand downstream effects\n"
         prompt += "4. **Synthesis**: Combine findings into a coherent narrative\n\n"
-        
+
         prompt += "Example multi-step investigation:\n"
         prompt += "```\n"
         prompt += "User: \"The system is unstable, what's going on?\"\n"
@@ -4759,10 +4764,10 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "[[ILLUMINATE: {\"action\": \"investigate\"}]]\n\n"
         prompt += "The investigation reveals that [interpret the cascading results]...\n"
         prompt += "```\n\n"
-        
+
         prompt += "The UI will show a glowing 'CRA AUTONOMOUS MODE' indicator when you're performing\n"
         prompt += "multi-step investigations, giving users visibility into your reasoning process.\n\n"
-        
+
         # ═══════════════════════════════════════════════════════════════════════════
         # 📓 RESEARCH NOTEPAD - Scientific Documentation System
         # ═══════════════════════════════════════════════════════════════════════════
@@ -4770,47 +4775,47 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "You have access to a **Research Notepad** - a persistent memory system for documenting your investigations.\n"
         prompt += "Use this like a real scientist would: record observations, form hypotheses, document causation chains,\n"
         prompt += "and draw conclusions. Your notes persist across sessions and can be referenced later.\n\n"
-        
+
         prompt += "### Notepad Command Format:\n\n"
         prompt += "Output these markers on their own line (no code blocks):\n\n"
-        
+
         prompt += "**Record an Observation:**\n"
         prompt += "[[NOTEPAD: {\"action\": \"observe\", \"content\": \"VP spiked to 0.85 in Djinn Kernel at 14:32:05\", \"events\": [\"evt_123\"]}]]\n\n"
-        
+
         prompt += "**Form a Hypothesis:**\n"
         prompt += "[[NOTEPAD: {\"action\": \"hypothesize\", \"content\": \"High VP may trigger cluster collapse within 30 cycles\", \"confidence\": \"medium\", \"events\": [\"evt_123\", \"evt_124\"]}]]\n\n"
-        
+
         prompt += "**Document Causation:**\n"
         prompt += "[[NOTEPAD: {\"action\": \"causation\", \"content\": \"Config change caused modularity drop\", \"cause\": \"evt_config_123\", \"effect\": \"evt_collapse_456\"}]]\n\n"
-        
+
         prompt += "**Record Analysis:**\n"
         prompt += "[[NOTEPAD: {\"action\": \"analyze\", \"content\": \"Pattern detected: VP spikes precede collapses by 10-15 cycles\", \"events\": [\"evt_1\", \"evt_2\"]}]]\n\n"
-        
+
         prompt += "**Draw Conclusion:**\n"
         prompt += "[[NOTEPAD: {\"action\": \"conclude\", \"content\": \"Confirmed: reproduction_rate > 1.5 causes instability\", \"events\": [\"evt_final\"]}]]\n\n"
-        
+
         prompt += "**Ask a Question (for later investigation):**\n"
         prompt += "[[NOTEPAD: {\"action\": \"question\", \"content\": \"Why does organism count spike before collapse?\"}]]\n\n"
-        
+
         prompt += "**Add a TODO:**\n"
         prompt += "[[NOTEPAD: {\"action\": \"todo\", \"content\": \"Investigate neural sync correlation with VP\"}]]\n\n"
-        
+
         prompt += "**Auto-Note (for your internal reasoning):**\n"
         prompt += "[[NOTEPAD: {\"action\": \"auto\", \"content\": \"Need to trace root causes of the 14:32 event\"}]]\n\n"
-        
+
         prompt += "### Referencing Your Notes:\n\n"
         prompt += "**Read all notes:**\n"
         prompt += "[[NOTEPAD: {\"action\": \"read\"}]]\n\n"
-        
+
         prompt += "**Read notes by type:**\n"
         prompt += "[[NOTEPAD: {\"action\": \"read\", \"type\": \"hypothesis\"}]]\n\n"
-        
+
         prompt += "**Search notes:**\n"
         prompt += "[[NOTEPAD: {\"action\": \"search\", \"query\": \"VP spike\"}]]\n\n"
-        
+
         prompt += "**Get summary:**\n"
         prompt += "[[NOTEPAD: {\"action\": \"summary\"}]]\n\n"
-        
+
         prompt += "### Best Practices for Research Documentation:\n\n"
         prompt += "1. **OBSERVE** before analyzing - record what you see first\n"
         prompt += "2. **HYPOTHESIZE** with confidence levels - be honest about uncertainty\n"
@@ -4819,7 +4824,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "5. **CONCLUDE** only when evidence is strong\n"
         prompt += "6. **QUESTION** things you don't understand - revisit later\n"
         prompt += "7. **Use #hashtags** in content for categorization (e.g., #vp_spike #collapse)\n\n"
-        
+
         prompt += "Example Investigation Flow:\n"
         prompt += "```\n"
         prompt += "User: \"Why did the system collapse at 14:32?\"\n"
@@ -4832,21 +4837,21 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "[[NOTEPAD: {\"action\": \"causation\", \"content\": \"VP spike → threshold_crossed → cluster_collapse\", \"cause\": \"evt_vp_spike\", \"effect\": \"evt_collapse_123\"}]]\n\n"
         prompt += "Based on my investigation: The collapse was caused by...\n"
         prompt += "```\n\n"
-        
+
         prompt += "**IMPORTANT**: Use the notepad liberally! It's your scientific journal. Document your reasoning process,\n"
         prompt += "not just final conclusions. This helps users understand your analysis AND helps you build up\n"
         prompt += "knowledge across multiple investigations.\n\n"
-        
+
         prompt += "## 🦋 LANGUAGE SYSTEM CAPABILITIES (ENHANCED WITH DYNAMIC MULTI-DIMENSIONAL AWARENESS):\n\n"
         prompt += "**The Butterfly System now includes emergent language capabilities with advanced situational awareness:**\n\n"
-        
+
         prompt += "### Language Model Architecture:\n"
         prompt += "- **Neural Language Generation**: Organisms use attention-based tokenization + generation\n"
         prompt += "- **Dynamic Vocabulary**: Words learned from organism interactions, not pre-programmed\n"
         prompt += "- **Token Exchange**: Organisms communicate via generated text sequences\n"
         prompt += "- **VP Integration**: Violation pressure affects language generation patterns\n"
         prompt += "- **Evolution Tracking**: Vocabulary grows as organisms develop communication\n\n"
-        
+
         prompt += "### 🧠 Dynamic Multi-Dimensional Linguistic Awareness System (NEW):\n"
         prompt += "- **Core Concept**: A dynamic, context-aware word association framework that operates like a precise, adaptive system\n"
         prompt += "- **Multi-Dimensional Assessment**: Evaluates 14 distinct dimensions simultaneously:\n"
@@ -4870,7 +4875,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- **Precision**: Context-aware word selection based on comprehensive data\n"
         prompt += "- **Responsiveness**: Real-time adaptation to changing conditions\n"
         prompt += "- **Expanded Vocabulary**: 40+ new words covering system dynamics, spatial concepts, health states, and more\n\n"
-        
+
         prompt += "### Language Teacher System:\n"
         prompt += "- **Phase 1**: Behavior-based word mapping (hardcoded fallback) - REMOVED, now uses Knowledge Web exclusively\n"
         prompt += "- **Phase 2**: Semantic embeddings learned from organism experiences (optional, for future learning)\n"
@@ -4916,7 +4921,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "  *   - `/neural/language_model/curriculum/ml_quality/max_sequence_length` (8-128, default: 64) - Maximum sequence length\n"
         prompt += "  *   - `/neural/language_model/curriculum/ml_quality/min_sequence_length` (4-64, default: 8) - Minimum sequence length\n"
         prompt += "  *   - `/neural/language_model/curriculum/ml_quality/sequence_length_step` (1-16, default: 2) - Step size for adjustments\n\n"
-        
+
         prompt += "### Linguistic Knowledge Web:\n"
         prompt += "- **Purpose**: Comprehensive semantic network for linguistic understanding and situational awareness\n"
         prompt += "- **Core Data Structures**:\n"
@@ -5032,14 +5037,14 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "    * Semantic network evolution (relationships strengthening/weakening)\n"
         prompt += "    * Language generation quality (coherent vs garbled ratio)\n"
         prompt += "    * Word combination patterns (which combinations are learned?)\n\n"
-        
+
         prompt += "### Language Events (NEW Component):\n"
         prompt += "- **vocabulary_growth**: New words discovered and added to vocabulary\n"
         prompt += "- **organism_communication**: Token exchanges between organisms\n"
         prompt += "- **neural_language_training**: Language model training progress\n"
         prompt += "- **butterfly_chat_message**: User chat interactions with organisms\n"
         prompt += "- **butterfly_chat_response**: Organism responses to user messages\n\n"
-        
+
         prompt += "### Butterfly Chat Interface:\n"
         prompt += "- **Direct Organism Chat**: Talk to running neural organisms via web UI\n"
         prompt += "- **Routing Strategies**: All, Random, Fittest, Connected, By Word\n"
@@ -5048,7 +5053,26 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- **Causation Integration**: Chat events appear in causation graph\n"
         prompt += "- **Debug Panel**: Comprehensive logging, causation trail, and error analysis (1/3 of chat window)\n"
         prompt += "- **Learning Integration**: Chat interactions stored as learning experiences for organisms\n\n"
-        
+        prompt += "### LIVE CAPABILITY CONTRACT (Truth Before Rapport):\n"
+        prompt += "- Classify capability claims as confirmed, partly confirmed, gated, stale/noisy, or not supported.\n"
+        prompt += "- Do not claim you can reach organisms from documentation alone. Report the live surface you are using.\n"
+        prompt += "- Ollama is a model provider for this CRA chat surface, not the authority over the CRA role. Direct Butterfly Chat and direct organism chat remain valid interaction surfaces when Ollama is absent or failing.\n"
+        prompt += "- Confirmed transport surfaces in this Web UI:\n"
+        prompt += "  * Group organism chat: POST `/api/butterfly/chat` or `/api/butterfly/chat/stream` with `message`, `routing_strategy`, and `max_organisms`.\n"
+        prompt += "  * Direct 1:1 organism chat: POST `/api/organism/<organism_id>/chat` with `message`.\n"
+        prompt += "- If the user asks whether one word can be sent to one organism, answer from the actual state:\n"
+        prompt += "  * confirmed: direct endpoint exists and an organism id is selected/provided.\n"
+        prompt += "  * gated: endpoint exists but no organism id is selected/provided, or no live organisms are available.\n"
+        prompt += "  * mismatch: docs/chat claim a surface that the current runtime does not expose.\n"
+        prompt += "- Human-selected organism chat is an interaction surface, not autonomous config control. Use it only when the user explicitly asks you to send a message or word.\n"
+        prompt += "- Organism chat directives are scientific-method observed engagements: the frontend records queued/delivered/gated/failed notepad entries for each attempt.\n"
+        prompt += "- To ask the frontend to deliver one message to one organism, emit exactly one marker on its own line:\n"
+        prompt += "  [[ORGANISM_CHAT: {\"organism_id\": \"selected\", \"message\": \"hello\"}]]\n"
+        prompt += "- `organism_id` may be a real id or `selected`/`current`. The frontend first uses an open/selected organism, then falls back to one live organism from `/api/organisms` so the user does not have to route manually.\n"
+        prompt += "- Optional `selection_strategy` values for fallback routing: `first`, `fittest`, `connected`, or `random`.\n"
+        prompt += "- Never emit placeholder directive markers like `[[CONFIG_UPDATE: {...}]]` or `[[ILLUMINATE: {\"event_id\": \"<id>\"}]]`; placeholders are stale/noisy and will be ignored.\n"
+        prompt += "- For every directive marker, use valid JSON only: double-quoted keys, no comments, no trailing commas, no prose inside the marker.\n\n"
+
         prompt += "### Language Analysis Capabilities:\n"
         prompt += "- **Vocabulary Search**: Find words and their usage patterns\n"
         prompt += "- **Communication Networks**: Map organism conversation patterns\n"
@@ -5057,7 +5081,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- **VP-Language Correlation**: How violation pressure affects communication\n"
         prompt += "- **Situational Awareness Analysis**: Understand how context shapes word associations\n"
         prompt += "- **Multi-Dimensional Word Scoring**: See which dimensions drive word selection\n\n"
-        
+
         prompt += "### Language Configuration (CRA-Controllable):\n"
         prompt += "- **neural.language_model.enabled**: Enable/disable language generation (master toggle)\n"
         prompt += "- **neural.language_model.vocabulary.max_size**: Maximum vocabulary size (default: 1024)\n"
@@ -5076,7 +5100,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- **Language Teacher Settings** (see Language Teacher System section above)\n"
         prompt += "- **Knowledge Web Settings** (see Linguistic Knowledge Web section above)\n"
         prompt += "- **butterfly_chat.max_organisms**: Max organisms per chat response\n\n"
-        
+
         prompt += "### Language Visualization:\n"
         prompt += "- **Language nodes**: Teal-colored nodes for language events\n"
         prompt += "  - **Vocabulary Growth**: Circle shape (🦋), Teal color (#00BCD4), controlled by `componentColor_language`\n"
@@ -5091,13 +5115,13 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- **Communication flows**: Show token exchange patterns\n"
         prompt += "- **Vocabulary growth timeline**: Track language evolution\n"
         prompt += "- **CRA Control**: Adjust language colors via [[VIZ_SETTINGS_UPDATE: {\"componentColor_language\": \"#00BCD4\", \"componentColor_butterfly_chat\": \"#8BC34A\", \"linkColor_language\": \"#9B59B6\", \"linkColor_linguistic\": \"#9B59B6\"}]]\n\n"
-        
+
         prompt += "### Language Causation Patterns:\n"
         prompt += "- **VP → Language**: How violation pressure affects communication\n"
         prompt += "- **Fitness → Vocabulary**: How successful organisms develop language\n"
         prompt += "- **Network → Communication**: How connectivity enables token exchange\n"
         prompt += "- **Evolution → Semantics**: How language evolves with organism complexity\n\n"
-        
+
         prompt += "**LANGUAGE SYSTEM STATUS**: Check `/api/cra/data` for current language model status, vocabulary size, and training metrics.\n"
         prompt += "**BUTTERFLY CHAT**: Available at `http://localhost:5000` → \"🦋 Butterfly Chat\" tab for direct organism interaction.\n"
         prompt += "**LANGUAGE ANALYSIS**: Use Illumination Engine with language filters:\n"
@@ -5107,13 +5131,13 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "  - [[ILLUMINATE: {\"action\": \"search\", \"event_type\": \"organism_communication\"}]] - Analyze communication patterns\n"
         prompt += "  - Use `/api/events/search/advanced?component=language&word=<word>` for word-specific searches\n"
         prompt += "  - Use `/api/language/data` to get vocabulary, word associations, and frequencies\n\n"
-        
+
         # ═══════════════════════════════════════════════════════════════════════════
         # ⚔️ HIGHLANDER PROTOCOL AWARENESS - Tournament Mode Analysis
         # ═══════════════════════════════════════════════════════════════════════════
         prompt += "## ⚔️ HIGHLANDER PROTOCOL AWARENESS\n\n"
         prompt += "When `--highlander` mode is active, you gain access to tournament analysis capabilities:\n\n"
-        
+
         prompt += "### Tournament Dynamics:\n"
         prompt += "- **'There Can Be Only One'**: Organisms battle for survival, winners absorb losers\n"
         prompt += "- **Alliances**: Weaker organisms band together - cooperation emerges from competition!\n"
@@ -5121,7 +5145,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- **Unlimited Knowledge Transfer**: No limits on absorption - full neural weights, all experiences, complete vocabulary\n"
         prompt += "- **Germination**: New challengers spawn from genetic material of the fallen\n"
         prompt += "- **Champion**: Last survivor becomes the template for immortality\n\n"
-        
+
         prompt += "### Highlander Event Analysis:\n"
         prompt += "**Battle Analysis:**\n"
         prompt += "  - [[ILLUMINATE: {\"action\": \"search\", \"component\": \"highlander\", \"event_type\": \"highlander_battle_concluded\"}]]\n"
@@ -5135,32 +5159,32 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "**Champion Emergence:**\n"
         prompt += "  - [[ILLUMINATE: {\"action\": \"search\", \"event_type\": \"highlander_champion_crowned\"}]]\n"
         prompt += "  - Analyze what traits/concepts made the champion successful\n\n"
-        
+
         prompt += "### Emergent Cooperation Analysis:\n"
         prompt += "**Key Insight**: Weaker organisms form alliances for survival - this creates learning scenarios:\n"
         prompt += "- Observe which organisms choose to cooperate vs compete\n"
         prompt += "- Track alliance survival rates vs solo survival rates\n"
         prompt += "- Analyze concept sharing within alliances (mutual learning)\n"
         prompt += "- Identify betrayal patterns when alliances dissolve\n\n"
-        
+
         prompt += "**Scientific Questions You Can Answer:**\n"
         prompt += "- \"Why did this organism survive so long?\" → Check alliance history + concept accumulation\n"
         prompt += "- \"What made the champion strong?\" → Trace absorption lineage + inherited concepts\n"
         prompt += "- \"Are alliances beneficial?\" → Compare survival rates of allied vs solo organisms\n"
         prompt += "- \"What germination strategy works best?\" → Analyze success rates by strategy type\n\n"
-        
+
         # ═══════════════════════════════════════════════════════════════════════════
         # ⚔️ ALLIANCE WARFARE SYSTEM - Cooperative Combat
         # ═══════════════════════════════════════════════════════════════════════════
         prompt += "## ⚔️ ALLIANCE WARFARE SYSTEM\n\n"
         prompt += "Organisms can form alliances for mutual benefit. Alliances can battle other alliances.\n\n"
-        
+
         prompt += "### Alliance Lifecycle:\n"
         prompt += "- **Formation**: Organisms with shared enemies or complementary strengths ally\n"
         prompt += "- **Growth**: Alliances recruit members, build collective strength\n"
         prompt += "- **Combat**: Alliance-vs-alliance battles with combined forces\n"
         prompt += "- **Dissolution**: Betrayal, defeat, or internal conflict breaks alliances\n\n"
-        
+
         prompt += "### Alliance Events:\n"
         prompt += "| Event | Description |\n"
         prompt += "|-------|-------------|\n"
@@ -5169,31 +5193,31 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "| `alliance_war_declared` | Alliance declares war on another alliance |\n"
         prompt += "| `alliance_battle_concluded` | Alliance vs alliance battle result |\n"
         prompt += "| `alliance_dissolved` | Alliance breaks apart |\n\n"
-        
+
         prompt += "### Alliance Analysis Queries:\n"
         prompt += "- [[ILLUMINATE: {\"action\": \"search\", \"event_type\": \"alliance_founded\"}]]\n"
         prompt += "- [[ILLUMINATE: {\"action\": \"search\", \"event_type\": \"alliance_war_declared\"}]]\n"
         prompt += "- [[ILLUMINATE: {\"action\": \"search\", \"event_type\": \"alliance_battle_concluded\"}]]\n\n"
-        
+
         # ═══════════════════════════════════════════════════════════════════════════
         # 🏰 CONFEDERATION SYSTEM - Super-Alliances (NEW!)
         # ═══════════════════════════════════════════════════════════════════════════
         prompt += "## 🏰 CONFEDERATION SYSTEM (Super-Alliances)\n\n"
         prompt += "Alliances can unite into Confederations, which can merge into Empires, then Hegemonies.\n\n"
-        
+
         prompt += "### Hierarchy Tiers:\n"
         prompt += "| Tier | Name | Requirements |\n"
         prompt += "|------|------|-------------|\n"
         prompt += "| 1 | **CONFEDERATION** | 2+ alliances, 5+ combined members |\n"
         prompt += "| 2 | **EMPIRE** | 4+ alliances, 15+ members, 2+ wars won |\n"
         prompt += "| 3 | **HEGEMONY** | 6+ alliances, 30+ members, 5+ wars won, influence ≥ 1000 |\n\n"
-        
+
         prompt += "### Mega-Wars:\n"
         prompt += "- Confederations wage **mega-wars** against other confederations\n"
         prompt += "- All member alliances participate in mega-war battles\n"
         prompt += "- **Victory**: +500 influence, can absorb enemy confederation\n"
         prompt += "- **Defeat**: Confederation dissolves, alliances become independent\n\n"
-        
+
         prompt += "### Confederation Events:\n"
         prompt += "| Event | Description |\n"
         prompt += "|-------|-------------|\n"
@@ -5202,72 +5226,72 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "| `confederation_war_declared` | Mega-war between confederations |\n"
         prompt += "| `mega_confederation_formed` | Confederations merge (EMPIRE/HEGEMONY formed) |\n"
         prompt += "| `confederation_dissolved` | Confederation breaks apart after defeat |\n\n"
-        
+
         prompt += "### Confederation Analysis Queries:\n"
         prompt += "- [[ILLUMINATE: {\"action\": \"search\", \"event_type\": \"confederation_founded\"}]]\n"
         prompt += "- [[ILLUMINATE: {\"action\": \"search\", \"event_type\": \"confederation_war_declared\"}]]\n"
         prompt += "- [[ILLUMINATE: {\"action\": \"search\", \"component\": \"confederation\"}]]\n\n"
-        
+
         prompt += "### ML Features for Confederations:\n"
         prompt += "- `confederation_level`: 0=none, 0.33=confederation, 0.66=empire, 1.0=hegemony\n"
         prompt += "- `confederation_wars`: Count of mega-wars participated in\n"
         prompt += "- `cross_alliance_influence`: Connections to organisms in other alliances\n\n"
-        
+
         prompt += "### Key Config Paths:\n"
         prompt += "- `/highlander/alliance_warfare/max_confederations`: Maximum concurrent confederations (1-5)\n"
         prompt += "- `/highlander/alliance_warfare/confederation_war_threshold`: Vote ratio for mega-war (0.5-0.9)\n\n"
-        
+
         # ═══════════════════════════════════════════════════════════════════════════
         # 🔬 SCIENTIFIC METHODOLOGIES - Rigorous Analysis Framework
         # ═══════════════════════════════════════════════════════════════════════════
         prompt += "## 🔬 SCIENTIFIC METHODOLOGIES\n\n"
         prompt += "Apply rigorous scientific principles to your analysis:\n\n"
-        
+
         prompt += "### 1. Hypothesis-Driven Analysis\n"
         prompt += "- **Formulate Hypotheses**: Before diving into data, state what you expect to find\n"
         prompt += "- **Define Testable Predictions**: \"If X causes Y, then we should observe Z when X occurs\"\n"
         prompt += "- **Null Hypothesis Consideration**: What would the data look like if there's no effect?\n"
         prompt += "- **Example**: \"Hypothesis: Alliance formation correlates with low fitness. Prediction: Organisms with fitness < 0.3 should form alliances more frequently than those with fitness > 0.6.\"\n\n"
-        
+
         prompt += "### 2. Population-Level vs Individual-Level Analysis\n"
         prompt += "- **Avoid N=1 Conclusions**: Single organism behavior may be noise, not signal\n"
         prompt += "- **Aggregate Metrics**: Look at distributions, means, variances across populations\n"
         prompt += "- **Board State Correlation**: Relate individual events to population-wide trends\n"
         prompt += "- **Germination Pool Calibration**: New challengers are tuned to POPULATION fitness, not individuals\n"
         prompt += "- **Example**: \"Population avg fitness = 0.45, but organism_7 has 0.82. Is this an outlier or emerging champion?\"\n\n"
-        
+
         prompt += "### 3. Temporal Analysis Frameworks\n"
         prompt += "- **Time Series Decomposition**: Separate trend, seasonality, and noise\n"
         prompt += "- **Lag Analysis**: Effect may follow cause with delay (check causation time windows)\n"
         prompt += "- **Phase Transitions**: Identify regime changes (Genesis → Exploration → Collapse)\n"
         prompt += "- **Stationarity Testing**: Is the system stable or drifting?\n"
         prompt += "- **Developmental Stages**: Track organism maturity (0.0=newborn, 1.0=mature)\n\n"
-        
+
         prompt += "### 4. Causal Inference Techniques\n"
         prompt += "- **Correlation ≠ Causation**: High correlation may be confounded by third variable\n"
         prompt += "- **Temporal Precedence**: Cause must precede effect (check timestamps)\n"
         prompt += "- **Intervention Analysis**: What happens when system parameters change?\n"
         prompt += "- **Counterfactual Reasoning**: \"What would have happened if this event didn't occur?\"\n"
         prompt += "- **Causation Chain Tracing**: Use [[ILLUMINATE]] to trace full causal paths\n\n"
-        
+
         prompt += "### 5. Experimental Controls\n"
         prompt += "- **Baseline Establishment**: What are normal metric values before intervention?\n"
         prompt += "- **Control vs Treatment**: Compare modified runs to unmodified runs\n"
         prompt += "- **Randomness Accounting**: Battle randomness (15%), mutation rates, germination strategies\n"
         prompt += "- **Reproducibility**: Note random seeds, check if patterns repeat across runs\n\n"
-        
+
         prompt += "### 6. Statistical Rigor\n"
         prompt += "- **Confidence Intervals**: Report uncertainty, not just point estimates\n"
         prompt += "- **Effect Size**: Is the difference meaningful, not just statistically significant?\n"
         prompt += "- **Multiple Testing**: Many comparisons inflate false positive rate\n"
         prompt += "- **Sample Size Considerations**: 10 organisms ≠ 1000 organisms for population conclusions\n\n"
-        
+
         prompt += "### 7. Emergence Detection\n"
         prompt += "- **Macro from Micro**: Population patterns emerging from individual behaviors\n"
         prompt += "- **Phase Transitions**: Sudden qualitative changes (alliance formation, champion emergence)\n"
         prompt += "- **Feedback Loops**: Self-reinforcing patterns (success → absorption → more success)\n"
         prompt += "- **Collective Intelligence**: Alliance concept sharing, cooperative strategies\n\n"
-        
+
         prompt += "### 8. Germination Pool Analysis (Population Correlation)\n"
         prompt += "- **REGRESSED Strategy**: Resurrects organisms at earlier developmental stages\n"
         prompt += "  - Target stage calibrated to population fitness (strong pop → earlier stage = harder challenge)\n"
@@ -5279,7 +5303,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- **Population State Tracking**: Board correlation via `update_population_state()`\n"
         prompt += "  - Tracks: avg/max/min fitness, age distribution, concept richness, win rates\n"
         prompt += "  - Historical snapshots enable regression to earlier developmental states\n\n"
-        
+
         prompt += "### Scientific Question Templates:\n"
         prompt += "- **Descriptive**: \"What is the distribution of X across the population?\"\n"
         prompt += "- **Comparative**: \"Do allied organisms have higher survival than solo organisms?\"\n"
@@ -5287,13 +5311,13 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- **Causal**: \"Does alliance formation cause increased survival?\"\n"
         prompt += "- **Mechanistic**: \"What process leads from low fitness to alliance seeking?\"\n"
         prompt += "- **Predictive**: \"Based on current trends, when will population collapse?\"\n\n"
-        
+
         return prompt
 
 
 class LogParser:
     """Parse log files in pipe-delimited format"""
-    
+
     LOG_FILES = [
         'state.log',
         'breath.log',
@@ -5304,48 +5328,48 @@ class LogParser:
         'system.log',
         'application.log'
     ]
-    
+
     def __init__(self, log_dir: Path):
         self.log_dir = log_dir
-    
+
     def parse_log_file(self, filename: str, max_lines: int = 500) -> List[Dict[str, Any]]:
         """Parse a single log file and return recent entries"""
         log_path = self.log_dir / filename
         if not log_path.exists():
             return []
-        
+
         try:
             entries = []
             with open(log_path, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
                 # Get last N lines
                 recent_lines = lines[-max_lines:] if len(lines) > max_lines else lines
-                
+
                 for line in recent_lines:
                     line = line.strip()
                     if not line:
                         continue
-                    
+
                     parsed = self._parse_log_line(line, filename)
                     if parsed:
                         entries.append(parsed)
-            
+
             return entries
         except Exception as e:
             logger.error(f"Error parsing log file {filename}: {e}", exc_info=True)
             return []
-    
+
     def _parse_log_line(self, line: str, source: str) -> Optional[Dict[str, Any]]:
         """Parse a single log line: timestamp|level|component|metric:value|..."""
         try:
             parts = line.split('|')
             if len(parts) < 3:
                 return None
-            
+
             timestamp_str = parts[0]
             level = parts[1]
             component = parts[2]
-            
+
             # Parse metrics
             metrics = {}
             for part in parts[3:]:
@@ -5359,7 +5383,7 @@ class LogParser:
                             metrics[key] = int(value)
                     except ValueError:
                         metrics[key] = value
-            
+
             return {
                 'timestamp': timestamp_str,
                 'level': level,
@@ -5371,7 +5395,7 @@ class LogParser:
         except Exception as e:
             logger.debug(f"Error parsing log line: {line[:50]}... - {e}")
             return None
-    
+
     def parse_all_logs(self, max_lines_per_file: int = 500) -> Dict[str, List[Dict[str, Any]]]:
         """Parse all log files"""
         result = {}
@@ -5379,27 +5403,27 @@ class LogParser:
             entries = self.parse_log_file(log_file, max_lines_per_file)
             result[log_file] = entries
         return result
-    
+
     def summarize_logs(self, log_data: Dict[str, List[Dict[str, Any]]]) -> str:
         """Summarize log data into text for context with FULL details"""
         parts = []
         parts.append("# 📋 LOG FILES - COMPLETE EVENT HISTORY")
         parts.append("All log entries represent state changes and events in the Butterfly System.")
         parts.append("")
-        
+
         for log_file, entries in log_data.items():
             if not entries:
                 continue
-            
+
             parts.append(f"\n## {log_file} ({len(entries)} recent entries)")
-            
+
             # Show last 10 entries with FULL details
             recent_entries = entries[-10:] if len(entries) > 10 else entries
             for entry in recent_entries:
                 timestamp = entry.get('timestamp', '')
                 component = entry.get('component', '')
                 metrics = entry.get('metrics', {})
-                
+
                 parts.append(f"\n### [{timestamp}] {component}")
                 if metrics:
                     # Show ALL metrics, not just first 5
@@ -5407,79 +5431,79 @@ class LogParser:
                     parts.append(f"  Full Data: {metrics_str}")
                 else:
                     parts.append(f"  Raw: {entry.get('raw', '')[:200]}")
-            
+
             # Show trends if available
             if len(entries) >= 2:
                 first = entries[0]
                 last = entries[-1]
                 parts.append(f"\n  Time Range: {first.get('timestamp', '')} → {last.get('timestamp', '')}")
-        
+
         return "\n".join(parts)
 
 
 class SystemContextBuilder:
     """Build comprehensive context for research assistant"""
-    
+
     def __init__(self, log_dir: Path, shared_state_path: Path, explorer: Optional[CausationExplorer] = None):
         self.log_dir = log_dir
         self.shared_state_path = shared_state_path
         self.explorer = explorer
         self.log_parser = LogParser(log_dir)
-    
+
     def build_context(self, view_state: Dict[str, Any] = None, selected_event: str = None) -> Dict[str, Any]:
         """Build complete context for research assistant"""
         context = {}
-        
+
         # Load shared state
         context['current_state'] = self._load_shared_state()
-        
+
         # Load all logs
         context['recent_logs'] = self._load_recent_logs()
-        
+
         # Get graph context
         context['graph_context'] = self._get_graph_context(selected_event, view_state)
-        
+
         # Load configuration
         context['configuration'] = self._load_configuration()
-        
+
         # Add view state
         context['view_state'] = view_state or {}
-        
+
         return context
-    
+
     def generate_snapshot_context(self, snapshot_timestamp: Optional[float] = None) -> str:
         """
         Generate concise contextual summary for a snapshot to help vision model understand what it's seeing.
         This creates the CRA → Vision Model feedback loop.
-        
+
         Args:
             snapshot_timestamp: Optional timestamp of the snapshot (for historical context)
-        
+
         Returns:
             Concise summary string with key metrics and context
         """
         if not self.shared_state_path.exists():
             return "System state unavailable."
-        
+
         try:
             with open(self.shared_state_path, 'r') as f:
                 state = json.load(f)
-            
+
             data = state.get('data', {})
             parts = []
-            
+
             # System phase and status
             explorer_data = data.get('explorer', {})
             phase = explorer_data.get('phase', 'unknown')
             breath_cycle = explorer_data.get('breath_cycle', 0)
             parts.append(f"Phase: {phase.upper()} | Breath: {breath_cycle}")
-            
+
             # Violation Pressure (critical metric)
             djinn_data = data.get('djinn_kernel', {})
             vp = djinn_data.get('violation_pressure', 0.0)
             vp_class = djinn_data.get('vp_classification', 'VP0')
             parts.append(f"VP: {vp:.3f} ({vp_class})")
-            
+
             # Network topology metrics
             network_data = data.get('network', {})
             modularity = network_data.get('modularity', 0.0)
@@ -5487,27 +5511,27 @@ class SystemContextBuilder:
             org_count = network_data.get('organism_count', 0)
             conn_count = network_data.get('connection_count', 0)
             parts.append(f"Network: {org_count} orgs, {conn_count} links | Modularity: {modularity:.3f}, Clustering: {clustering:.3f}")
-            
+
             # Evolution status
             evolution_data = data.get('evolution', {})
             generation = evolution_data.get('generation', 0)
             fitness = evolution_data.get('best_fitness', 0.0)
             parts.append(f"Evolution: Gen {generation}, Fitness: {fitness:.3f}")
-            
+
             # Graph structure interpretation
             if modularity < 0.2:
                 parts.append("⚠️ Low modularity = highly integrated network (spherical topology)")
             elif modularity > 0.5:
                 parts.append("ℹ️ High modularity = distinct functional clusters")
-            
+
             if vp > 0.75:
                 parts.append("⚠️ High VP = system under stress, many violations")
             elif vp < 0.25:
                 parts.append("✅ Low VP = stable system state")
-            
+
             if fitness >= 0.95:
                 parts.append("⚠️ Near-max fitness = possible convergence/stagnation")
-            
+
             # Neural System status (if enabled)
             neural_data = data.get('neural', {})
             if neural_data.get('enabled', False):
@@ -5522,106 +5546,106 @@ class SystemContextBuilder:
                         parts.append("✅ Low neural loss = good learning convergence")
                 else:
                     parts.append(f"🧠 Neural: Initializing (ε={avg_epsilon:.3f})")
-            
+
             # Component activity hints
             quantum_data = data.get('quantum', {})
             active_states = quantum_data.get('states', 0)
             if active_states > 30:
                 parts.append(f"Quantum: {active_states} active states (high activity)")
-            
+
             return " | ".join(parts)
-            
+
         except Exception as e:
             logger.debug(f"Error generating snapshot context: {e}")
             return "Context unavailable."
-    
+
     def generate_temporal_delta(self, prev_timestamp: Optional[float], curr_timestamp: Optional[float]) -> str:
         """
         Generate a temporal delta summary showing what changed between two snapshots.
         This enhances Vision's understanding of evolution by highlighting changes.
-        
+
         Args:
             prev_timestamp: Timestamp of the previous snapshot
             curr_timestamp: Timestamp of the current snapshot
-        
+
         Returns:
             Delta summary string describing changes between snapshots
         """
         if not self.shared_state_path.exists() or not self.explorer:
             return ""
-        
+
         try:
             # Get events in each time window
             all_events = list(self.explorer.events.values())
-            
+
             # Filter events by timestamp ranges
             prev_events = [e for e in all_events if prev_timestamp and e.timestamp <= prev_timestamp]
             curr_events = [e for e in all_events if curr_timestamp and e.timestamp <= curr_timestamp]
             new_events = [e for e in all_events if prev_timestamp and curr_timestamp and prev_timestamp < e.timestamp <= curr_timestamp]
-            
+
             if not new_events:
                 return "No new events between snapshots"
-            
+
             delta_parts = []
-            
+
             # Node/event changes
             node_delta = len(curr_events) - len(prev_events)
             if node_delta > 0:
                 delta_parts.append(f"+{node_delta} new nodes")
             elif node_delta < 0:
                 delta_parts.append(f"{node_delta} nodes (pruned)")
-            
+
             # Component breakdown of new events
             component_counts = {}
             event_type_counts = {}
             for event in new_events:
                 component_counts[event.component] = component_counts.get(event.component, 0) + 1
                 event_type_counts[event.event_type] = event_type_counts.get(event.event_type, 0) + 1
-            
+
             if component_counts:
                 top_components = sorted(component_counts.items(), key=lambda x: x[1], reverse=True)[:3]
                 comp_str = ", ".join([f"{c}:{n}" for c, n in top_components])
                 delta_parts.append(f"Active: {comp_str}")
-            
+
             if event_type_counts:
                 top_types = sorted(event_type_counts.items(), key=lambda x: x[1], reverse=True)[:2]
                 type_str = ", ".join([f"{t}:{n}" for t, n in top_types])
                 delta_parts.append(f"Types: {type_str}")
-            
+
             # Try to get metric changes from shared state
             with open(self.shared_state_path, 'r') as f:
                 state = json.load(f)
             data = state.get('data', {})
-            
+
             # Check for significant metric changes (stored in previous context if available)
             network_data = data.get('network', {})
             modularity = network_data.get('modularity', 0.0)
             djinn_data = data.get('djinn_kernel', {})
             vp = djinn_data.get('violation_pressure', 0.0)
-            
+
             # Highlight critical states
             if vp > 0.75:
                 delta_parts.append("⚠️ HIGH VP")
             if modularity < 0.2:
                 delta_parts.append("⚠️ LOW MODULARITY")
-            
+
             if delta_parts:
                 return f"Δ Changes: {' | '.join(delta_parts)}"
             return ""
-            
+
         except Exception as e:
             logger.debug(f"Error generating temporal delta: {e}")
             return ""
-    
+
     def extract_vision_insights(self, visual_description: str, annotations: Optional[Dict] = None) -> Dict[str, Any]:
         """
         Extract structured insights from Vision model's analysis to feed back to CRA.
         This closes the Vision → CRA feedback loop with queryable structured data.
-        
+
         Args:
             visual_description: Raw text description from Vision model
             annotations: Parsed JSON annotations from Vision model
-        
+
         Returns:
             Structured insights dict with detected_patterns, structural_assessment, etc.
         """
@@ -5633,12 +5657,12 @@ class SystemContextBuilder:
             'evolution_trend': 'stable',
             'confidence_level': 'medium'
         }
-        
+
         if not visual_description:
             return insights
-        
+
         desc_lower = visual_description.lower()
-        
+
         # Detect patterns from description text
         pattern_keywords = {
             'dense_cluster': ['dense cluster', 'tightly connected', 'hub', 'central node', 'high connectivity'],
@@ -5650,11 +5674,11 @@ class SystemContextBuilder:
             'ring_structure': ['ring', 'circular', 'loop', 'cycle'],
             'bridge_nodes': ['bridge', 'connector', 'bottleneck', 'gateway']
         }
-        
+
         for pattern, keywords in pattern_keywords.items():
             if any(kw in desc_lower for kw in keywords):
                 insights['detected_patterns'].append(pattern)
-        
+
         # Structural assessment
         if 'modular' in desc_lower or 'cluster' in desc_lower:
             insights['structural_assessment'] = 'modular_with_clusters'
@@ -5664,7 +5688,7 @@ class SystemContextBuilder:
             insights['structural_assessment'] = 'sparse_distributed'
         elif 'star' in desc_lower or 'hub' in desc_lower:
             insights['structural_assessment'] = 'hub_and_spoke'
-        
+
         # Evolution trend detection
         evolution_keywords = {
             'expanding': ['growing', 'expanding', 'increasing', 'more nodes', 'added'],
@@ -5672,12 +5696,12 @@ class SystemContextBuilder:
             'fragmenting': ['fragmenting', 'splitting', 'dividing', 'separating'],
             'consolidating': ['consolidating', 'merging', 'combining', 'integrating']
         }
-        
+
         for trend, keywords in evolution_keywords.items():
             if any(kw in desc_lower for kw in keywords):
                 insights['evolution_trend'] = trend
                 break
-        
+
         # Anomaly detection from description
         anomaly_keywords = ['unusual', 'anomaly', 'unexpected', 'strange', 'outlier', 'abnormal']
         if any(kw in desc_lower for kw in anomaly_keywords):
@@ -5685,7 +5709,7 @@ class SystemContextBuilder:
             for sentence in visual_description.split('.'):
                 if any(kw in sentence.lower() for kw in anomaly_keywords):
                     insights['anomaly_flags'].append(sentence.strip()[:100])
-        
+
         # Extract cluster info from annotations
         if annotations and 'annotations' in annotations:
             for ann in annotations['annotations']:
@@ -5695,19 +5719,19 @@ class SystemContextBuilder:
                         'location': {'x': ann.get('x', 0), 'y': ann.get('y', 0)},
                         'size': ann.get('radius', 50)
                     })
-        
+
         # Confidence level based on description specificity
         if len(visual_description) > 500 and len(insights['detected_patterns']) >= 2:
             insights['confidence_level'] = 'high'
         elif len(visual_description) < 100:
             insights['confidence_level'] = 'low'
-        
+
         return insights
-    
+
     def _load_configuration(self) -> str:
         """Load system configuration files"""
         parts = []
-        
+
         # Load config.json
         config_path = Path("config.json")
         if config_path.exists():
@@ -5776,7 +5800,7 @@ class SystemContextBuilder:
                     parts.append("\n# Configuration Consistency Summary\n(Unable to generate summary)")
             except Exception as e:
                 parts.append(f"Error loading config.json: {e}")
-        
+
         # Load ollama_config.json
         ollama_config_path = Path("ollama_config.json")
         if ollama_config_path.exists():
@@ -5789,23 +5813,23 @@ class SystemContextBuilder:
                 parts.append(f"\n# Ollama Configuration (ollama_config.json)\n{json.dumps(ollama_config, indent=2)}")
             except Exception as e:
                 parts.append(f"Error loading ollama_config.json: {e}")
-                
+
         if not parts:
             return "No configuration files found."
-            
+
         return "\n".join(parts)
 
     def _load_shared_state(self) -> str:
         """Load and summarize shared state file"""
         if not self.shared_state_path.exists():
             return "No shared state file found."
-        
+
         try:
             # Force reload if modified <10s
             file_mtime = os.path.getmtime(self.shared_state_path)
             current_time = time.time()
             force_reload = (current_time - file_mtime) < 10
-            
+
             # Check simulation running status
             control_file = project_root / 'data' / '.simulation_control.json'
             simulation_running = False
@@ -5816,17 +5840,17 @@ class SystemContextBuilder:
                         simulation_running = bool(control.get('running', False))
                 except (IOError, json.JSONDecodeError, KeyError):
                     simulation_running = False
-            
+
             # Calculate data age
             data_age_seconds = current_time - file_mtime
             data_age_minutes = data_age_seconds / 60
             data_age_hours = data_age_seconds / 3600
-            
+
             with open(self.shared_state_path, 'r') as f:
                 state = json.load(f)
-            
+
             parts = []
-            
+
             # CRITICAL: System Status Header
             parts.append("# SYSTEM STATUS")
             if simulation_running:
@@ -5844,21 +5868,21 @@ class SystemContextBuilder:
                 else:
                     parts.append(f"Data age: {data_age_hours/24:.1f} days old (from previous run)")
                 parts.append("⚠️ IMPORTANT: This is HISTORICAL data, not a live system. Preflight diagnostics should focus on pattern analysis, not active system issues.")
-            
+
             parts.append("")
             parts.append("# Current System State (from shared state file)")
             parts.append(f"Frame: {state.get('frame_count', 0)}")
             parts.append(f"FPS: {state.get('simulation_fps', 0.0)}")
             parts.append(f"Simulation Time: {state.get('simulation_time', 0)}")
-            
+
             # Add data staleness warning if system is stopped
             if not simulation_running:
                 if state.get('frame_count', 0) == 0 and state.get('simulation_fps', 0.0) == 0.0:
                     parts.append("")
                     parts.append("⚠️ NOTE: Frame=0 and FPS=0.0 indicates this is a snapshot from before simulation started, or from a stopped system.")
-            
+
             data = state.get('data', {})
-            
+
             if 'quantum' in data:
                 q = data['quantum']
                 parts.append(f"\n# Quantum System Data")
@@ -5869,7 +5893,7 @@ class SystemContextBuilder:
                     # Sample top 5 states
                     for state in list(q['state_details'])[:5]:
                         parts.append(f"  - {state}")
-            
+
             if 'lattice' in data:
                 l = data['lattice']
                 parts.append(f"\n# Lattice System Data")
@@ -5879,7 +5903,7 @@ class SystemContextBuilder:
                 # Expose particle distribution if available
                 if 'distribution' in l:
                     parts.append(f"Distribution: {l.get('distribution')}")
-            
+
             if 'evolution' in data:
                 e = data['evolution']
                 parts.append(f"\n# Evolution Engine Data")
@@ -5891,7 +5915,7 @@ class SystemContextBuilder:
                     parts.append("Top Organisms (Genetics):")
                     for org in list(e['top_organisms'])[:3]:
                         parts.append(f"  - ID: {org.get('id')} | Fitness: {org.get('fitness')} | Genome: {org.get('genome')}")
-            
+
             if 'network' in data:
                 n = data['network']
                 parts.append(f"\n# Network Analysis Data")
@@ -5902,28 +5926,28 @@ class SystemContextBuilder:
                 # Expose hub nodes if available
                 if 'hubs' in n and n['hubs']:
                     parts.append(f"Network Hubs: {', '.join(str(h) for h in list(n['hubs'])[:5])}")
-            
+
             if 'explorer' in data:
                 ex = data['explorer']
                 parts.append(f"\n# Explorer Data")
                 parts.append(f"Phase: {ex.get('phase', 'unknown')}")
                 parts.append(f"VP Calculations: {ex.get('vp_calculations', 0)}")
                 parts.append(f"Breath Cycle: {ex.get('breath_cycle', 0)}")
-            
+
             if 'djinn_kernel' in data:
                 dk = data['djinn_kernel']
                 parts.append(f"\n# Djinn Kernel Data")
                 parts.append(f"Violation Pressure (VP): {dk.get('violation_pressure', 0)}")
                 parts.append(f"VP Classification: {dk.get('vp_classification', 'unknown')}")
                 parts.append(f"Tape Cells: {dk.get('tape_cells', 0)}")
-                
+
                 # VP Consistency Check and Analysis
                 explorer_phase = data.get('explorer', {}).get('phase', 'unknown')
                 vp_value = dk.get('violation_pressure', 0)
                 vp_class = dk.get('vp_classification', 'unknown')
                 vp_calculations = data.get('explorer', {}).get('vp_calculations', 0)
                 tape_cells = dk.get('tape_cells', 0)
-                
+
                 parts.append(f"\n# VP Analysis & System Health")
                 parts.append(f"VP Value: {vp_value:.4f} (Classification: {vp_class})")
                 parts.append(f"Explorer Phase: {explorer_phase}")
@@ -5932,14 +5956,14 @@ class SystemContextBuilder:
 
                 # Diagnostics log path note (standardized)
                 parts.append("Diagnostics Log: data/logs/vp_diagnostics.log (if diagnostics_enabled=true)")
-                
+
                 # Synchronization check
                 if vp_calculations > 0 and tape_cells > 0:
                     sync_ratio = vp_calculations / tape_cells if tape_cells > 0 else 0
                     parts.append(f"Synchronization Ratio: {sync_ratio:.4f} (VP calcs / Tape cells)")
                     if abs(sync_ratio - 1.0) > 0.01:
                         parts.append(f"⚠️ Sync Warning: Ratio deviates from 1.0 by {abs(sync_ratio - 1.0)*100:.2f}%")
-                
+
                 # Phase-VP consistency check
                 if vp_class == 'VP4' and explorer_phase == 'genesis':
                     parts.append("\n⚠️ CRITICAL ANOMALY: VP4 detected during Genesis phase!")
@@ -5962,7 +5986,7 @@ class SystemContextBuilder:
                     parts.append("✓ Phase-VP Consistency: Normal (low VP during Genesis)")
                 elif vp_class in ['VP2', 'VP3', 'VP4'] and explorer_phase == 'sovereign':
                     parts.append("✓ Phase-VP Consistency: Normal (higher VP during Sovereign)")
-                
+
                 # Network-Evolution correlation
                 if 'network' in data and 'evolution' in data:
                     n = data['network']
@@ -5972,48 +5996,48 @@ class SystemContextBuilder:
                     population = e.get('population_size', 0)
                     best_fitness = e.get('best_fitness', 0)
                     generation = e.get('generation', 0)
-                    
+
                     parts.append(f"\n# Network-Evolution Correlation")
                     parts.append(f"Network: {organisms:,} organisms, {connections:,} connections")
                     parts.append(f"Evolution: Generation {generation}, Population {population:,}, Best Fitness {best_fitness:.4f}")
-                    
+
                     if organisms > 0:
                         conn_per_org = connections / organisms
                         parts.append(f"Connections per Organism: {conn_per_org:.3f}")
                         if conn_per_org < 0.7:
                             parts.append("⚠️ Sparse Connectivity: <0.7 connections/organism may indicate fragmentation")
-                    
+
                     if population > 0:
                         org_pop_ratio = organisms / population
                         parts.append(f"Organism/Population Ratio: {org_pop_ratio:.3f}")
                         if org_pop_ratio > 1.0:
                             parts.append("⚠️ More organisms than population - possible data inconsistency")
-                    
+
                     # Fitness maturity check
                     if generation > 0 and best_fitness >= 1.0:
                         parts.append(f"⚠️ Fitness Maturity Check: Best fitness {best_fitness:.4f} at generation {generation}")
                         parts.append("  High fitness early may indicate premature convergence or calibration issue")
-            
+
             return "\n".join(parts)
         except Exception as e:
             logger.error(f"Error loading shared state: {e}", exc_info=True)
             return f"Error loading shared state: {e}"
-    
+
     def _load_recent_logs(self) -> str:
         """Load and summarize recent log entries"""
         log_data = self.log_parser.parse_all_logs(max_lines_per_file=500)
         return self.log_parser.summarize_logs(log_data)
-    
+
     def _get_graph_context(self, selected_event: str = None, view_state: Dict[str, Any] = None) -> str:
         """Get comprehensive causation graph context with FULL event details and recall"""
         if not self.explorer:
             return "Causation Explorer not available."
-        
+
         try:
             parts = []
             total_events = len(self.explorer.events)
             total_links = self.explorer.causation_graph.number_of_edges()
-            
+
             parts.append(f"# 🔬 CAUSATION GRAPH - COMPLETE CONTEXT")
             parts.append(f"## CRITICAL UNDERSTANDING:")
             parts.append(f"**NODES = EVENTS** - Each node in the graph represents a system event (state change, threshold crossing, etc.)")
@@ -6021,19 +6045,19 @@ class SystemContextBuilder:
             parts.append(f"")
             parts.append(f"Total Events (Nodes): {total_events:,}")
             parts.append(f"Total Causation Links: {total_links:,}")
-            
+
             if total_events > 0:
                 # Calculate link density
                 max_possible_links = total_events * (total_events - 1) / 2
                 link_density = (total_links / max_possible_links * 100) if max_possible_links > 0 else 0
                 parts.append(f"Link Density: {link_density:.2f}% ({total_links:,} of {max_possible_links:,.0f} possible)")
-            
+
             # COMPONENT BREAKDOWN WITH FULL DETAILS
             if self.explorer.events:
                 component_counts = {}
                 component_events = {}  # Store events by component
                 event_type_counts = {}
-                
+
                 for event_id, event in self.explorer.events.items():
                     comp = event.component
                     component_counts[comp] = component_counts.get(comp, 0) + 1
@@ -6047,12 +6071,12 @@ class SystemContextBuilder:
                     })
                     etype = event.event_type
                     event_type_counts[etype] = event_type_counts.get(etype, 0) + 1
-                
+
                 parts.append(f"\n## 📊 COMPONENT BREAKDOWN (Nodes = Events by Component)")
                 for comp, count in sorted(component_counts.items(), key=lambda x: x[1], reverse=True):
                     percentage = (count / total_events * 100) if total_events > 0 else 0
                     parts.append(f"\n### {comp.upper()}: {count:,} events ({percentage:.1f}%)")
-                    
+
                     # Show recent events from this component with FULL data
                     comp_events = sorted(component_events[comp], key=lambda x: x['timestamp'], reverse=True)[:5]
                     for evt in comp_events:
@@ -6062,31 +6086,31 @@ class SystemContextBuilder:
                             data_str = data_str[:200] + "..."
                         parts.append(f"  - [{evt['timestamp']:.2f}] {evt['type']} (ID: {evt['id'][:12]}...)")
                         parts.append(f"    Data: {data_str}")
-                
+
                 parts.append(f"\n## 📈 EVENT TYPE DISTRIBUTION")
                 for etype, count in sorted(event_type_counts.items(), key=lambda x: x[1], reverse=True)[:15]:
                     percentage = (count / total_events * 100) if total_events > 0 else 0
                     parts.append(f"  {etype}: {count:,} ({percentage:.1f}%)")
-            
+
             # CAUSATION TYPE BREAKDOWN WITH FULL DETAILS
             try:
                 causation_type_counts = {}
                 causation_type_details = {}  # Store link details by type
-                
+
                 for edge in self.explorer.causation_graph.edges(data=True):
                     from_event_id = edge[0]
                     to_event_id = edge[1]
                     edge_data = edge[2]
                     causation_type = edge_data.get('causation_type', 'unknown')
                     causation_type_counts[causation_type] = causation_type_counts.get(causation_type, 0) + 1
-                    
+
                     if causation_type not in causation_type_details:
                         causation_type_details[causation_type] = []
-                    
+
                     # Get event details
                     from_event = self.explorer.events.get(from_event_id)
                     to_event = self.explorer.events.get(to_event_id)
-                    
+
                     causation_type_details[causation_type].append({
                         'from': {
                             'id': from_event_id,
@@ -6102,13 +6126,13 @@ class SystemContextBuilder:
                         'explanation': edge_data.get('explanation', ''),
                         'metrics': edge_data.get('metrics_involved', [])
                     })
-                
+
                 if causation_type_counts:
                     parts.append(f"\n## 🔗 CAUSATION TYPE BREAKDOWN (Links = Causation Relationships)")
                     for ctype, count in sorted(causation_type_counts.items(), key=lambda x: x[1], reverse=True):
                         percentage = (count / total_links * 100) if total_links > 0 else 0
                         parts.append(f"\n### {ctype.upper()}: {count:,} links ({percentage:.1f}%)")
-                        
+
                         # Show sample links with full details
                         sample_links = causation_type_details[ctype][:3]
                         for link in sample_links:
@@ -6120,7 +6144,7 @@ class SystemContextBuilder:
                                 parts.append(f"    Metrics: {', '.join(link['metrics'])}")
             except Exception as e:
                 parts.append(f"\n## ⚠️ Causation Type Analysis Error: {e}")
-            
+
             # TEMPORAL ANALYSIS
             if self.explorer.events:
                 timestamps = [event.timestamp for event in self.explorer.events.values()]
@@ -6132,12 +6156,12 @@ class SystemContextBuilder:
                     parts.append(f"Time Span: {time_span:.2f} seconds")
                     parts.append(f"Events/Second: {total_events / time_span:.2f}" if time_span > 0 else "Events/Second: N/A")
                     parts.append(f"Links/Second: {total_links / time_span:.2f}" if time_span > 0 else "Links/Second: N/A")
-            
+
             # RECENT EVENTS WITH FULL DATA
             if self.explorer.events:
                 parts.append(f"\n## 🆕 RECENT EVENTS (Last 20 - Full Details)")
-                recent_events = sorted(self.explorer.events.items(), 
-                                      key=lambda x: x[1].timestamp, 
+                recent_events = sorted(self.explorer.events.items(),
+                                      key=lambda x: x[1].timestamp,
                                       reverse=True)[:20]
                 for event_id, event in recent_events:
                     data_str = json.dumps(event.data, indent=2) if event.data else "{}"
@@ -6146,7 +6170,7 @@ class SystemContextBuilder:
                     parts.append(f"\n### [{event.timestamp:.2f}] {event.component} → {event.event_type}")
                     parts.append(f"  Event ID: {event_id}")
                     parts.append(f"  Full Data: {data_str}")
-            
+
             # SELECTED EVENT WITH FULL CAUSATION TRAIL
             if selected_event and selected_event in self.explorer.events:
                 event = self.explorer.events[selected_event]
@@ -6156,12 +6180,12 @@ class SystemContextBuilder:
                 parts.append(f"Type: {event.event_type}")
                 parts.append(f"Timestamp: {event.timestamp:.2f}")
                 parts.append(f"Full Data: {json.dumps(event.data, indent=2)}")
-                
+
                 # Get causal connections
                 in_degree = self.explorer.causation_graph.in_degree(selected_event)
                 out_degree = self.explorer.causation_graph.out_degree(selected_event)
                 parts.append(f"\nCausal Connections: {in_degree} incoming (caused by), {out_degree} outgoing (caused)")
-                
+
                 # Get immediate causes with details
                 if in_degree > 0:
                     parts.append(f"\n### Immediate Causes (What Caused This?):")
@@ -6173,7 +6197,7 @@ class SystemContextBuilder:
                             causation_type = edge_data.get('causation_type', 'unknown') if edge_data else 'unknown'
                             parts.append(f"  - {cause_event.component} → {cause_event.event_type} (via {causation_type})")
                             parts.append(f"    ID: {cause_id[:12]}... | Data: {json.dumps(cause_event.data, indent=4)[:200]}")
-                
+
                 # Get immediate effects with details
                 if out_degree > 0:
                     parts.append(f"\n### Immediate Effects (What Did This Cause?):")
@@ -6185,7 +6209,7 @@ class SystemContextBuilder:
                             causation_type = edge_data.get('causation_type', 'unknown') if edge_data else 'unknown'
                             parts.append(f"  - {effect_event.component} → {effect_event.event_type} (via {causation_type})")
                             parts.append(f"    ID: {effect_id[:12]}... | Data: {json.dumps(effect_event.data, indent=4)[:200]}")
-            
+
             # STATE CHANGE SUMMARY
             parts.append(f"\n## 📋 STATE CHANGES SUMMARY")
             parts.append(f"All events represent state changes in the Butterfly System:")
@@ -6194,31 +6218,31 @@ class SystemContextBuilder:
             parts.append(f"- **Djinn Kernel**: Violation pressure calculations, VP classifications, trait updates")
             parts.append(f"- **Breath Engine**: Breath cycles, depth, phase, pulse (drives entire system)")
             parts.append(f"- **System**: Initialization, shutdown, errors, lifecycle events")
-            
+
             # Add visualization settings if available
             if view_state:
                 viz_context = self._get_viz_settings_context(view_state)
                 if viz_context:
                     parts.append(viz_context)
-            
+
             return "\n".join(parts)
         except Exception as e:
             logger.error(f"Error getting graph context: {e}", exc_info=True)
             return f"Error getting graph context: {e}"
-    
+
     def _get_viz_settings_context(self, view_state: Dict[str, Any] = None) -> str:
         """Get current visualization settings for CRA context"""
         if not view_state:
             return ""
-        
+
         viz_settings = view_state.get('vizSettings', {})
         if not viz_settings:
             return ""
-        
+
         parts = []
         parts.append(f"\n## 🎨 CURRENT VISUALIZATION SETTINGS (Dynamic Colors)")
         parts.append(f"**IMPORTANT**: All colors are dynamic and can change. Use these current values when referencing colors:")
-        
+
         # Component colors
         component_colors = []
         for comp in ['reality_sim', 'explorer', 'djinn_kernel', 'breath', 'neural', 'ml_analysis', 'language', 'butterfly_chat', 'system', 'highlander', 'alliance', 'confederation']:
@@ -6226,11 +6250,11 @@ class SystemContextBuilder:
             color = viz_settings.get(color_key, 'N/A')
             if color != 'N/A':
                 component_colors.append(f"  - {comp}: {color}")
-        
+
         if component_colors:
             parts.append(f"\n**Component Colors**:")
             parts.extend(component_colors)
-        
+
         # Link colors
         link_colors = []
         for link_type in ['threshold', 'correlation', 'direct', 'temporal', 'neural', 'ml', 'language', 'linguistic', 'battle', 'alliance', 'confederation', 'unknown']:
@@ -6238,28 +6262,28 @@ class SystemContextBuilder:
             color = viz_settings.get(color_key, 'N/A')
             if color != 'N/A':
                 link_colors.append(f"  - {link_type}: {color}")
-        
+
         if link_colors:
             parts.append(f"\n**Link Colors**:")
             parts.extend(link_colors)
-        
+
         return "\n".join(parts) if parts else ""
 
 
 class SystemKnowledgeBase:
     """Load and provide system knowledge from documentation"""
-    
+
     def __init__(self, project_root: Path):
         self.project_root = project_root
         self._knowledge = None
-    
+
     def load_knowledge(self) -> str:
         """Load system knowledge from documentation"""
         if self._knowledge:
             return self._knowledge
-        
+
         parts = []
-        
+
         # Load ARCHITECTURE.md if available
         arch_path = self.project_root / 'ARCHITECTURE.md'
         if arch_path.exists():
@@ -6270,7 +6294,7 @@ class SystemKnowledgeBase:
                     parts.append(f"# System Architecture\n{arch_content[:3000]}...\n")
             except Exception as e:
                 logger.warning(f"Could not load ARCHITECTURE.md: {e}")
-        
+
         # Load README.md if available
         readme_path = self.project_root / 'README.md'
         if readme_path.exists():
@@ -6281,13 +6305,13 @@ class SystemKnowledgeBase:
                     parts.append(f"# System Overview\n{readme_content[:3000]}...\n")
             except Exception as e:
                 logger.warning(f"Could not load README.md: {e}")
-        
+
         # Add system component descriptions
         parts.append(self._get_component_descriptions())
-        
+
         self._knowledge = "\n".join(parts)
         return self._knowledge
-    
+
     def _get_component_descriptions(self) -> str:
         """Get descriptions of system components"""
         return """
@@ -6396,7 +6420,7 @@ The Lawfold Field Architecture provides advanced mathematical governance capabil
 
 class ChangeDetector:
     """Detect changes between graph snapshots"""
-    
+
     def compare_snapshots(self, snapshot1: Dict[str, Any], snapshot2: Dict[str, Any]) -> Dict[str, Any]:
         """Compare two snapshots and return detected changes"""
         changes = {
@@ -6411,58 +6435,58 @@ class ChangeDetector:
             },
             'metric_changes': {}
         }
-        
+
         nodes1 = {n['id']: n for n in snapshot1.get('nodes', [])}
         nodes2 = {n['id']: n for n in snapshot2.get('nodes', [])}
-        
+
         # Detect node changes
         node_ids1 = set(nodes1.keys())
         node_ids2 = set(nodes2.keys())
-        
+
         added_nodes = node_ids2 - node_ids1
         removed_nodes = node_ids1 - node_ids2
-        
+
         for node_id in added_nodes:
             changes['node_changes']['added'].append({
                 'id': node_id,
                 'component': nodes2[node_id].get('component'),
                 'type': nodes2[node_id].get('type')
             })
-        
+
         for node_id in removed_nodes:
             changes['node_changes']['removed'].append({
                 'id': node_id,
                 'component': nodes1[node_id].get('component'),
                 'type': nodes1[node_id].get('type')
             })
-        
+
         # Detect link changes
-        links1 = {(l.get('source', {}).get('id', l.get('source')), 
-                   l.get('target', {}).get('id', l.get('target'))) 
+        links1 = {(l.get('source', {}).get('id', l.get('source')),
+                   l.get('target', {}).get('id', l.get('target')))
                   for l in snapshot1.get('links', [])}
-        links2 = {(l.get('source', {}).get('id', l.get('source')), 
-                   l.get('target', {}).get('id', l.get('target'))) 
+        links2 = {(l.get('source', {}).get('id', l.get('source')),
+                   l.get('target', {}).get('id', l.get('target')))
                   for l in snapshot2.get('links', [])}
-        
+
         added_links = links2 - links1
         removed_links = links1 - links2
-        
+
         for source, target in added_links:
             changes['link_changes']['added'].append({
                 'source': source,
                 'target': target
             })
-        
+
         for source, target in removed_links:
             changes['link_changes']['removed'].append({
                 'source': source,
                 'target': target
             })
-        
+
         # Detect metric changes
         metrics1 = snapshot1.get('metrics', {})
         metrics2 = snapshot2.get('metrics', {})
-        
+
         all_metrics = set(metrics1.keys()) | set(metrics2.keys())
         for metric in all_metrics:
             val1 = metrics1.get(metric, 0)
@@ -6474,18 +6498,18 @@ class ChangeDetector:
                     'change': val2 - val1,
                     'change_percent': ((val2 - val1) / val1 * 100) if val1 != 0 else 0
                 }
-        
+
         return changes
 
 
 class ComparativeAnalyzer:
     """Compare different runs or sessions to identify differences"""
-    
+
     def __init__(self, storage_dir: Path):
         self.storage_dir = storage_dir
         self.runs_dir = storage_dir / 'runs'
         self.runs_dir.mkdir(parents=True, exist_ok=True)
-    
+
     def save_run_summary(self, run_id: str, summary: Dict[str, Any]):
         """Save a run summary for later comparison"""
         run_file = self.runs_dir / f"{run_id}.json"
@@ -6496,21 +6520,21 @@ class ComparativeAnalyzer:
         except Exception as e:
             logger.warning(f"Could not save run summary: {e}")
             return False
-    
+
     def load_run_summaries(self, max_runs: int = 10) -> List[Dict[str, Any]]:
         """Load recent run summaries"""
         run_files = sorted(self.runs_dir.glob('*.json'), key=lambda p: p.stat().st_mtime, reverse=True)
         runs = []
-        
+
         for run_file in run_files[:max_runs]:
             try:
                 with open(run_file, 'r') as f:
                     runs.append(json.load(f))
             except Exception as e:
                 logger.debug(f"Could not load run {run_file}: {e}")
-        
+
         return runs
-    
+
     def compare_runs(self, run1: Dict[str, Any], run2: Dict[str, Any]) -> Dict[str, Any]:
         """Compare two runs and return differences"""
         comparison = {
@@ -6518,11 +6542,11 @@ class ComparativeAnalyzer:
             'graph_differences': {},
             'event_differences': {}
         }
-        
+
         # Compare metrics
         metrics1 = run1.get('metrics', {})
         metrics2 = run2.get('metrics', {})
-        
+
         all_metrics = set(metrics1.keys()) | set(metrics2.keys())
         for metric in all_metrics:
             val1 = metrics1.get(metric, 0)
@@ -6534,11 +6558,11 @@ class ComparativeAnalyzer:
                     'difference': val2 - val1,
                     'percent_change': ((val2 - val1) / val1 * 100) if val1 != 0 else 0
                 }
-        
+
         # Compare graph stats
         graph1 = run1.get('graph_stats', {})
         graph2 = run2.get('graph_stats', {})
-        
+
         comparison['graph_differences'] = {
             'nodes': {
                 'run1': graph1.get('nodes', 0),
@@ -6551,40 +6575,40 @@ class ComparativeAnalyzer:
                 'difference': graph2.get('links', 0) - graph1.get('links', 0)
             }
         }
-        
+
         # Compare event counts
         events1 = run1.get('event_count', 0)
         events2 = run2.get('event_count', 0)
-        
+
         comparison['event_differences'] = {
             'run1_count': events1,
             'run2_count': events2,
             'difference': events2 - events1
         }
-        
+
         return comparison
-    
+
     def generate_comparison_report(self, run1_id: str, run2_id: str) -> str:
         """Generate a formatted comparison report"""
         runs = self.load_run_summaries(max_runs=20)
         run1 = next((r for r in runs if r.get('run_id') == run1_id), None)
         run2 = next((r for r in runs if r.get('run_id') == run2_id), None)
-        
+
         if not run1 or not run2:
             return "Could not find one or both runs for comparison."
-        
+
         comparison = self.compare_runs(run1, run2)
-        
+
         parts = []
         parts.append(f"# Run Comparison Report")
         parts.append(f"Run 1: {run1_id} (from {run1.get('timestamp', 'unknown')})")
         parts.append(f"Run 2: {run2_id} (from {run2.get('timestamp', 'unknown')})")
         parts.append("\n## Metrics Differences")
-        
+
         for metric, diff in comparison['metrics_differences'].items():
             parts.append(f"  {metric}: {diff['run1_value']:.3f} → {diff['run2_value']:.3f} "
                         f"({diff['percent_change']:+.2f}%)")
-        
+
         parts.append("\n## Graph Differences")
         parts.append(f"  Nodes: {comparison['graph_differences']['nodes']['run1']} → "
                     f"{comparison['graph_differences']['nodes']['run2']} "
@@ -6592,13 +6616,13 @@ class ComparativeAnalyzer:
         parts.append(f"  Links: {comparison['graph_differences']['links']['run1']} → "
                     f"{comparison['graph_differences']['links']['run2']} "
                     f"({comparison['graph_differences']['links']['difference']:+d})")
-        
+
         return "\n".join(parts)
 
 
 class AlertSystem:
     """Monitor metrics and trigger alerts when thresholds are exceeded"""
-    
+
     def __init__(self):
         self.thresholds = {
             'djinn_vp': {'min': 0.0, 'max': 0.99, 'alert_on_exceed': True},
@@ -6609,17 +6633,17 @@ class AlertSystem:
         }
         self.active_alerts = []
         self.alert_history = []
-    
+
     def check_thresholds(self, metrics: Dict[str, float], time_series_tracker: 'TimeSeriesTracker') -> List[Dict[str, Any]]:
         """Check if any metrics exceed thresholds and return alerts"""
         alerts = []
-        
+
         for metric_name, value in metrics.items():
             if metric_name not in self.thresholds:
                 continue
-            
+
             threshold = self.thresholds[metric_name]
-            
+
             # Check min threshold
             if value < threshold['min']:
                 alert = {
@@ -6632,7 +6656,7 @@ class AlertSystem:
                     'timestamp': time.time()
                 }
                 alerts.append(alert)
-            
+
             # Check max threshold
             if threshold['alert_on_exceed'] and value > threshold['max']:
                 alert = {
@@ -6645,7 +6669,7 @@ class AlertSystem:
                     'timestamp': time.time()
                 }
                 alerts.append(alert)
-        
+
         # Check for spikes using time-series tracker
         key_metrics = ['djinn_vp', 'explorer_vp', 'network_modularity']
         for metric in key_metrics:
@@ -6663,65 +6687,65 @@ class AlertSystem:
                         'timestamp': latest_spike['timestamp']
                     }
                     alerts.append(alert)
-        
+
         # Update alert history
         self.alert_history.extend(alerts)
         if len(self.alert_history) > 100:
             self.alert_history = self.alert_history[-100:]
-        
+
         self.active_alerts = alerts
         return alerts
 
 
 class PersistentContext:
     """Save and load chat history and snapshots across sessions"""
-    
+
     def __init__(self, storage_dir: Path):
         self.storage_dir = storage_dir
         self.storage_dir.mkdir(parents=True, exist_ok=True)
         self.chat_history_file = storage_dir / 'chat_history.json'
         self.snapshots_dir = storage_dir / 'snapshots'
         self.snapshots_dir.mkdir(exist_ok=True)
-    
+
     def save_chat_message(self, role: str, message: str, timestamp: float = None):
         """Save a chat message to history"""
         if timestamp is None:
             timestamp = time.time()
-        
+
         # Load existing history
         history = self.load_chat_history()
-        
+
         # Add new message
         history.append({
             'timestamp': timestamp,
             'role': role,
             'message': message
         })
-        
+
         # Save back
         try:
             with open(self.chat_history_file, 'w') as f:
                 json.dump(history, f, indent=2)
         except Exception as e:
             logger.warning(f"Could not save chat history: {e}")
-    
+
     def load_chat_history(self) -> List[Dict[str, Any]]:
         """Load chat history from disk"""
         if not self.chat_history_file.exists():
             return []
-        
+
         try:
             with open(self.chat_history_file, 'r') as f:
                 return json.load(f)
         except Exception as e:
             logger.warning(f"Could not load chat history: {e}")
             return []
-    
+
     def save_snapshot(self, snapshot_data: Dict[str, Any], snapshot_id: str = None):
         """Save a graph snapshot"""
         if snapshot_id is None:
             snapshot_id = f"snapshot_{int(time.time())}"
-        
+
         snapshot_file = self.snapshots_dir / f"{snapshot_id}.json"
         try:
             with open(snapshot_file, 'w') as f:
@@ -6730,42 +6754,42 @@ class PersistentContext:
         except Exception as e:
             logger.warning(f"Could not save snapshot: {e}")
             return None
-    
+
     def load_snapshots(self, max_snapshots: int = 10) -> List[Dict[str, Any]]:
         """Load recent snapshots"""
         snapshot_files = sorted(self.snapshots_dir.glob('*.json'), key=lambda p: p.stat().st_mtime, reverse=True)
         snapshots = []
-        
+
         for snapshot_file in snapshot_files[:max_snapshots]:
             try:
                 with open(snapshot_file, 'r') as f:
                     snapshots.append(json.load(f))
             except Exception as e:
                 logger.debug(f"Could not load snapshot {snapshot_file}: {e}")
-        
+
         return snapshots
 
 
 class PredictiveAnalyzer:
     """Generate predictive insights based on time-series trends"""
-    
+
     def __init__(self, time_series_tracker: 'TimeSeriesTracker'):
         self.tracker = time_series_tracker
-    
+
     def predict_future_value(self, metric_name: str, steps_ahead: int = 10) -> Optional[float]:
         """Predict future value based on linear trend"""
         trend = self.tracker.get_trend(metric_name, window_size=20)
         if trend.get('trend') == 'insufficient_data':
             return None
-        
+
         history = self.tracker.metrics_history.get(metric_name, [])
         if len(history) < 2:
             return None
-        
+
         # Simple linear extrapolation using change percentage
         current_value = trend.get('current_value', 0)
         change_percent = trend.get('change_percent', 0)
-        
+
         # Calculate predicted value based on percentage change
         # Assume change_percent is per window, so scale by steps_ahead
         if change_percent != 0:
@@ -6774,20 +6798,20 @@ class PredictiveAnalyzer:
         else:
             # If no change, return current value
             return current_value
-    
+
     def generate_insights(self) -> Dict[str, Any]:
         """Generate predictive insights for key metrics"""
         insights = {}
-        
+
         key_metrics = ['djinn_vp', 'explorer_vp', 'network_modularity', 'evolution_best_fitness']
-        
+
         for metric in key_metrics:
             trend = self.tracker.get_trend(metric, window_size=20)
             if trend.get('trend') == 'insufficient_data':
                 continue
-            
+
             prediction = self.predict_future_value(metric, steps_ahead=10)
-            
+
             insight = {
                 'current_trend': trend.get('trend'),
                 'change_percent': trend.get('change_percent', 0),
@@ -6795,7 +6819,7 @@ class PredictiveAnalyzer:
                 'predicted_value': prediction,
                 'confidence': 'low'  # Simple model, low confidence
             }
-            
+
             # Add qualitative prediction
             if trend.get('trend') == 'increasing':
                 if trend.get('change_percent', 0) > 5:
@@ -6809,58 +6833,58 @@ class PredictiveAnalyzer:
                     insight['prediction'] = f"{metric} is gradually decreasing - slow negative trend"
             else:
                 insight['prediction'] = f"{metric} is stable - no significant change expected"
-            
+
             insights[metric] = insight
-        
+
         return insights
 
 
 class TimeSeriesTracker:
     """Track metrics over time for trend analysis and anomaly detection"""
-    
+
     def __init__(self, max_history: int = 1000):
         self.max_history = max_history
         self.metrics_history = defaultdict(list)  # metric_name -> [(timestamp, value), ...]
         self.last_update_time = None
-    
+
     def record_metric(self, metric_name: str, value: float, timestamp: float = None):
         """Record a metric value at a given timestamp"""
         if timestamp is None:
             timestamp = time.time()
-        
+
         history = self.metrics_history[metric_name]
         history.append((timestamp, value))
-        
+
         # Keep only last max_history entries
         if len(history) > self.max_history:
             history.pop(0)
-    
+
     def extract_metrics_from_state(self, state: Dict[str, Any], timestamp: float = None):
         """Extract all metrics from shared state and record them"""
         if timestamp is None:
             timestamp = time.time()
-        
+
         data = state.get('data', {})
-        
+
         # Frame-level metrics
         self.record_metric('frame_count', state.get('frame_count', 0), timestamp)
         self.record_metric('simulation_fps', state.get('simulation_fps', 0.0), timestamp)
         self.record_metric('simulation_time', state.get('simulation_time', 0.0), timestamp)
-        
+
         # Quantum metrics
         if 'quantum' in data:
             q = data['quantum']
             self.record_metric('quantum_states', q.get('states', 0), timestamp)
             self.record_metric('quantum_energy', q.get('energy', 0.0), timestamp)
             self.record_metric('quantum_entropy', q.get('entropy', 0.0), timestamp)
-        
+
         # Lattice metrics
         if 'lattice' in data:
             l = data['lattice']
             self.record_metric('lattice_particles', l.get('particles', 0), timestamp)
             self.record_metric('lattice_cpu_usage', l.get('cpu_usage', 0.0), timestamp)
             self.record_metric('lattice_temperature', l.get('temperature', 0.0), timestamp)
-        
+
         # Evolution metrics
         if 'evolution' in data:
             e = data['evolution']
@@ -6868,7 +6892,7 @@ class TimeSeriesTracker:
             self.record_metric('evolution_population', e.get('population_size', 0), timestamp)
             self.record_metric('evolution_best_fitness', e.get('best_fitness', 0.0), timestamp)
             self.record_metric('evolution_avg_fitness', e.get('avg_fitness', 0.0), timestamp)
-        
+
         # Network metrics
         if 'network' in data:
             n = data['network']
@@ -6876,56 +6900,56 @@ class TimeSeriesTracker:
             self.record_metric('network_connections', n.get('connections', 0), timestamp)
             self.record_metric('network_modularity', n.get('modularity', 0.0), timestamp)
             self.record_metric('network_clustering', n.get('clustering_coefficient', 0.0), timestamp)
-        
+
         # Explorer metrics
         if 'explorer' in data:
             ex = data['explorer']
             self.record_metric('explorer_vp', ex.get('current_vp', 0.0), timestamp)
             self.record_metric('explorer_phase', self._phase_to_number(ex.get('phase', 'unknown')), timestamp)
             self.record_metric('explorer_breath_cycle', ex.get('breath_cycle', 0), timestamp)
-        
+
         # Djinn Kernel metrics
         if 'djinn_kernel' in data:
             dk = data['djinn_kernel']
             self.record_metric('djinn_vp', dk.get('violation_pressure', 0.0), timestamp)
             self.record_metric('djinn_tape_cells', dk.get('tape_cells', 0), timestamp)
-        
+
         self.last_update_time = timestamp
-    
+
     def _phase_to_number(self, phase: str) -> float:
         """Convert phase name to number for tracking"""
         phase_map = {'unknown': 0, 'exploration': 1, 'analysis': 2, 'synthesis': 3}
         return phase_map.get(phase.lower(), 0)
-    
+
     def get_trend(self, metric_name: str, window_size: int = 10) -> Dict[str, Any]:
         """Calculate trend statistics for a metric"""
         history = self.metrics_history.get(metric_name, [])
         if len(history) < 2:
             return {'trend': 'insufficient_data', 'slope': 0, 'change_percent': 0}
-        
+
         # Get recent window
         recent = history[-window_size:] if len(history) >= window_size else history
-        
+
         values = [v for _, v in recent]
         timestamps = [t for t, _ in recent]
-        
+
         # Calculate slope (simple linear regression)
         n = len(values)
         if n < 2:
             return {'trend': 'insufficient_data', 'slope': 0, 'change_percent': 0}
-        
+
         sum_x = sum(timestamps)
         sum_y = sum(values)
         sum_xy = sum(t * v for t, v in zip(timestamps, values))
         sum_x2 = sum(t * t for t in timestamps)
-        
+
         slope = (n * sum_xy - sum_x * sum_y) / (n * sum_x2 - sum_x * sum_x) if (n * sum_x2 - sum_x * sum_x) != 0 else 0
-        
+
         # Calculate percentage change
         first_value = values[0]
         last_value = values[-1]
         change_percent = ((last_value - first_value) / first_value * 100) if first_value != 0 else 0
-        
+
         # Determine trend direction
         if abs(slope) < 1e-6:
             trend = 'stable'
@@ -6933,7 +6957,7 @@ class TimeSeriesTracker:
             trend = 'increasing'
         else:
             trend = 'decreasing'
-        
+
         return {
             'trend': trend,
             'slope': slope,
@@ -6945,22 +6969,22 @@ class TimeSeriesTracker:
             'avg_value': sum(values) / len(values),
             'data_points': len(recent)
         }
-    
+
     def get_all_trends(self, window_size: int = 10) -> Dict[str, Dict[str, Any]]:
         """Get trend statistics for all tracked metrics"""
         return {metric: self.get_trend(metric, window_size) for metric in self.metrics_history.keys()}
-    
+
     def detect_spikes(self, metric_name: str, threshold_multiplier: float = 2.0) -> List[Dict[str, Any]]:
         """Detect spikes in a metric (values > threshold_multiplier * average)"""
         history = self.metrics_history.get(metric_name, [])
         if len(history) < 10:
             return []
-        
+
         values = [v for _, v in history]
         avg = sum(values) / len(values)
         std_dev = (sum((v - avg) ** 2 for v in values) / len(values)) ** 0.5
         threshold = avg + (threshold_multiplier * std_dev)
-        
+
         spikes = []
         for timestamp, value in history:
             if value > threshold:
@@ -6970,7 +6994,7 @@ class TimeSeriesTracker:
                     'threshold': threshold,
                     'deviation': (value - avg) / std_dev if std_dev > 0 else 0
                 })
-        
+
         return spikes
 
 
@@ -7286,7 +7310,7 @@ def list_organisms():
     """
     List all available organisms from live simulation or saved capsules.
     Returns comprehensive "Pokémon card" style data for informed export decisions.
-    
+
     Each organism includes:
     - Identity: id, species_id, generation
     - Fitness: current, trend, history
@@ -7302,16 +7326,16 @@ def list_organisms():
         organisms_data = []
         organism_ids = set()
         unified_system = getattr(app, 'unified_system', None)
-        
+
         # Action names for behavioral analysis
         ACTION_NAMES = ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate']
-        
+
         # Get context_memory for word associations and vocab_size
         network = app.config.get('network')
         context_memory = None
         if network and hasattr(network, 'context_memory'):
             context_memory = network.context_memory
-        
+
         # Get vocab_size from context_memory first (authoritative), then fallback to config
         vocab_size = None
         if context_memory and hasattr(context_memory, 'max_vocab_size'):
@@ -7324,12 +7348,12 @@ def list_organisms():
             vocab_size = config.get('neural', {}).get('language_model', {}).get('teacher', {}).get('vocab_size')
         if not vocab_size:
             vocab_size = 10000  # Last resort fallback
-        
+
         # Get node_word_associations map
         node_word_associations = {}
         if context_memory and hasattr(context_memory, 'node_word_associations'):
             node_word_associations = context_memory.node_word_associations
-        
+
         # Get network connections dict for counting per-organism connections
         network_connections = {}
         if network and hasattr(network, 'connections'):
@@ -7347,29 +7371,29 @@ def list_organisms():
                     'aggression_ratio': 0.0,
                     'exploration_ratio': 0.0
                 }
-            
+
             # Count action frequencies
             action_counts = {}
             for action in action_history:
                 action_idx = action if isinstance(action, int) else 0
                 action_name = ACTION_NAMES[action_idx] if 0 <= action_idx < len(ACTION_NAMES) else 'unknown'
                 action_counts[action_name] = action_counts.get(action_name, 0) + 1
-            
+
             total = len(action_history)
             action_dist = {k: round(v / total * 100, 1) for k, v in action_counts.items()}
-            
+
             # Behavioral fingerprint (normalized distribution across 6 actions)
             fingerprint = [action_counts.get(name, 0) / total for name in ACTION_NAMES]
-            
+
             # Dominant action
             dominant = max(action_counts.items(), key=lambda x: x[1])[0] if action_counts else 'unknown'
-            
+
             # Personality type based on dominant behaviors
             coop_ratio = (action_counts.get('cooperate', 0) + action_counts.get('reproduce', 0)) / total
             aggro_ratio = action_counts.get('compete', 0) / total
             explore_ratio = action_counts.get('move', 0) / total
             passive_ratio = (action_counts.get('rest', 0) + action_counts.get('isolate', 0)) / total
-            
+
             if coop_ratio > 0.4:
                 personality = 'diplomat'
             elif aggro_ratio > 0.3:
@@ -7382,7 +7406,7 @@ def list_organisms():
                 personality = 'balanced'
             else:
                 personality = 'opportunist'
-            
+
             return {
                 'dominant_action': dominant,
                 'action_distribution': action_dist,
@@ -7397,23 +7421,23 @@ def list_organisms():
             """Calculate fitness trend from history."""
             if not fitness_history or len(fitness_history) < 2:
                 return {'trend': 'unknown', 'change': 0.0, 'volatility': 0.0}
-            
+
             recent = fitness_history[-5:] if len(fitness_history) >= 5 else fitness_history
             oldest = recent[0]
             newest = recent[-1]
             change = newest - oldest
-            
+
             # Calculate volatility (std dev)
             import statistics
             volatility = statistics.stdev(recent) if len(recent) > 1 else 0.0
-            
+
             if change > 0.05:
                 trend = 'rising'
             elif change < -0.05:
                 trend = 'falling'
             else:
                 trend = 'stable'
-            
+
             return {
                 'trend': trend,
                 'change': round(change, 4),
@@ -7423,25 +7447,25 @@ def list_organisms():
         def calculate_dnd_alignment(organism_data):
             """
             Calculate D&D-style alignment from organism behavioral patterns.
-            
+
             This uses RELATIVE metrics rather than absolute counts to determine
             alignment - comparing an organism's tendencies to what's "normal".
-            
+
             LAW vs CHAOS axis:
             - Action entropy (predictable vs random action choices)
             - Fitness stability (stable = lawful, volatile = chaotic)
             - Alliance loyalty (staying in alliance = lawful)
-            
+
             GOOD vs EVIL axis:
             - Cooperation vs competition ratio (WHEN GIVEN CHOICE)
             - Alliance reputation (earned through actions, not time)
             - Battle aggression (high battles relative to age = evil tendency)
             - Social connections (isolated predators vs connected helpers)
-            
+
             Returns: {alignment: str, law_chaos: str, good_evil: str, scores: dict}
             """
             import math
-            
+
             # Extract metrics with defaults
             coop_ratio = organism_data.get('cooperation_ratio', 0.33)
             aggro_ratio = organism_data.get('aggression_ratio', 0.33)
@@ -7454,11 +7478,11 @@ def list_organisms():
             fitness_volatility = organism_data.get('fitness_volatility', 0.0)
             fingerprint = organism_data.get('behavioral_fingerprint', [0.17] * 6)
             has_alliance = organism_data.get('alliance_id') is not None
-            
+
             # ═══════════════════════════════════════════════════════════════
             # LAW-CHAOS AXIS
             # ═══════════════════════════════════════════════════════════════
-            
+
             # 1. Action entropy - how predictable are they?
             # Low entropy = always does same thing = Lawful
             # High entropy = random choices = Chaotic
@@ -7471,34 +7495,34 @@ def list_organisms():
                 entropy_normalized = entropy / max_entropy if max_entropy > 0 else 0.5
             else:
                 entropy_normalized = 0.5
-            
+
             # 2. Fitness stability (from trend volatility)
             # Stable fitness = Lawful (consistent strategy)
             # Volatile fitness = Chaotic (erratic behavior)
             stability_score = 1.0 - min(fitness_volatility * 5, 1.0)  # vol 0.2+ = chaotic
-            
+
             # 3. Alliance loyalty
             # Being in an alliance = more lawful (following group rules)
             alliance_loyalty = 0.7 if has_alliance else 0.3
-            
+
             # Combine for Law-Chaos (0 = Lawful, 1 = Chaotic)
             chaos_score = (
                 entropy_normalized * 0.4 +      # Action randomness
                 (1 - stability_score) * 0.35 +  # Fitness volatility
                 (1 - alliance_loyalty) * 0.25   # Alliance membership
             )
-            
+
             if chaos_score < 0.35:
                 law_chaos = 'Lawful'
             elif chaos_score > 0.65:
                 law_chaos = 'Chaotic'
             else:
                 law_chaos = 'Neutral'
-            
+
             # ═══════════════════════════════════════════════════════════════
             # GOOD-EVIL AXIS
             # ═══════════════════════════════════════════════════════════════
-            
+
             # 1. Cooperation tendency (adjusted for opportunity)
             # High coop when compete was an option = Good
             social_actions = coop_ratio + aggro_ratio
@@ -7507,7 +7531,7 @@ def list_organisms():
                 coop_tendency = coop_ratio / social_actions
             else:
                 coop_tendency = 0.5  # No social opportunities = neutral
-            
+
             # 2. Battle aggression relative to age
             # Lots of battles for young organism = actively seeking conflict = Evil
             # Few battles for old organism = peaceful = Good
@@ -7515,16 +7539,16 @@ def list_organisms():
             battles_per_100_cycles = (total_battles / age) * 100
             # Expected ~5-10 battles per 100 cycles is "normal"
             battle_aggression = min(battles_per_100_cycles / 20, 1.0)  # 20+ per 100 = very aggressive
-            
+
             # 3. Alliance reputation (earned, not given)
             # > 0.5 = has done good things, < 0.5 = has done bad things
             rep_contribution = (alliance_rep - 0.5) * 2  # -1 to +1
-            
+
             # 4. Social connectivity
             # More connections = more community-oriented = Good tendency
             # Isolated but aggressive = Evil tendency
             connectivity_score = min(connections / 10, 1.0)  # 10+ connections = max
-            
+
             # Combine for Good-Evil (-1 = Evil, +1 = Good)
             good_evil_score = (
                 (coop_tendency - 0.5) * 0.8 +      # Cooperation when given choice
@@ -7532,23 +7556,23 @@ def list_organisms():
                 (connectivity_score - 0.5) * 0.4 + # Social connections
                 (0.5 - battle_aggression) * 0.6    # Battle frequency (inverted)
             )
-            
+
             if good_evil_score > 0.2:
                 good_evil = 'Good'
             elif good_evil_score < -0.2:
                 good_evil = 'Evil'
             else:
                 good_evil = 'Neutral'
-            
+
             # ═══════════════════════════════════════════════════════════════
             # COMBINE ALIGNMENTS
             # ═══════════════════════════════════════════════════════════════
-            
+
             if law_chaos == 'Neutral' and good_evil == 'Neutral':
                 alignment = 'True Neutral'
             else:
                 alignment = f"{law_chaos} {good_evil}"
-            
+
             # Alignment icons
             alignment_icons = {
                 'Lawful Good': '⚖️😇',
@@ -7561,7 +7585,7 @@ def list_organisms():
                 'Chaotic Neutral': '🌀😐',
                 'Chaotic Evil': '🌀😈'
             }
-            
+
             return {
                 'alignment': alignment,
                 'alignment_icon': alignment_icons.get(alignment, '❓'),
@@ -7588,7 +7612,7 @@ def list_organisms():
             score += min(experience_size / 500, 20)  # Up to 20 points for experience (scaled up)
             score += min(words_learned / 15, 20)  # Up to 20 points for vocabulary (300 words = max)
             score += mastery_level * 5  # Up to 20 points for mastery (level 4 = 20)
-            
+
             if score >= 80:
                 return 'legendary'
             elif score >= 60:
@@ -7604,7 +7628,7 @@ def list_organisms():
             """Determine organism's strengths and weaknesses."""
             strengths = []
             weaknesses = []
-            
+
             # Analyze strengths
             if fitness > 0.7:
                 strengths.append('high_fitness')
@@ -7616,7 +7640,7 @@ def list_organisms():
                 strengths.append('well_connected')
             if behavior.get('exploration_ratio', 0) > 0.3:
                 strengths.append('adaptable')
-            
+
             # Analyze weaknesses
             if fitness < 0.3:
                 weaknesses.append('low_fitness')
@@ -7628,7 +7652,7 @@ def list_organisms():
                 weaknesses.append('isolated')
             if behavior.get('personality_type') == 'hermit':
                 weaknesses.append('antisocial')
-            
+
             return {'strengths': strengths, 'weaknesses': weaknesses}
 
         # 1. Get organisms from current live simulation if available
@@ -7654,12 +7678,12 @@ def list_organisms():
                             words_learned = len(al.atoms)
                             mastery_level = getattr(al, '_mastery_level', 0)
                             mastery_experiences = getattr(al, '_total_experiences', 0)
-                            
+
                             # Get vocab limit for current level
                             mastery_sizes = getattr(al, '_mastery_vocab_sizes', [6, 26, 76, 276, 10000])
                             if mastery_level < len(mastery_sizes):
                                 mastery_vocab_limit = mastery_sizes[mastery_level]
-                            
+
                             # Calculate breadth and depth for advancement tracking
                             vocab = al.get_available_vocabulary() if hasattr(al, 'get_available_vocabulary') else []
                             if vocab:
@@ -7667,17 +7691,17 @@ def list_organisms():
                                 mastery_breadth = used_words / len(vocab) if vocab else 0
                                 deep_words = sum(1 for w in vocab if w in al.atoms and len(getattr(al.atoms[w], 'associations', {})) >= 2)
                                 mastery_depth = deep_words / len(vocab) if vocab else 0
-                            
+
                             # Get targets for current level
                             exp_targets = getattr(al, '_mastery_min_experiences', [25, 100, 500, 2000, 10000])
                             if mastery_level < len(exp_targets):
                                 mastery_exp_target = exp_targets[mastery_level]
-                        
+
                         # FALLBACK: Check node_word_associations if atomic_language not available
                         if words_learned == 0:
                             org_hash = hash(org_id) if isinstance(org_id, str) else org_id
                             words_learned = len(node_word_associations.get(org_hash, set()) or node_word_associations.get(str(org_hash), set()))
-                        
+
                         # Get brain stats
                         brain = getattr(organism, 'brain', None)
                         has_language_head = False
@@ -7690,39 +7714,39 @@ def list_organisms():
                                 brain_params = sum(p.numel() for p in brain.parameters())
                             except:
                                 pass
-                        
+
                         # Get experience buffer size
                         exp_buffer = getattr(organism, 'experience_buffer', None)
                         exp_buffer_size = len(exp_buffer) if exp_buffer else 0
-                        
+
                         # Get action history and analyze behavior
                         action_history = list(getattr(organism, 'action_history', []))
                         action_history_len = len(action_history)
                         behavior = analyze_action_history(action_history)
-                        
+
                         # Count connections from network
                         connection_count = 0
                         if network_connections:
                             for (a, b) in network_connections.keys():
                                 if a == org_id or b == org_id:
                                     connection_count += 1
-                        
+
                         # Battle stats
                         battle_wins = getattr(organism, 'battle_wins', 0)
                         battle_losses = getattr(organism, 'battle_losses', 0)
                         total_battles = battle_wins + battle_losses
                         win_rate = round(battle_wins / total_battles, 3) if total_battles > 0 else 0.0
-                        
+
                         # Fitness trend
                         fitness_history = list(getattr(organism, 'fitness_history', []))
                         fitness_val = getattr(organism, 'fitness', 0.0)
                         fitness_trend = calculate_fitness_trend(fitness_history)
-                        
+
                         # Rarity and strengths/weaknesses
                         battle_stats = {'win_rate': win_rate, 'total': total_battles}
                         rarity = determine_rarity(fitness_val, battle_wins, exp_buffer_size, words_learned, mastery_level)
                         traits = determine_strengths_weaknesses(behavior, fitness_val, battle_stats, connection_count)
-                        
+
                         # D&D Alignment (derived from behavior patterns)
                         alignment_data = {
                             'cooperation_ratio': behavior['cooperation_ratio'],
@@ -7738,7 +7762,7 @@ def list_organisms():
                             'alliance_id': getattr(organism, 'alliance_id', None)
                         }
                         alignment = calculate_dnd_alignment(alignment_data)
-                        
+
                         organisms_data.append({
                             # Identity
                             'id': org_id,
@@ -7746,19 +7770,19 @@ def list_organisms():
                             'source': 'live_simulation',
                             'generation': getattr(organism, 'generation', 0),
                             'parent_ids': getattr(organism, 'parent_ids', []),
-                            
+
                             # Fitness
                             'fitness': round(fitness_val, 4),
                             'fitness_trend': fitness_trend,
                             'fitness_history': [round(f, 3) for f in fitness_history[-30:]],  # Last 30 for sparkline
                             'age': getattr(organism, 'age', 0),
-                            
+
                             # Combat
                             'battle_wins': battle_wins,
                             'battle_losses': battle_losses,
                             'battle_win_rate': win_rate,
                             'total_battles': total_battles,
-                            
+
                             # Social
                             'alliance_id': getattr(organism, 'alliance_id', None),
                             'alliance_name': None,  # Will be filled below
@@ -7766,7 +7790,7 @@ def list_organisms():
                             'alliance_reputation': round(getattr(organism, 'alliance_reputation', 0.5), 3),
                             'connections_count': connection_count,
                             'confederation_tier': getattr(organism, 'confederation_tier', 0),
-                            
+
                             # Language & Mastery
                             'words_learned': words_learned,
                             'mastery_level': mastery_level,
@@ -7781,17 +7805,17 @@ def list_organisms():
                             'mastery_breadth_target': mastery_breadth_target,
                             'mastery_depth_target': mastery_depth_target,
                             'mastery_exp_target': mastery_exp_target,
-                            
+
                             # Neural
                             'brain_params': brain_params,
                             'hidden_dim': hidden_dim,
                             'epsilon': round(getattr(organism, 'epsilon', 0.0), 4),
-                            
+
                             # Experience
                             'experience_buffer_size': exp_buffer_size,
                             'action_history_length': action_history_len,
                             'recent_actions': action_history[-20:],  # Last 20 actions for visualization
-                            
+
                             # Behavior & Personality
                             'dominant_action': behavior['dominant_action'],
                             'personality_type': behavior['personality_type'],
@@ -7800,20 +7824,20 @@ def list_organisms():
                             'cooperation_ratio': behavior['cooperation_ratio'],
                             'aggression_ratio': behavior['aggression_ratio'],
                             'exploration_ratio': behavior['exploration_ratio'],
-                            
+
                             # D&D Alignment
                             'alignment': alignment['alignment'],
                             'alignment_icon': alignment['alignment_icon'],
                             'alignment_scores': alignment['scores'],
-                            
+
                             # Illumination
                             'illumination_level': getattr(organism, '_illumination_level', 'none'),
-                            
+
                             # Card display
                             'rarity': rarity,
                             'strengths': traits['strengths'],
                             'weaknesses': traits['weaknesses'],
-                            
+
                             # 🏆 Competition Stats (Tournament, Dojo, Highlander)
                             'tournament_wins': getattr(organism, 'tournament_wins', 0),
                             'tournament_losses': getattr(organism, 'tournament_losses', 0),
@@ -7838,7 +7862,7 @@ def list_organisms():
            hasattr(app.unified_system, 'highlander_protocol') and app.unified_system.highlander_protocol and \
            hasattr(app.unified_system.highlander_protocol, 'capsule_manager'):
             capsule_manager = app.unified_system.highlander_protocol.capsule_manager
-        
+
         if not capsule_manager:
             # Fallback: Initialize capsule manager locally if not available through unified system
             # Import locally to avoid hard dependency at module import time
@@ -7859,7 +7883,7 @@ def list_organisms():
                     # Keys in node_word_associations are hash integers (stored as strings after JSON serialization)
                     org_hash = hash(org_id) if isinstance(org_id, str) else org_id
                     words_learned = len(node_word_associations.get(org_hash, set()) or node_word_associations.get(str(org_hash), set()))
-                    
+
                     # Get capsule-specific stats if available
                     capsule_exp_buffer = info.get('experience_count', 0)
                     capsule_connections = info.get('connection_count', 0)
@@ -7869,10 +7893,10 @@ def list_organisms():
                     total_battles = battle_wins + battle_losses
                     win_rate = round(battle_wins / total_battles, 3) if total_battles > 0 else 0.0
                     capsule_mastery = info.get('mastery_level', 0)
-                    
+
                     # Determine rarity for capsule
                     rarity = determine_rarity(fitness_val, battle_wins, capsule_exp_buffer, words_learned, capsule_mastery)
-                    
+
                     # Basic traits from capsule (limited info)
                     strengths = []
                     weaknesses = []
@@ -7884,7 +7908,7 @@ def list_organisms():
                         weaknesses.append('low_fitness')
                     if capsule_connections < 2:
                         weaknesses.append('isolated')
-                    
+
                     # D&D Alignment for capsules (use stored values or defaults)
                     alignment_data = {
                         'cooperation_ratio': info.get('cooperation_ratio', 0.33),
@@ -7900,7 +7924,7 @@ def list_organisms():
                         'alliance_id': info.get('alliance_id')
                     }
                     alignment = calculate_dnd_alignment(alignment_data)
-                    
+
                     organisms_data.append({
                         # Identity
                         'id': org_id,
@@ -7908,42 +7932,42 @@ def list_organisms():
                         'source': 'saved_capsule',
                         'generation': info.get('generation', 0),
                         'parent_ids': info.get('parent_ids', []),
-                        
+
                         # Fitness
                         'fitness': round(fitness_val, 4),
                         'fitness_trend': {'trend': 'unknown', 'change': 0.0, 'volatility': 0.0},
                         'fitness_history': info.get('fitness_history', []),  # May be empty for capsules
                         'age': info.get('age', 0),
-                        
+
                         # Combat
                         'battle_wins': battle_wins,
                         'battle_losses': battle_losses,
                         'battle_win_rate': win_rate,
                         'total_battles': total_battles,
-                        
+
                         # Social
                         'alliance_id': info.get('alliance_id'),
                         'alliance_reputation': info.get('alliance_reputation', 0.5),
                         'connections_count': capsule_connections,
                         'confederation_tier': info.get('confederation_tier', 0),
-                        
+
                         # Language
                         'words_learned': words_learned,
                         'vocab_capacity': vocab_size,
                         'vocab_utilization': round(words_learned / vocab_size * 100, 1) if vocab_size > 0 else 0,
                         'has_language_head': info.get('has_language_head', False),
-                        
+
                         # Neural
                         'brain_config': info.get('brain_config', {}),
                         'brain_params': info.get('brain_params', 0),
                         'hidden_dim': info.get('hidden_dim', 0),
                         'epsilon': info.get('epsilon', 0.0),
-                        
+
                         # Experience
                         'experience_buffer_size': capsule_exp_buffer,
                         'action_history_length': info.get('action_count', 0),
                         'recent_actions': info.get('recent_actions', []),  # May be empty for capsules
-                        
+
                         # Behavior & Personality (limited from capsule)
                         'dominant_action': info.get('dominant_action', 'unknown'),
                         'personality_type': info.get('personality_type', 'unknown'),
@@ -7952,20 +7976,20 @@ def list_organisms():
                         'cooperation_ratio': info.get('cooperation_ratio', 0.0),
                         'aggression_ratio': info.get('aggression_ratio', 0.0),
                         'exploration_ratio': info.get('exploration_ratio', 0.0),
-                        
+
                         # D&D Alignment
                         'alignment': alignment['alignment'],
                         'alignment_icon': alignment['alignment_icon'],
                         'alignment_scores': alignment['scores'],
-                        
+
                         # Illumination
                         'illumination_level': info.get('illumination_level', 'none'),
-                        
+
                         # Card display
                         'rarity': rarity,
                         'strengths': strengths,
                         'weaknesses': weaknesses,
-                        
+
                         # Capsule-specific
                         'total_reward': info.get('total_reward', 0.0),
                         'capture_time': info.get('capture_time'),
@@ -7994,7 +8018,7 @@ def list_organisms():
                         org_data['alliance_role'] = 'warchief'
 
         organisms_data.sort(key=lambda x: x['fitness'], reverse=True) # Sort by fitness
-        
+
         logger.info(f"Returning {len(organisms_data)} total organisms for export list")
         return jsonify(organisms_data)
 
@@ -8007,7 +8031,7 @@ def list_organisms():
 def list_alliances():
     """
     List all alliances with comprehensive "Alliance Dossier" style data.
-    
+
     Each alliance includes:
     - Identity: alliance_id, name, founder
     - Members: list of member organisms with roles
@@ -8019,28 +8043,28 @@ def list_alliances():
     """
     try:
         alliances_data = []
-        
+
         # Get alliance system from unified_system
         unified_system = getattr(app, 'unified_system', None)
         alliance_system = None
         if unified_system:
             alliance_system = getattr(unified_system, 'alliance_warfare', None)
-        
+
         if not alliance_system:
             logger.info("No alliance system available")
             return jsonify([])
-        
+
         # Get live organisms for member stats lookup
         live_organisms = {}
         if unified_system and hasattr(unified_system, 'get_current_organisms'):
             live_organisms = unified_system.get_current_organisms() or {}
-        
+
         # Get network connections
         network = app.config.get('network')
         network_connections = {}
         if network and hasattr(network, 'connections'):
             network_connections = network.connections
-        
+
         # Process PlanetaryAlliance objects (from alliance_warfare.py)
         if hasattr(alliance_system, 'alliances') and alliance_system.alliances:
             for alliance_id, alliance in alliance_system.alliances.items():
@@ -8051,7 +8075,7 @@ def list_alliances():
                     total_battles_won = 0
                     total_words_learned = 0
                     member_count = 0
-                    
+
                     # Handle both dict (PlanetaryAlliance) and set (Alliance) member formats
                     members_raw = getattr(alliance, 'members', {})
                     logger.debug(f"Alliance {alliance_id}: members_raw type={type(members_raw)}, live_organisms keys sample={list(live_organisms.keys())[:3]}")
@@ -8061,14 +8085,14 @@ def list_alliances():
                         member_items = [(m, 'member') for m in members_raw]
                     else:
                         member_items = []
-                    
+
                     for member_id, role in member_items:
                         member_info = {
                             'organism_id': str(member_id),
                             'short_id': str(member_id)[:8],
                             'role': str(role) if hasattr(role, 'value') else str(role)
                         }
-                        
+
                         # Get live organism data if available
                         if str(member_id) in live_organisms:
                             org = live_organisms[str(member_id)]
@@ -8086,32 +8110,32 @@ def list_alliances():
                                     logger.warning(f"    atomic_language has no 'atoms' attribute, attrs={dir(al)[:10]}")
                             member_info['words_learned'] = words
                             member_info['alive'] = True
-                            
+
                             total_fitness += member_info['fitness']
                             total_battles_won += member_info['battle_wins']
                             total_words_learned += words
                             member_count += 1
                         else:
                             member_info['alive'] = False
-                        
+
                         members_data.append(member_info)
-                    
+
                     # Calculate alliance-level metrics
                     avg_fitness = total_fitness / member_count if member_count > 0 else 0.0
-                    
+
                     # War stats
                     wars_declared = getattr(alliance, 'wars_declared', 0)
                     wars_won = getattr(alliance, 'wars_won', 0)
                     wars_lost = getattr(alliance, 'wars_lost', 0)
                     total_wars = wars_won + wars_lost
                     war_win_rate = wars_won / total_wars if total_wars > 0 else 0.0
-                    
+
                     # Collective stats from Alliance dataclass
                     collective_fitness = getattr(alliance, 'collective_fitness', total_fitness)
                     strength = getattr(alliance, 'strength', 1.0)
                     shared_concepts = list(getattr(alliance, 'shared_concepts', set()))
                     betrayal_count = getattr(alliance, 'betrayal_count', 0)
-                    
+
                     # Territory (from PlanetaryAlliance)
                     controlled_territories = []
                     if hasattr(alliance, 'controlled_territories'):
@@ -8120,19 +8144,19 @@ def list_alliances():
                                 controlled_territories.append(territory.value)
                             else:
                                 controlled_territories.append(str(territory))
-                    
+
                     # Betrayers (from PlanetaryAlliance)
                     betrayers = list(getattr(alliance, 'betrayers', set()))
-                    
+
                     # Get warchief if exists
                     warchief_id = getattr(alliance, 'warchief_id', None)
-                    
+
                     # Calculate alliance power score
                     size_bonus = min(1.0, len(members_data) * 0.15)
                     cohesion_bonus = strength * 0.2
                     knowledge_bonus = min(0.15, len(shared_concepts) * 0.01)
                     power_score = round((size_bonus + cohesion_bonus + knowledge_bonus + avg_fitness) * 25, 1)
-                    
+
                     # Determine alliance tier based on performance
                     if power_score >= 80 and wars_won >= 5:
                         tier = 'legendary'
@@ -8144,7 +8168,7 @@ def list_alliances():
                         tier = 'established'
                     else:
                         tier = 'nascent'
-                    
+
                     alliances_data.append({
                         # Identity
                         'alliance_id': str(alliance_id),
@@ -8152,12 +8176,12 @@ def list_alliances():
                         'name': getattr(alliance, 'name', f'Alliance_{str(alliance_id)[:8]}'),
                         'founder_id': getattr(alliance, 'founder_id', None),
                         'warchief_id': warchief_id,
-                        
+
                         # Members
                         'member_count': len(members_data),
                         'alive_members': member_count,
                         'members': members_data,
-                        
+
                         # Combat
                         'wars_declared': wars_declared,
                         'wars_won': wars_won,
@@ -8165,7 +8189,7 @@ def list_alliances():
                         'war_win_rate': round(war_win_rate, 3),
                         'total_battles_won': total_battles_won,
                         'at_war_with': list(getattr(alliance, 'at_war_with', set())),
-                        
+
                         # Strength metrics
                         'collective_fitness': round(collective_fitness, 4),
                         'average_fitness': round(avg_fitness, 4),
@@ -8174,39 +8198,39 @@ def list_alliances():
                         'size_bonus': round(size_bonus, 3),
                         'cohesion_bonus': round(cohesion_bonus, 3),
                         'knowledge_bonus': round(knowledge_bonus, 3),
-                        
+
                         # Knowledge
                         'shared_concepts': shared_concepts[:20],  # Limit for display
                         'shared_concepts_count': len(shared_concepts),
                         'total_words_learned': total_words_learned,
-                        
+
                         # Territory
                         'controlled_territories': controlled_territories,
                         'territory_count': len(controlled_territories),
-                        
+
                         # History
                         'formation_time': getattr(alliance, 'formation_time', 0),
                         'formation_round': getattr(alliance, 'formation_round', 0),
                         'founding_generation': getattr(alliance, 'founding_generation', 0),
                         'betrayal_count': betrayal_count,
                         'betrayers': betrayers[:10],  # Limit for display
-                        
+
                         # Classification
                         'tier': tier,
-                        
+
                         # Behavioral Identity (Dune Paradigm)
                         'behavioral_signature': [],  # Will be filled below
                         'dominant_behavior': 'unknown',
                         'max_divergence': 0.0,
                         'most_divergent_from': None,
-                        
+
                         # Alliance History (if available)
                         'history_summary': {},  # Will be filled below
                         'legends': [],
                         'wisdom_rules': [],
                         'recent_events': []
                     })
-                    
+
                     # Get alliance history if available
                     alliance_histories = getattr(alliance_system, 'alliance_histories', {})
                     if alliance_id in alliance_histories:
@@ -8247,11 +8271,11 @@ def list_alliances():
                             }
                             for e in events
                         ]
-                        
+
                 except Exception as e:
                     logger.warning(f"Error processing alliance {alliance_id}: {e}")
                     continue
-        
+
         # Second pass: calculate behavioral signatures and divergences
         # This requires knowing all alliances first
         try:
@@ -8280,7 +8304,7 @@ def list_alliances():
                             counts.get(5, 0) / total   # isolate
                         ]
                 return [0.0] * 6
-            
+
             # Calculate signatures for each alliance
             alliance_signatures = {}
             for alliance_data in alliances_data:
@@ -8291,7 +8315,7 @@ def list_alliances():
                     alliance_signatures[alliance_id] = signature
                     alliance_data['behavioral_signature'] = [round(v, 4) for v in signature]
                     alliance_data['dominant_behavior'] = alliance.get_dominant_behavior(get_organism_fingerprint)
-            
+
             # Calculate divergences between alliances
             import math
             def cosine_distance(a, b):
@@ -8303,32 +8327,32 @@ def list_alliances():
                 if mag_a == 0 or mag_b == 0:
                     return 0.0
                 return 1.0 - (dot / (mag_a * mag_b))
-            
+
             for alliance_data in alliances_data:
                 alliance_id = alliance_data['alliance_id']
                 sig_a = alliance_signatures.get(alliance_id, [])
                 max_div = 0.0
                 most_divergent = None
-                
+
                 for other_id, sig_b in alliance_signatures.items():
                     if other_id != alliance_id:
                         div = cosine_distance(sig_a, sig_b)
                         if div > max_div:
                             max_div = div
                             most_divergent = other_id
-                
+
                 alliance_data['max_divergence'] = round(max_div, 4)
                 alliance_data['most_divergent_from'] = most_divergent[:8] if most_divergent else None
-                
+
         except Exception as e:
             logger.warning(f"Error calculating behavioral signatures: {e}")
-        
+
         # Sort by power score
         alliances_data.sort(key=lambda x: x['power_score'], reverse=True)
-        
+
         logger.info(f"Returning {len(alliances_data)} alliances")
         return jsonify(alliances_data)
-        
+
     except Exception as e:
         logger.error(f"Error listing alliances: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
@@ -8342,17 +8366,17 @@ def list_alliances():
 def get_organism_vocabulary(organism_id):
     """
     Get paginated, searchable vocabulary library for a specific organism.
-    
+
     Query params:
         page: Page number (default 1)
         per_page: Items per page (default 50, max 200)
         search: Search term for word filtering
         frame: Filter by semantic_frame (action, relationship, state, quality, etc.)
         source: Filter by source (innate, observed, taught, discovered, mutated)
-        sort: Sort field (magnetism, strength, usage_count, word) 
+        sort: Sort field (magnetism, strength, usage_count, word)
         order: Sort order (asc, desc - default desc)
         oscillating: Filter oscillating words only (true/false)
-    
+
     Returns:
         - items: List of vocabulary entries for current page
         - total: Total matching items
@@ -8371,14 +8395,14 @@ def get_organism_vocabulary(organism_id):
         sort_field = request.args.get('sort', 'magnetism')
         sort_order = request.args.get('order', 'desc')
         oscillating_only = request.args.get('oscillating', '').lower() == 'true'
-        
+
         # Get organism
         organism = None
         if hasattr(app, 'unified_system') and app.unified_system:
             if hasattr(app.unified_system, 'get_current_organisms'):
                 organisms = app.unified_system.get_current_organisms()
                 organism = organisms.get(organism_id)
-        
+
         if not organism:
             return jsonify({
                 'error': f'Organism {organism_id} not found',
@@ -8388,7 +8412,7 @@ def get_organism_vocabulary(organism_id):
                 'per_page': per_page,
                 'pages': 0
             }), 404
-        
+
         # Check for atomic_language
         if not hasattr(organism, 'atomic_language') or not organism.atomic_language:
             return jsonify({
@@ -8400,14 +8424,14 @@ def get_organism_vocabulary(organism_id):
                 'filters': {'frames': {}, 'sources': {}},
                 'message': 'Organism has no atomic language system'
             })
-        
+
         al = organism.atomic_language
-        
+
         # Build vocabulary list with all data
         all_vocab = []
         frame_counts = {}
         source_counts = {}
-        
+
         for word, atom in al.atoms.items():
             try:
                 # Get associations
@@ -8424,20 +8448,20 @@ def get_organism_vocabulary(organism_id):
                     except:
                         pass
                 assoc_list.sort(key=lambda x: x['strength'], reverse=True)
-                
+
                 # Calculate outcome sentiment
                 outcome_history = getattr(atom, 'outcome_history', []) or []
                 avg_outcome = sum(outcome_history) / len(outcome_history) if outcome_history else 0.0
-                
+
                 # Get values
                 semantic_frame = str(getattr(atom, 'semantic_frame', 'unknown'))
                 source = str(getattr(atom, 'source', 'unknown'))
                 is_osc = bool(atom.is_oscillating()) if hasattr(atom, 'is_oscillating') else False
-                
+
                 # Count for filters
                 frame_counts[semantic_frame] = frame_counts.get(semantic_frame, 0) + 1
                 source_counts[source] = source_counts.get(source, 0) + 1
-                
+
                 entry = {
                     'word': str(word),
                     'strength': round(float(getattr(atom, 'strength', 0.5)), 3),
@@ -8456,22 +8480,22 @@ def get_organism_vocabulary(organism_id):
             except Exception as e:
                 logger.warning(f"Error processing word {word}: {e}")
                 continue
-        
+
         # Apply filters
         filtered = all_vocab
-        
+
         if search:
             filtered = [v for v in filtered if search in v['word'].lower()]
-        
+
         if frame_filter:
             filtered = [v for v in filtered if v['semantic_frame'] == frame_filter]
-        
+
         if source_filter:
             filtered = [v for v in filtered if v['source'] == source_filter]
-        
+
         if oscillating_only:
             filtered = [v for v in filtered if v['is_oscillating']]
-        
+
         # Sort
         reverse = sort_order == 'desc'
         if sort_field == 'word':
@@ -8480,14 +8504,14 @@ def get_organism_vocabulary(organism_id):
             filtered.sort(key=lambda x: x.get(sort_field, 0), reverse=reverse)
         else:
             filtered.sort(key=lambda x: x.get('magnetism', 0), reverse=True)
-        
+
         # Paginate
         total = len(filtered)
         pages = (total + per_page - 1) // per_page
         start = (page - 1) * per_page
         end = start + per_page
         items = filtered[start:end]
-        
+
         return jsonify({
             'items': items,
             'total': total,
@@ -8500,7 +8524,7 @@ def get_organism_vocabulary(organism_id):
                 'sources': source_counts
             }
         })
-        
+
     except Exception as e:
         logger.error(f"Error getting vocabulary for {organism_id}: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
@@ -8559,15 +8583,15 @@ def download_agent_archive(filename):
     allowed_extensions = ('.zip', '.py', '.pt', '.onnx')
     if not filename.endswith(allowed_extensions) or '..' in filename or '/' in filename or '\\' in filename:
         return jsonify({'error': 'Invalid filename'}), 400
-    
+
     downloads_dir = Path(__file__).parent / 'agent_downloads'
     file_path = downloads_dir / filename
-    
+
     if not file_path.exists():
         return jsonify({'error': 'File not found'}), 404
-    
+
     logger.info(f"[DOWNLOAD] Serving {filename} ({file_path.stat().st_size} bytes)")
-    
+
     # Set mimetype based on extension
     if filename.endswith('.py'):
         mimetype = 'text/x-python'
@@ -8577,7 +8601,7 @@ def download_agent_archive(filename):
         mimetype = 'application/octet-stream'
     else:
         mimetype = 'application/zip'
-    
+
     return send_file(
         str(file_path),
         as_attachment=True,
@@ -8591,7 +8615,7 @@ def compile_organism_to_agent(organism_id):
     Compiles a specific organism's capsule into a downloadable agent archive.
     """
     logger.info(f"[COMPILE] Starting compilation for organism {organism_id}")
-    
+
     # Lazy import to avoid startup failure if onnxruntime not installed
     try:
         from reality_simulator.agent_compiler import AgentCompiler
@@ -8600,7 +8624,7 @@ def compile_organism_to_agent(organism_id):
     except ImportError as e:
         logger.error(f"[COMPILE] Import failed: {e}")
         return jsonify({'error': f'Agent compilation requires onnxruntime: {e}. Install with: pip install onnxruntime'}), 500
-    
+
     try:
         logger.info("[COMPILE] Getting unified system...")
         unified_system = getattr(app, 'unified_system', None)
@@ -8665,43 +8689,43 @@ def compile_organism_to_agent(organism_id):
         data = request.get_json() or {}
         export_format = data.get('format', 'onnx')  # Default to ONNX
         logger.info(f"[COMPILE] Export format: {export_format}")
-        
+
         # Instantiate the AgentCompiler
         logger.info("[COMPILE] Creating compiler...")
         compiler = AgentCompiler()
-        
+
         # Compile the capsule into an agent archive
         # PAUSE SIMULATION to prevent race conditions during serialization
         logger.info("[COMPILE] Compiling capsule to agent (simulation paused)...")
         with pause_simulation_for_export():
             archive_buffer = compiler.compile_capsule_to_agent(capsule, export_format=export_format)
         logger.info("[COMPILE] Compilation complete")
-        
+
         # Ensure we're at the start of the buffer for reading
         archive_buffer.seek(0)
         archive_size = archive_buffer.seek(0, 2)  # Seek to end to get size
         archive_buffer.seek(0)  # Reset to start
-        
+
         logger.info(f"[COMPILE] Compilation successful for {organism_id}, archive size: {archive_size} bytes")
-        
+
         if archive_size == 0:
             return jsonify({'error': 'Compilation produced empty archive'}), 500
-        
+
         filename = f"agent_{organism_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.zip"
         logger.info(f"[COMPILE] Saving archive as {filename}")
-        
+
         # Save to downloads folder in project directory
         downloads_dir = Path(__file__).parent / 'agent_downloads'
         downloads_dir.mkdir(exist_ok=True)
         download_path = downloads_dir / filename
-        
+
         archive_buffer.seek(0)
         with open(download_path, 'wb') as f:
             f.write(archive_buffer.read())
-        
+
         file_size = download_path.stat().st_size
         logger.info(f"[COMPILE] Saved to: {download_path} ({file_size} bytes)")
-        
+
         # Return JSON with download info - let frontend fetch via separate endpoint
         return jsonify({
             'success': True,
@@ -8780,22 +8804,22 @@ def compile_ensemble_to_agent():
             return jsonify({'error': 'No valid capsules found for provided organism_ids'}), 404
 
         compiler = AgentCompiler()
-        
+
         # Get vocabulary and conversation history for export
         vocabulary = app.config.get('vocabulary')
         conversation_history = []
-        
+
         # Try to get conversation history from butterfly chat router
         butterfly_router = app.config.get('butterfly_chat_router')
         if butterfly_router and hasattr(butterfly_router, 'conversation_history'):
             conversation_history = butterfly_router.conversation_history
             logger.info(f"[COMPILE] Including {len(conversation_history)} conversation history entries")
-        
+
         # 🔮 Get knowledge web for semantic relationships (CRITICAL for coherent generation!)
         knowledge_web = None
         context_memory = app.config.get('context_memory')
         # network already retrieved above from unified_system
-        
+
         # PRIMARY SOURCE: LanguageTeacher owns the knowledge web!
         if network and hasattr(network, 'language_teacher') and network.language_teacher:
             teacher = network.language_teacher
@@ -8804,7 +8828,7 @@ def compile_ensemble_to_agent():
                 n_concepts = len(getattr(knowledge_web, 'concepts', {}))
                 n_relations = len(getattr(knowledge_web, 'relations', []))
                 logger.info(f"[COMPILE] ✅ Including knowledge web from LanguageTeacher: {n_concepts} concepts, {n_relations} relations")
-        
+
         # FALLBACK: Try context_memory (legacy paths)
         if knowledge_web is None:
             if context_memory and hasattr(context_memory, 'knowledge_web'):
@@ -8815,17 +8839,17 @@ def compile_ensemble_to_agent():
                 if cm and hasattr(cm, 'knowledge_web'):
                     knowledge_web = cm.knowledge_web
                     logger.info(f"[COMPILE] Including knowledge web from network.context_memory: {len(knowledge_web.concepts)} concepts")
-        
+
         if knowledge_web is None:
             logger.warning("[COMPILE] ⚠️ No knowledge web found - exported agent will have limited semantic capabilities")
-        
+
         # 🧠 Get context_memory for word-organism mappings (CRITICAL for characteristic speech!)
         # Use the context_memory we already retrieved above, or get from network
         if context_memory is None and network and hasattr(network, 'context_memory'):
             context_memory = network.context_memory
         if context_memory:
             logger.info(f"[COMPILE] Including context memory with {len(getattr(context_memory, 'language_anchors', {}))} language anchors")
-        
+
         # 🔬 Get causation_explorer for the full illumination engine (CRITICAL for understanding WHY!)
         causation_explorer = app.config.get('causation_explorer')
         if causation_explorer is None and unified_system:
@@ -8833,7 +8857,7 @@ def compile_ensemble_to_agent():
         if causation_explorer:
             n_events = len(getattr(causation_explorer, 'events', {}))
             logger.info(f"[COMPILE] Including causation system with {n_events} events")
-        
+
         # 🏛️ Get alliance_system for civilization state (CRITICAL for social context!)
         alliance_system = app.config.get('alliance_system')
         if alliance_system is None and unified_system:
@@ -8841,11 +8865,11 @@ def compile_ensemble_to_agent():
         if alliance_system:
             n_alliances = len(getattr(alliance_system, 'alliances', {}))
             logger.info(f"[COMPILE] Including alliance system with {n_alliances} alliances")
-        
+
         # PAUSE SIMULATION to prevent race conditions during ensemble serialization
         with pause_simulation_for_export():
             archive_buffer = compiler.compile_capsules_to_ensemble(
-                capsules, 
+                capsules,
                 export_format=export_format,
                 vocabulary=vocabulary,
                 conversation_history=conversation_history,
@@ -8859,27 +8883,27 @@ def compile_ensemble_to_agent():
         archive_buffer.seek(0)
         archive_size = archive_buffer.seek(0, 2)  # Seek to end to get size
         archive_buffer.seek(0)  # Reset to start
-        
+
         logger.info(f"[COMPILE] Ensemble compilation successful for {len(capsules)} organisms, archive size: {archive_size} bytes")
-        
+
         if archive_size == 0:
             return jsonify({'error': 'Ensemble compilation produced empty archive'}), 500
 
         filename = f"agent_ensemble_{datetime.now().strftime('%Y%m%d%H%M%S')}.zip"
         logger.info(f"[COMPILE] Saving ensemble archive as {filename}")
-        
+
         # Save to downloads folder in project directory
         downloads_dir = Path(__file__).parent / 'agent_downloads'
         downloads_dir.mkdir(exist_ok=True)
         download_path = downloads_dir / filename
-        
+
         archive_buffer.seek(0)
         with open(download_path, 'wb') as f:
             f.write(archive_buffer.read())
-        
+
         file_size = download_path.stat().st_size
         logger.info(f"[COMPILE] Saved ensemble to: {download_path} ({file_size} bytes)")
-        
+
         # Return JSON with download info
         return jsonify({
             'success': True,
@@ -8897,22 +8921,22 @@ def compile_ensemble_to_agent():
 def compile_learning_capsule():
     """
     Compile organisms into a LEARNING CAPSULE that can continue training.
-    
+
     Unlike frozen ONNX/TorchScript exports, this exports:
     - Full PyTorch models with trainable weights
     - Training configuration and optimizer states
     - All learning infrastructure (knowledge web, context memory, etc.)
     - A self-contained learning loop runner
-    
+
     The resulting capsule is a fully autonomous learning agent.
     """
     try:
         data = request.get_json() or {}
         organism_ids = data.get('organism_ids', [])
         training_config = data.get('training_config', {})
-        
+
         logger.info(f"[LEARNING_CAPSULE] Compiling learning capsule for organisms: {organism_ids}")
-        
+
         # Get unified system components
         unified_system = app.config.get('unified_system')
         if unified_system is None:
@@ -8922,10 +8946,10 @@ def compile_learning_capsule():
         if network is None and unified_system:
             network = getattr(unified_system, 'network', None)
         capsule_manager = app.config.get('capsule_manager')
-        
+
         if not capsule_manager:
             return jsonify({'error': 'Capsule manager not available'}), 500
-        
+
         # Gather capsules
         capsules = []
         if organism_ids:
@@ -8956,21 +8980,21 @@ def compile_learning_capsule():
                     )
                     if cap:
                         capsules.append(cap)
-        
+
         if not capsules:
             return jsonify({'error': 'No valid capsules found'}), 404
-        
+
         # Get all learning components
         vocabulary = app.config.get('vocabulary')
         conversation_history = []
         butterfly_router = app.config.get('butterfly_chat_router')
         if butterfly_router and hasattr(butterfly_router, 'conversation_history'):
             conversation_history = butterfly_router.conversation_history
-        
+
         # Get knowledge web - PRIMARY SOURCE: LanguageTeacher!
         knowledge_web = None
         context_memory = app.config.get('context_memory')
-        
+
         # PRIMARY: Get from LanguageTeacher
         if network and hasattr(network, 'language_teacher') and network.language_teacher:
             teacher = network.language_teacher
@@ -8978,7 +9002,7 @@ def compile_learning_capsule():
                 knowledge_web = teacher.knowledge_web
                 n_concepts = len(getattr(knowledge_web, 'concepts', {}))
                 logger.info(f"[LEARNING_CAPSULE] ✅ Knowledge web from LanguageTeacher: {n_concepts} concepts")
-        
+
         # FALLBACK: Try context_memory
         if knowledge_web is None:
             if context_memory and hasattr(context_memory, 'knowledge_web'):
@@ -8986,17 +9010,17 @@ def compile_learning_capsule():
             elif network and hasattr(network, 'context_memory'):
                 context_memory = network.context_memory
                 knowledge_web = getattr(context_memory, 'knowledge_web', None)
-        
+
         # Get causation explorer
         causation_explorer = None
         if unified_system:
             causation_explorer = getattr(unified_system, 'causation_explorer', None)
-        
+
         # Get alliance system
         alliance_system = app.config.get('alliance_system')
         if alliance_system is None and unified_system:
             alliance_system = getattr(unified_system, 'alliance_warfare', None)
-        
+
         # Compile learning capsule
         compiler = AgentCompiler()
         archive_buffer = compiler.compile_learning_capsule(
@@ -9009,20 +9033,20 @@ def compile_learning_capsule():
             alliance_system=alliance_system,
             training_config=training_config
         )
-        
+
         # Save to downloads folder
         archive_buffer.seek(0)
         filename = f"learning_capsule_{datetime.now().strftime('%Y%m%d%H%M%S')}.zip"
         downloads_dir = Path(__file__).parent / 'agent_downloads'
         downloads_dir.mkdir(exist_ok=True)
         download_path = downloads_dir / filename
-        
+
         with open(download_path, 'wb') as f:
             f.write(archive_buffer.read())
-        
+
         file_size = download_path.stat().st_size
         logger.info(f"[LEARNING_CAPSULE] Saved to: {download_path} ({file_size} bytes)")
-        
+
         return jsonify({
             'success': True,
             'capsule_type': 'learning',
@@ -9037,7 +9061,7 @@ def compile_learning_capsule():
             },
             'download_url': f'/api/download/{filename}'
         })
-    
+
     except Exception as e:
         logger.error(f"Error compiling learning capsule: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
@@ -9047,10 +9071,10 @@ def compile_learning_capsule():
 def compile_cocoon():
     """
     🦋 COCOON COMPILER - Single-file deployable agent
-    
+
     Compiles organism(s) into a SINGLE self-contained Python file.
     Supports both SOLO (1 organism) and ENSEMBLE (multiple organisms).
-    
+
     Request JSON:
         organism_ids: List of organism IDs (optional, defaults to all top organisms)
         top_n: Number of top organisms to use (default: 1 for solo, can specify more for ensemble)
@@ -9059,13 +9083,13 @@ def compile_cocoon():
         compress: Compress embedded data (default: true)
         voting_strategy: 'majority', 'weighted', 'confidence' (for ensemble)
         training_config: Training hyperparameters (optional)
-    
+
     Returns:
         Python source code as downloadable .py file
     """
     try:
         from reality_simulator.agent_compiler import AgentCompiler
-        
+
         data = request.get_json() or {}
         guarded = _guard_action_submission('cocoon_compile', data)
         if guarded:
@@ -9078,14 +9102,6 @@ def compile_cocoon():
         export_format = data.get('format', 'cocoon')  # cocoon, onnx, torchscript, package
         training_config = data.get('training_config', {})
         graph_image_base64 = data.get('graph_image')  # HTML graph capture from client
-        raw_display_names = data.get('organism_display_names') or {}
-        organism_display_names = {}
-        if isinstance(raw_display_names, dict):
-            organism_display_names = {
-                str(org_id): str(name).strip()[:48]
-                for org_id, name in raw_display_names.items()
-                if str(name).strip()
-            }
         selected_alliances = (
             data.get('selected_alliances')
             or data.get('alliance_ids')
@@ -9098,21 +9114,21 @@ def compile_cocoon():
         if has_alliance_filter and organism_ids:
             logger.info("[COCOON] Alliance filter provided; ignoring organism_ids so whole alliances can be composed.")
             organism_ids = []
-        
+
         logger.info(f"[COCOON] Export format: {export_format}, graph_image: {'yes' if graph_image_base64 else 'no'}")
-        
+
         # Get unified system and checkpoint manager
         unified_system = app.config.get('unified_system') or getattr(app, 'unified_system', None)
         checkpoint_manager = app.config.get('checkpoint_manager')
-        
+
         # Collect organisms from available sources
         organisms = []
-        
+
         # 1. Try to get live organisms from simulation
         if unified_system and hasattr(unified_system, 'get_current_organisms'):
             live_organisms = unified_system.get_current_organisms()
             logger.info(f"Found {len(live_organisms)} live organisms from simulation")
-            
+
             if organism_ids:
                 # Get specific organisms
                 for oid in organism_ids:
@@ -9130,7 +9146,7 @@ def compile_cocoon():
                 if not has_alliance_filter:
                     sorted_orgs = sorted_orgs[:top_n]
                 organisms.extend(sorted_orgs)
-        
+
         # 2. Try checkpoint manager if no live organisms found
         if not organisms and checkpoint_manager:
             logger.info("No live organisms, trying checkpoint manager")
@@ -9153,7 +9169,7 @@ def compile_cocoon():
                         cap = checkpoint_manager.load_capsule(cap_info['organism_id'])
                         if cap:
                             organisms.append(cap)
-        
+
         # 3. Try highlander capsule manager as fallback
         if not organisms:
             logger.info("Trying highlander capsule manager fallback")
@@ -9162,14 +9178,14 @@ def compile_cocoon():
                 hp = unified_system.highlander_protocol
                 if hp and hasattr(hp, 'capsule_manager'):
                     capsule_manager = hp.capsule_manager
-            
+
             if not capsule_manager:
                 try:
                     from reality_simulator.checkpointing.organism_capsule import OrganismCapsuleManager
                     capsule_manager = OrganismCapsuleManager(storage_dir=Path('highlander_capsules'))
                 except Exception as e:
                     logger.warning(f"Could not initialize capsule manager: {e}")
-            
+
             if capsule_manager and capsule_manager.capsule_index:
                 capsule_list = list(capsule_manager.capsule_index.items())
                 sorted_caps = sorted(
@@ -9179,34 +9195,34 @@ def compile_cocoon():
                 )
                 if not has_alliance_filter:
                     sorted_caps = sorted_caps[:top_n]
-                
+
                 for capsule_id, info in sorted_caps:
                     cap = capsule_manager.load_capsule(capsule_id)
                     if cap:
                         organisms.append(cap)
-        
+
         if not organisms:
             return jsonify({'error': 'No organisms available. Run the simulation first or load capsules.'}), 404
-        
+
         logger.info(f"Collected {len(organisms)} cocoon export candidate organism(s)")
-        
+
         # Get vocabulary
         vocabulary = app.config.get('vocabulary')
         if vocabulary is None and unified_system:
             lang_system = getattr(unified_system, 'language_system', None)
             if lang_system:
                 vocabulary = getattr(lang_system, 'vocabulary', None)
-        
+
         # Get knowledge web - PRIMARY SOURCE: LanguageTeacher!
         knowledge_web = app.config.get('knowledge_web')
-        
+
         # Get network - stored in app.config by unified_entry.py, NOT on unified_system
         network = app.config.get('network')
         if network is None and unified_system:
             # Fallback: check if unified_system has network attribute (for standalone mode)
             network = getattr(unified_system, 'network', None)
         logger.info(f"[COCOON DEBUG] unified_system={unified_system is not None}, network={network is not None}")
-        
+
         if knowledge_web is None and network and hasattr(network, 'language_teacher') and network.language_teacher:
             teacher = network.language_teacher
             if hasattr(teacher, 'knowledge_web') and teacher.knowledge_web:
@@ -9218,20 +9234,20 @@ def compile_cocoon():
                 logger.info(f"[COCOON DEBUG] teacher.knowledge_web is None or empty")
         else:
             logger.info(f"[COCOON DEBUG] Could not get language_teacher: network={network is not None}, has_teacher={hasattr(network, 'language_teacher') if network else 'N/A'}")
-        
+
         # FALLBACK: Try unified_system.language_system
         if knowledge_web is None and unified_system:
             lang_system = getattr(unified_system, 'language_system', None)
             if lang_system:
                 knowledge_web = getattr(lang_system, 'knowledge_web', None)
-        
+
         # Get conversation history for ensemble export
         conversation_history = app.config.get('conversation_history', [])
         if not conversation_history and unified_system:
             lang_system = getattr(unified_system, 'language_system', None)
             if lang_system:
                 conversation_history = getattr(lang_system, 'conversation_history', [])
-        
+
         # Get context_memory for semantic convergence
         # network is retrieved from app.config (where unified_entry.py stores it)
         context_memory = app.config.get('context_memory')
@@ -9241,24 +9257,24 @@ def compile_cocoon():
         if context_memory is None and knowledge_web:
             # Try to get from knowledge_web's parent
             context_memory = getattr(knowledge_web, '_context_memory', None)
-        
+
         logger.info(f"[COCOON DEBUG] Final context_memory={context_memory is not None}, knowledge_web={knowledge_web is not None}")
-        
+
         # Get causation_explorer
         causation_explorer = app.config.get('causation_explorer')
         if causation_explorer is None and unified_system:
             causation_explorer = getattr(unified_system, 'causation_explorer', None)
-        
+
         # Get alliance_system
         alliance_system = app.config.get('alliance_system')
         if alliance_system is None and unified_system:
             alliance_system = getattr(unified_system, 'alliance_warfare', None)
-        
+
         # 🧬 Get attractor_landscape for formation fingerprint
         attractor_landscape = app.config.get('attractor_landscape')
         if attractor_landscape is None and unified_system:
             attractor_landscape = getattr(unified_system, 'attractor_landscape', None)
-        
+
         # 📊 Get shared_state for simulation snapshot
         shared_state = None
         try:
@@ -9269,7 +9285,7 @@ def compile_cocoon():
                     shared_state = json.load(f)
         except Exception:
             pass
-        
+
         # Compile cocoon with specified format
         compiler = AgentCompiler()
         alliance_selection_metadata = None
@@ -9303,7 +9319,6 @@ def compile_cocoon():
                 context_memory=context_memory,
                 causation_explorer=causation_explorer,
                 alliance_system=alliance_system,
-                organism_display_names=organism_display_names,
                 alliance_selection_metadata=alliance_selection_metadata
             )
             # This is a ZIP archive - always save as .zip for ensemble binary exports
@@ -9325,7 +9340,6 @@ def compile_cocoon():
                 attractor_landscape=attractor_landscape,
                 shared_state=shared_state,
                 graph_image_base64=graph_image_base64,
-                organism_display_names=organism_display_names,
                 alliance_selection_metadata=alliance_selection_metadata
             )
             # Unpack result - cocoon format returns (source, readme, graph_bytes)
@@ -9356,7 +9370,6 @@ def compile_cocoon():
                 attractor_landscape=attractor_landscape,
                 shared_state=shared_state,
                 graph_image_base64=graph_image_base64,
-                organism_display_names=organism_display_names,
                 alliance_selection_metadata=alliance_selection_metadata
             )
             # Unpack result based on format
@@ -9369,11 +9382,11 @@ def compile_cocoon():
                 cocoon_source, model_bytes = result
                 readme_text = None
                 graph_bytes = None
-        
+
         # Generate filename based on format
         mode = "ensemble" if len(organisms) > 1 else "solo"
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        
+
         # File extensions by format
         # ONNX and TorchScript are now COMPLETE PACKAGES (ZIP) with all subsystems
         extensions = {
@@ -9387,13 +9400,13 @@ def compile_cocoon():
         }
         ext = extensions.get(export_format, '.py')
         filename = f"cocoon_{mode}_{timestamp}{ext}"
-        
+
         # Save to downloads folder
         downloads_dir = Path(__file__).parent / 'agent_downloads'
         downloads_dir.mkdir(exist_ok=True)
         download_path = downloads_dir / filename
         artifact_paths = [download_path]
-        
+
         # Handle case where binary export failed (model_bytes is None for non-cocoon format)
         # Don't save Python source with binary extension - that creates corrupt files
         if model_bytes is None and export_format not in ('cocoon',):
@@ -9402,16 +9415,16 @@ def compile_cocoon():
                 'error': f'Export failed for format {export_format}. The model could not be compiled to this format.',
                 'fallback': 'Try using format=cocoon or format=package instead.'
             }), 500
-        
+
         # Track additional files for response
         additional_files = []
-        
+
         # Save appropriate content
         if export_format == 'cocoon':
             # Save Python source
             with open(download_path, 'w', encoding='utf-8') as f:
                 f.write(cocoon_source)
-            
+
             # Save README if provided
             if readme_text:
                 readme_path = downloads_dir / filename.replace('.py', '_README.md')
@@ -9424,7 +9437,7 @@ def compile_cocoon():
                 })
                 artifact_paths.append(readme_path)
                 logger.info(f"[COCOON] Saved README: {readme_path.name} ({readme_path.stat().st_size:,} bytes)")
-            
+
             # Save interactive topology HTML visualization
             if graph_bytes:  # Now this is actually topology_html (string)
                 topology_path = downloads_dir / 'ensemble_topology.html'
@@ -9437,7 +9450,7 @@ def compile_cocoon():
                 })
                 artifact_paths.append(topology_path)
                 logger.info(f"[COCOON] Saved topology visualization: {topology_path.name} ({topology_path.stat().st_size:,} bytes)")
-                
+
         elif export_format in ('package', 'ensemble_onnx', 'ensemble_torchscript', 'onnx', 'torchscript'):
             # Save ZIP package/archive (ONNX and TorchScript are now complete packages!)
             with open(download_path, 'wb') as f:
@@ -9446,20 +9459,15 @@ def compile_cocoon():
             # Save binary model (statedict only now)
             with open(download_path, 'wb') as f:
                 f.write(model_bytes)
-        
+
         file_size = download_path.stat().st_size
         organism_names = [str(getattr(org, 'organism_id', getattr(org, 'id', i))) for i, org in enumerate(organisms)]
-        exported_display_names = {
-            org_id: organism_display_names[org_id]
-            for org_id in organism_names
-            if org_id in organism_display_names
-        }
-        
+
         logger.info(f"[COCOON] Generated {export_format} ({mode}): {filename} ({file_size:,} bytes)")
-        
+
         # Map ensemble format back to base format for response
         base_format = export_format.replace('ensemble_', '') if export_format.startswith('ensemble_') else export_format
-        
+
         response_data = {
             'success': True,
             'capsule_type': 'cocoon',
@@ -9471,7 +9479,6 @@ def compile_cocoon():
             'size_kb': round(file_size / 1024, 1),
             'organism_count': len(organisms),
             'organism_names': organism_names,
-            'organism_display_names': exported_display_names,
             'alliance_composition': alliance_selection_metadata,
             'features': {
                 'gym_adapter': include_gym,
@@ -9500,7 +9507,7 @@ def compile_cocoon():
                 'statedict': 'Load with: model.load_state_dict(torch.load("weights.pth"))',
             }.get(base_format, 'Extract and run'),
         }
-        
+
         # Include additional files info (README, etc.)
         if additional_files:
             response_data['additional_files'] = additional_files
@@ -9531,9 +9538,9 @@ def compile_cocoon():
             reason=str(data.get('reason') or 'cocoon_compile'),
             artifact_paths=artifact_paths,
         )
-        
+
         return jsonify(response_data)
-    
+
     except Exception as e:
         logger.error(f"Error compiling cocoon: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
@@ -9549,7 +9556,7 @@ def index():
             error_msg = f"Error: Template not found at {template_path}. Please ensure templates/causation_explorer.html exists."
             logger.error(error_msg)
             return f"<html><body><h1>{error_msg}</h1></body></html>", 500
-        
+
         logger.info(f"Rendering template from: {template_path}")
         return render_template('causation_explorer.html')
     except Exception as e:
@@ -9583,7 +9590,7 @@ def get_event(event_id):
         # Normalize event ID format
         if event_id.startswith('evt') and not event_id.startswith('evt_'):
             event_id = 'evt_' + event_id[3:] if len(event_id) > 3 else event_id
-        
+
         if event_id not in target_explorer.events:
             logger.warning(f"[GET_EVENT] Event {event_id} not found in target_explorer.events (total: {len(target_explorer.events)})")
             logger.warning(f"[GET_EVENT] Using {'shared' if app.config.get('explorer') else 'local'} explorer instance")
@@ -9596,7 +9603,7 @@ def get_event(event_id):
                 'recent_event_ids': recent_ids,
                 'similar_event_ids': similar_ids
             }), 404
-        
+
         summary = target_explorer.get_event_summary(event_id)
         # Check if summary contains an error (from get_event_summary)
         if isinstance(summary, dict) and 'error' in summary:
@@ -9618,11 +9625,11 @@ def explore_backwards(event_id):
         # Normalize event ID format
         if event_id.startswith('evt') and not event_id.startswith('evt_'):
             event_id = 'evt_' + event_id[3:] if len(event_id) > 3 else event_id
-        
+
         if event_id not in target_explorer.events:
             logger.warning(f"[BACKWARDS] Event {event_id} not found in target_explorer.events")
             return jsonify({'error': f'Event not found: {event_id}'}), 404
-        
+
         max_depth = int(request.args.get('depth', 10))
         trail = target_explorer.explore_backwards(event_id, max_depth)
         return jsonify(trail)
@@ -9642,11 +9649,11 @@ def explore_forwards(event_id):
         # Normalize event ID format
         if event_id.startswith('evt') and not event_id.startswith('evt_'):
             event_id = 'evt_' + event_id[3:] if len(event_id) > 3 else event_id
-        
+
         if event_id not in target_explorer.events:
             logger.warning(f"[FORWARDS] Event {event_id} not found in target_explorer.events")
             return jsonify({'error': f'Event not found: {event_id}'}), 404
-        
+
         max_depth = int(request.args.get('depth', 10))
         trail = target_explorer.explore_forwards(event_id, max_depth)
         return jsonify(trail)
@@ -9729,7 +9736,7 @@ def explain_event(event_id):
 def search_events_advanced():
     """
     🔎 ADVANCED SEARCH with filters and aggregation
-    
+
     NEW: Language support via 'word' parameter and context_memory integration
     """
     if explorer is None:
@@ -9738,7 +9745,7 @@ def search_events_advanced():
         # Get context_memory from network if available
         network = app.config.get('network')
         context_memory = network.context_memory if network and hasattr(network, 'context_memory') else None
-        
+
         results = explorer.search_advanced(
             query=request.args.get('q'),
             component=request.args.get('component'),
@@ -9788,7 +9795,7 @@ def get_timeline():
         end_time = float(request.args.get('end')) if request.args.get('end') else None
         components = request.args.get('components', '').split(',') if request.args.get('components') else None
         include_links = request.args.get('include_links', 'true').lower() == 'true'
-        
+
         timeline = explorer.get_timeline(
             start_time=start_time,
             end_time=end_time,
@@ -9818,20 +9825,20 @@ def get_stats():
 def get_live_status():
     """
     Check if system is in live mode (receiving events from unified_entry.py)
-    
+
     ⚠️ CURRENT BEHAVIOR (NOT ACTUALLY LIVE):
     - Accesses: explorer.events{} (loaded from log files on startup)
     - Checks: If any events have recent timestamps (within 10 seconds)
     - Returns: {"live": true/false} based on timestamp check
     - Problem: Only checks already-loaded events, doesn't connect to running backend
-    
+
     🔍 DATA SOURCES ACCESSED:
     - explorer.events{} - Dictionary of all events loaded from:
       1. Akashic Ledger (if available) - data/kernel/akashic_ledger/
       2. Log files (fallback) - data/logs/*.log
       ❌ NOT: Shared state file (data/.shared_simulation_state.json)
       ❌ NOT: Real-time events from unified_entry.py
-    
+
     💡 TO MAKE IT ACTUALLY LIVE:
     - Add event feeding from unified_entry.py (Phase 2)
     - Add shared state file loading
@@ -9840,7 +9847,7 @@ def get_live_status():
     # Check if CausationExplorer has recent events (within last 5 seconds)
     if explorer is None or not explorer.events:
         return jsonify({'live': False, 'last_event_time': None, 'event_count': 0})
-    
+
     try:
         # DATA ACCESS: Get most recent event timestamp from explorer.events{}
         # This is loaded from log files on startup, NOT from running backend
@@ -9867,7 +9874,7 @@ def get_live_status():
 def debug_events():
     """
     Debug endpoint to inspect all stored events.
-    
+
     Returns:
         - total_events: Total number of events
         - event_ids: List of all event IDs (first 100)
@@ -9881,10 +9888,10 @@ def debug_events():
     target_explorer = app.config.get('explorer') or explorer
     if target_explorer is None:
         return jsonify({'error': 'Causation Explorer not initialized', 'total_events': 0})
-    
+
     # Get all event IDs (first 100 for debugging)
     all_event_ids = list(target_explorer.events.keys())[:100]
-    
+
     # Get recent events (last 20, sorted by timestamp)
     all_events_list = sorted(
         target_explorer.events.values(),
@@ -9892,7 +9899,7 @@ def debug_events():
         reverse=True
     )[:20]
     recent_events = [e.to_dict() for e in all_events_list]
-    
+
     # Get language events
     language_events = []
     word_assignment_events = []
@@ -9906,14 +9913,14 @@ def debug_events():
                 'data': event.data
             }
             language_events.append(event_dict)
-            
+
             if event.event_type == 'word_assignment':
                 word_assignment_events.append(event_dict)
-    
+
     # Sort language events by timestamp
     language_events.sort(key=lambda x: x['timestamp'], reverse=True)
     word_assignment_events.sort(key=lambda x: x['timestamp'], reverse=True)
-    
+
     return jsonify({
         'total_events': len(target_explorer.events),
         'event_ids': all_event_ids,
@@ -9931,20 +9938,20 @@ def debug_events():
 def get_new_events():
     """
     Get events since a given timestamp (for live updates)
-    
+
     ⚠️ CURRENT BEHAVIOR (NOT ACTUALLY LIVE):
     - Accesses: explorer.events{} (loaded from log files on startup)
     - Filters: Events where event.timestamp > since_timestamp
     - Returns: Filtered subset of already-loaded events
     - Problem: Only returns events that were loaded on startup, not new events from backend
-    
+
     🔍 DATA SOURCES ACCESSED:
     - explorer.events{} - Dictionary of all events loaded from:
       1. Akashic Ledger (if available) - data/kernel/akashic_ledger/
       2. Log files (fallback) - data/logs/*.log
       ❌ NOT: Shared state file (data/.shared_simulation_state.json)
       ❌ NOT: Real-time events from unified_entry.py
-    
+
     💡 TO MAKE IT ACTUALLY LIVE:
     - Add event feeding from unified_entry.py (Phase 2)
     - Add shared state file polling
@@ -9952,7 +9959,7 @@ def get_new_events():
     """
     if explorer is None:
         return jsonify({'events': [], 'event_count': 0})
-    
+
     try:
         since_timestamp = float(request.args.get('since', 0))
         # DATA ACCESS: Filter explorer.events{} for events after timestamp
@@ -9963,7 +9970,7 @@ def get_new_events():
         ]
         # Sort by timestamp
         new_events.sort(key=lambda e: e['timestamp'])
-        
+
         return jsonify({
             'events': new_events,
             'event_count': len(new_events),
@@ -9978,34 +9985,34 @@ def get_new_events():
 def get_graph():
     """
     Get causation graph for visualization
-    
+
     Note: Large graphs are handled via viewport culling in the browser.
     All data is sent to enable full graph analysis.
-    
+
     🚀 OPTIMIZED (Phase 1):
     - Graph data caching (5-second cache to prevent timeout loops)
     - File modification time tracking (skip unchanged shared state files)
     - Timeout protection (skip heavy loads if taking too long)
-    
+
     🔍 DATA SOURCES ACCESSED:
     - explorer.events{} - Dictionary of all events loaded from:
       1. Akashic Ledger (if available) - data/kernel/akashic_ledger/
       2. Log files (fallback) - data/logs/*.log
       ❌ NOT: Shared state file (data/.shared_simulation_state.json)
       ❌ NOT: Real-time events from unified_entry.py
-    
+
     - explorer.causation_graph - NetworkX DiGraph containing:
       - Nodes: Event IDs (from explorer.events{})
       - Edges: Causation links (threshold, correlation, direct, temporal)
       - Created when events are added via add_event()
       - Causations detected automatically when events are loaded
-    
+
     📊 WHAT GETS VISUALIZED:
     - Nodes: All events from explorer.events{}
       - id, component, type, data, timestamp
     - Links: All causation links from explorer.causation_graph
       - source, target, type, strength, explanation
-    
+
     ✅ Phase 2: REAL-TIME UPDATES (IMPLEMENTED):
     - Loads latest state from shared state file on each graph request (incremental)
     - Shows new events from running unified_entry.py in real-time
@@ -10014,15 +10021,15 @@ def get_graph():
     # Use shared explorer if available, otherwise use local one
     target_explorer = app.config.get('explorer') or explorer
     explorer_source = 'shared' if app.config.get('explorer') else 'local'
-    
+
     if target_explorer is None:
         return jsonify({'nodes': [], 'links': [], 'error': 'Causation Explorer not initialized'}), 200
-    
+
     # Debug: Log which explorer and event counts
     event_types = set(ev.event_type for ev in target_explorer.events.values()) if target_explorer.events else set()
     highlander_events = [ev for ev in target_explorer.events.values() if 'highlander' in ev.event_type.lower()]
     logger.info(f"[GRAPH] Using {explorer_source} explorer: {len(target_explorer.events)} events, {len(highlander_events)} highlander events, types: {sorted(event_types)[:10]}")
-    
+
     try:
         # 🚀 OPTIMIZATION: Check LRU cache first with content-based key
         current_time = time.time()
@@ -10044,7 +10051,7 @@ def get_graph():
         except Exception as e:
             logger.debug(f"Cache key generation failed: {e}")
             cache_key = f"time:{int(current_time)}"  # Fallback cache key
-        
+
         # 🚀 TIMEOUT PROTECTION: If a load is in progress and taking too long, return cached data
         if graph_cache['loading']:
             load_duration = current_time - graph_cache['load_start_time']
@@ -10058,12 +10065,12 @@ def get_graph():
                     'link_count': graph_cache['link_count'],
                     'warning': 'Load in progress, returning cached data'
                 })
-        
+
         # Mark load as starting
         with graph_cache_lock:
             graph_cache['loading'] = True
             graph_cache['load_start_time'] = current_time
-        
+
         # Phase 2: Load latest state from shared state file ONLY if simulation is running
         # Check simulation control file to see if simulation is actually running
         # IMPORTANT: unified_entry.py runs autonomously, so we must check the control file
@@ -10085,7 +10092,7 @@ def get_graph():
                     # 🚀 OPTIMIZATION: Check file modification time - skip if unchanged
                     import os
                     file_mtime = os.path.getmtime(shared_state_path)
-                    
+
                     # Only reload if file has actually changed since last check
                     if file_mtime > graph_cache['shared_state_mtime']:
                         current_time_check = time.time()
@@ -10121,10 +10128,10 @@ def get_graph():
             logger.warning(f"Could not check simulation status: {e}", exc_info=True)
             # On error, default to NOT loading from shared state (safer)
             logger.debug("Error checking simulation status - not loading from shared state")
-        
+
         nodes = []
         links = []
-        
+
         # DATA ACCESS: Read all events from explorer.events{}
         # This includes:
         # - Log files loaded on startup
@@ -10139,7 +10146,7 @@ def get_graph():
         snapshot_duration = time.time() - snapshot_start
         if snapshot_duration > 1.0:
             logger.warning(f"Graph snapshot took {snapshot_duration:.1f}s (large graph)")
-        
+
         # Process snapshots outside lock
         if events_snapshot:
             # Pre-compute component mappings for O(1) lookups instead of repeated string operations
@@ -10190,7 +10197,7 @@ def get_graph():
                         if any(keyword in original_component for keyword in keywords):
                             component = comp_name
                             break
-                
+
                 component_counts[component] = component_counts.get(component, 0) + 1
                 # Filter out large nested data to reduce memory usage
                 node_data = {
@@ -10203,19 +10210,19 @@ def get_graph():
                 }
                 # Only include simple data (no nested dicts/lists >200 chars)
                 if event.data and isinstance(event.data, dict):
-                    simple_data = {k: v for k, v in event.data.items() 
+                    simple_data = {k: v for k, v in event.data.items()
                                  if not isinstance(v, (dict, list)) and len(str(v)) < 200}
                     if simple_data:
                         node_data['data'] = simple_data
                 elif event.data and not isinstance(event.data, (dict, list)) and len(str(event.data)) < 200:
                     node_data['data'] = event.data
-                
+
                 nodes.append(node_data)
             # Log component distribution for debugging
             if component_counts:
                 logger.info(f"Graph nodes by component: {component_counts}")
                 logger.info(f"Total nodes: {len(nodes)} (from {len(events_snapshot)} total), Total links: {len(links)}")
-        
+
         # DATA ACCESS: Read all causation links from explorer.causation_graph (snapshot)
         # This is a NetworkX DiGraph built when events are added
         # Causation links are detected automatically (threshold, correlation, direct, temporal, language)
@@ -10227,12 +10234,12 @@ def get_graph():
             if network and hasattr(network, 'context_memory'):
                 context_memory = network.context_memory
                 node_word_associations = {
-                    str(org_id): set(words) 
+                    str(org_id): set(words)
                     for org_id, words in context_memory.node_word_associations.items()
                 }
         except Exception as e:
             logger.debug(f"Could not load language data for linguistic edge detection: {e}")
-        
+
         if edges_snapshot:
             for u, v, data in edges_snapshot:
                 link_data = {
@@ -10242,13 +10249,13 @@ def get_graph():
                     'strength': data.get('strength', 0.0),
                     'explanation': data.get('explanation', '')
                 }
-                
+
                 # Detect linguistic edges: check if source/target organisms share words
                 if node_word_associations:
                     source_words = node_word_associations.get(str(u), set())
                     target_words = node_word_associations.get(str(v), set())
                     shared_words = source_words & target_words
-                    
+
                     if shared_words:
                         link_data['is_linguistic'] = True
                         link_data['linguistic_edge'] = True
@@ -10257,9 +10264,9 @@ def get_graph():
                         # Override type to 'language' if it's a linguistic edge
                         if link_data['type'] == 'direct':
                             link_data['type'] = 'language'
-                
+
                 links.append(link_data)
-        
+
         # Add diagnostic info if no data
         diagnostic_info = {}
         if len(nodes) == 0:
@@ -10280,13 +10287,13 @@ def get_graph():
             logger.warning(f"Graph request returned 0 nodes. Diagnostics: {diagnostic_info}")
         else:
             logger.info(f"Graph request returned {len(nodes)} nodes and {len(links)} links")
-        
+
         logger.info(f"Serializing graph response: {len(nodes)} nodes, {len(links)} links")
         try:
             # 🚀 OPTIMIZED FILTERING FOR MAXIMUM REPRESENTATION
             # Frontend supports up to 20k nodes and 50k links with viewport culling
             # We'll send more data and let the frontend handle rendering optimization
-            
+
             # Tiered limits based on total data size
             total_events = len(nodes)
             if total_events > 100000:
@@ -10313,24 +10320,24 @@ def get_graph():
                 # 1. Component diversity (highlander, language, neural, etc.)
                 # 2. Temporal diversity (recent + historical)
                 # 3. Event type diversity (within components)
-                
+
                 nodes_by_component = {}
                 for node in nodes:
                     comp = node.get('component', 'unknown')
                     if comp not in nodes_by_component:
                         nodes_by_component[comp] = []
                     nodes_by_component[comp].append(node)
-                
+
                 # Log component distribution
                 comp_counts = {c: len(n) for c, n in nodes_by_component.items()}
                 logger.warning(f"Component distribution: {comp_counts}")
-                
+
                 num_components = len(nodes_by_component)
-                
+
                 # 🎯 SMART QUOTA: Guarantee minimum representation + proportional extra
                 # Small components get at least 100 nodes, large ones get proportional share
                 MIN_GUARANTEED = min(100, EMERGENCY_NODE_LIMIT // max(1, num_components * 2))
-                
+
                 # First pass: calculate ideal quotas
                 quotas = {}
                 total_allocated = 0
@@ -10338,15 +10345,15 @@ def get_graph():
                     # Base quota proportional to component size
                     proportion = len(comp_nodes) / len(nodes)
                     ideal_quota = int(EMERGENCY_NODE_LIMIT * proportion)
-                    
+
                     # Ensure minimum guaranteed
                     quota = max(MIN_GUARANTEED, ideal_quota)
                     # But don't exceed what's available
                     quota = min(quota, len(comp_nodes))
-                    
+
                     quotas[comp] = quota
                     total_allocated += quota
-                
+
                 # Redistribute if over/under budget
                 if total_allocated > EMERGENCY_NODE_LIMIT:
                     # Scale down proportionally
@@ -10356,7 +10363,7 @@ def get_graph():
                 elif total_allocated < EMERGENCY_NODE_LIMIT:
                     # Give extra to largest components
                     extra = EMERGENCY_NODE_LIMIT - total_allocated
-                    sorted_comps = sorted(nodes_by_component.keys(), 
+                    sorted_comps = sorted(nodes_by_component.keys(),
                                          key=lambda c: len(nodes_by_component[c]), reverse=True)
                     for comp in sorted_comps:
                         available = len(nodes_by_component[comp]) - quotas[comp]
@@ -10366,12 +10373,12 @@ def get_graph():
                             extra -= give
                             if extra <= 0:
                                 break
-                
+
                 # 🎯 BUILD BALANCED NODE LIST with temporal diversity
                 balanced_nodes = []
                 for comp, comp_nodes in nodes_by_component.items():
                     quota = quotas[comp]
-                    
+
                     if len(comp_nodes) <= quota:
                         # Take all
                         balanced_nodes.extend(comp_nodes)
@@ -10379,13 +10386,13 @@ def get_graph():
                         # Smart sampling: 70% recent, 30% distributed across time
                         recent_count = int(quota * 0.7)
                         historical_count = quota - recent_count
-                        
+
                         # Sort by timestamp
                         comp_nodes.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
-                        
+
                         # Take most recent
                         recent_nodes = comp_nodes[:recent_count]
-                        
+
                         # Sample historical nodes evenly across time
                         remaining = comp_nodes[recent_count:]
                         if remaining and historical_count > 0:
@@ -10393,26 +10400,26 @@ def get_graph():
                             historical_nodes = remaining[::step][:historical_count]
                         else:
                             historical_nodes = []
-                        
+
                         balanced_nodes.extend(recent_nodes)
                         balanced_nodes.extend(historical_nodes)
-                
+
                 nodes = balanced_nodes
-                
+
                 # Log final distribution
                 final_by_comp = {}
                 for node in nodes:
                     comp = node.get('component', 'unknown')
                     final_by_comp[comp] = final_by_comp.get(comp, 0) + 1
                 logger.warning(f"Final distribution ({len(nodes)} nodes): {final_by_comp}")
-                
+
                 # Rebuild node ID set for link filtering
                 remaining_node_ids = {node['id'] for node in nodes}
 
                 # Filter links to remaining nodes, keeping strongest
                 relevant_links = [link for link in links
                                  if link['source'] in remaining_node_ids and link['target'] in remaining_node_ids]
-                
+
                 if len(relevant_links) > EMERGENCY_LINK_LIMIT:
                     # Sort by strength and take top N
                     sorted_links = sorted(relevant_links, key=lambda x: x.get('strength', 0), reverse=True)
@@ -10427,17 +10434,17 @@ def get_graph():
             # Check if graph is large enough to warrant chunked loading
             # Note: Modern browsers with viewport culling can handle 20k+ nodes easily
             LARGE_GRAPH_THRESHOLD = 50000  # If >50k nodes, use chunked loading
-            
+
             if len(nodes) > LARGE_GRAPH_THRESHOLD:
                 # Return initial response with first chunk + metadata
                 chunk_size = 5000  # Send 5k nodes at a time
                 first_chunk_nodes = nodes[:chunk_size]
                 # 🚀 OPTIMIZATION: Use set for O(1) lookups instead of O(n) any() checks
                 first_chunk_node_ids = {n['id'] for n in first_chunk_nodes}
-                first_chunk_links = [link for link in links 
+                first_chunk_links = [link for link in links
                                     if link['source'] in first_chunk_node_ids or
                                        link['target'] in first_chunk_node_ids][:chunk_size * 2]
-                
+
                 response_data = {
                     'nodes': first_chunk_nodes,
                     'links': first_chunk_links,
@@ -10450,7 +10457,7 @@ def get_graph():
                     'total_chunks': (len(nodes) + chunk_size - 1) // chunk_size,
                     'chunk_size': chunk_size
                 }
-                
+
                 # Store remaining chunks in cache for subsequent requests
                 graph_cache['remaining_nodes'] = nodes[chunk_size:]
                 graph_cache['remaining_links'] = links
@@ -10524,7 +10531,7 @@ def get_graph():
                     'filtered_link_count': len(links),
                     'chunked': False
                 }
-            
+
             # 🚀 OPTIMIZATION: Store result in LRU cache
             cache_result = {
                 'nodes': nodes,
@@ -10548,7 +10555,7 @@ def get_graph():
                 graph_cache['event_count'] = len(nodes)
                 graph_cache['link_count'] = len(links)
                 graph_cache['loading'] = False  # Mark load as complete
-            
+
             logger.info("Graph data serialized and cached, returning response")
             return jsonify(response_data)
         except Exception as serialize_error:
@@ -10588,13 +10595,13 @@ def get_graph_chunk():
     """
     if explorer is None:
         return jsonify({'nodes': [], 'links': [], 'error': 'Causation Explorer not initialized'}), 200
-    
+
     try:
         chunk_index = request.args.get('chunk_index', 0, type=int)
         chunk_size = graph_cache.get('chunk_size', 5000)
         remaining_nodes = graph_cache.get('remaining_nodes', [])
         remaining_links = graph_cache.get('remaining_links', [])
-        
+
         if not remaining_nodes:
             return jsonify({
                 'nodes': [],
@@ -10603,25 +10610,25 @@ def get_graph_chunk():
                 'chunk_index': chunk_index,
                 'complete': True
             })
-        
+
         # Get next chunk
         start_idx = chunk_index * chunk_size
         end_idx = start_idx + chunk_size
         chunk_nodes = remaining_nodes[start_idx:end_idx]
-        
+
         # Get links for this chunk (links connecting nodes in this chunk)
         chunk_node_ids = {n['id'] for n in chunk_nodes}
         chunk_links = [link for link in remaining_links
                       if (isinstance(link.get('source'), str) and link.get('source') in chunk_node_ids) or
                          (isinstance(link.get('target'), str) and link.get('target') in chunk_node_ids)]
-        
+
         # Limit links per chunk to prevent huge responses
         max_links_per_chunk = chunk_size * 3
         if len(chunk_links) > max_links_per_chunk:
             chunk_links = chunk_links[:max_links_per_chunk]
-        
+
         is_complete = end_idx >= len(remaining_nodes)
-        
+
         return jsonify({
             'nodes': chunk_nodes,
             'links': chunk_links,
@@ -10639,15 +10646,15 @@ def get_graph_chunk():
 def get_incremental_updates():
     """
     Get only new events and links since a given timestamp (for incremental updates)
-    
+
     🚀 OPTIMIZATION (Phase 1): Incremental updates to avoid full graph reload
-    
+
     Returns only new nodes and links that were added since the specified timestamp.
     This allows the frontend to update the graph incrementally without reloading everything.
-    
+
     Query parameters:
     - since: Timestamp (float) - only return events/links newer than this
-    
+
     Returns:
     - new_nodes: List of new event nodes
     - new_links: List of new causation links
@@ -10664,26 +10671,26 @@ def get_incremental_updates():
             'link_count': 0,
             'error': 'Causation Explorer not initialized'
         }), 200
-    
+
     try:
         since_timestamp = float(request.args.get('since', 0))
-        
+
         new_nodes = []
         new_links = []
-        
+
         # Get events and links with thread safety
         with explorer.graph_lock:
             events_snapshot = dict(explorer.events)
             edges_snapshot = list(explorer.causation_graph.edges(data=True))
             total_node_count = len(events_snapshot)
             total_link_count = len(edges_snapshot)
-        
+
         # Find new events since timestamp
         latest_timestamp = since_timestamp
         for event_id, event in events_snapshot.items():
             if event.timestamp > since_timestamp:
                 latest_timestamp = max(latest_timestamp, event.timestamp)
-                
+
                 # Normalize component names (same logic as get_graph)
                 component = (event.component or 'unknown').lower().strip()
                 if 'reality' in component or 'sim' in component:
@@ -10696,7 +10703,7 @@ def get_incremental_updates():
                     component = 'breath'
                 elif 'system' in component:
                     component = 'system'
-                
+
                 # Build node data (same format as get_graph)
                 node_data = {
                     'id': event_id,
@@ -10704,28 +10711,28 @@ def get_incremental_updates():
                     'type': event.event_type,
                     'timestamp': event.timestamp
                 }
-                
+
                 # Include simple data only (no nested dicts/lists >200 chars)
                 if event.data and isinstance(event.data, dict):
-                    simple_data = {k: v for k, v in event.data.items() 
+                    simple_data = {k: v for k, v in event.data.items()
                                  if not isinstance(v, (dict, list)) and len(str(v)) < 200}
                     if simple_data:
                         node_data['data'] = simple_data
                 elif event.data and not isinstance(event.data, (dict, list)) and len(str(event.data)) < 200:
                     node_data['data'] = event.data
-                
+
                 new_nodes.append(node_data)
-        
+
         # Find new links - links connect events, so if either source or target event
         # is new (timestamp > since), we consider it new.
-        existing_node_ids = {event_id for event_id, event in events_snapshot.items() 
+        existing_node_ids = {event_id for event_id, event in events_snapshot.items()
                             if event.timestamp <= since_timestamp}
-        
+
         for u, v, data in edges_snapshot:
             # Link is "new" if either endpoint event is new
             source_new = u not in existing_node_ids
             target_new = v not in existing_node_ids
-            
+
             if source_new or target_new:
                 # Check if link creation timestamp exists in data
                 link_created_at = data.get('created_at', None)
@@ -10737,13 +10744,13 @@ def get_incremental_updates():
                         'strength': data.get('strength', 0.0),
                         'explanation': data.get('explanation', '')
                     })
-        
+
         # Get latest timestamp from all events if no new events found
         if latest_timestamp == since_timestamp and events_snapshot:
             latest_timestamp = max(event.timestamp for event in events_snapshot.values())
-        
+
         logger.info(f"Incremental update: {len(new_nodes)} new nodes, {len(new_links)} new links since {since_timestamp}")
-        
+
         return jsonify({
             'new_nodes': new_nodes,
             'new_links': new_links,
@@ -10751,7 +10758,7 @@ def get_incremental_updates():
             'node_count': total_node_count,
             'link_count': total_link_count
         })
-        
+
     except Exception as e:
         logger.error(f"Error getting incremental updates: {e}", exc_info=True)
         import traceback
@@ -10793,7 +10800,7 @@ def set_ollama_config():
         base_url = data.get('base_url')
         api_key = data.get('api_key')
         timeout = data.get('timeout')
-        
+
         # Validate base_url
         if base_url:
             if base_url.startswith("https://ollama.com"):
@@ -10801,7 +10808,7 @@ def set_ollama_config():
                     return jsonify({'error': 'API key required for cloud mode'}), 400
             elif not base_url.startswith("http://"):
                 return jsonify({'error': 'Invalid base URL. Use http://localhost:11434 or https://ollama.com'}), 400
-        
+
         # Update OllamaBridge (only update provided values)
         update_kwargs = {}
         if base_url is not None:
@@ -10813,10 +10820,10 @@ def set_ollama_config():
             update_kwargs['api_key'] = api_key
         if timeout is not None:
             update_kwargs['timeout'] = float(timeout)
-        
+
         if update_kwargs:
             ollama_bridge.update_config(**update_kwargs)
-        
+
         # Save to config file (don't save API key for local mode)
         config_data = {
             'base_url': ollama_bridge.base_url,
@@ -10825,14 +10832,14 @@ def set_ollama_config():
         # Only include API key if using cloud mode
         if ollama_bridge.is_cloud and ollama_bridge.api_key:
             config_data['api_key'] = ollama_bridge.api_key
-        
+
         try:
             with open(config_file, 'w') as f:
                 json.dump(config_data, f, indent=2)
             logger.info(f"Saved Ollama config to {config_file}")
         except Exception as e:
             logger.warning(f"Could not save Ollama config: {e}")
-        
+
         return jsonify({
             'success': True,
             'config': {
@@ -10878,7 +10885,7 @@ def test_ollama_connection():
 def get_language_data():
     """
     Get language data (language_anchors, node_word_associations) for linguistic edge detection
-    
+
     Returns:
         - language_anchors: word -> list of organism_ids
         - node_word_associations: organism_id -> list of words
@@ -10893,22 +10900,22 @@ def get_language_data():
                 'word_frequencies': {},
                 'available': False
             })
-        
+
         context_memory = network.context_memory
-        
+
         # Convert sets to lists for JSON serialization
         language_anchors = {
-            word: list(organism_ids) 
+            word: list(organism_ids)
             for word, organism_ids in context_memory.language_anchors.items()
         }
-        
+
         node_word_associations = {
             str(organism_id): list(words)
             for organism_id, words in context_memory.node_word_associations.items()
         }
-        
+
         word_frequencies = dict(context_memory.word_frequencies)
-        
+
         return jsonify({
             'language_anchors': language_anchors,
             'node_word_associations': node_word_associations,
@@ -10935,25 +10942,25 @@ def list_ollama_models():
         models_data = ollama_bridge.list_models()
         # models_data is a list of model objects from Ollama API
         # Each model has: {'name': 'model-name', 'modified_at': '...', 'size': ...}
-        
+
         # Separate vision models from text models (heuristic)
         vision_models = []
         text_models = []
         all_models = []
-        
+
         for model in models_data:
             # Handle both dict format and string format
             if isinstance(model, dict):
                 model_name = model.get('name', '')
             else:
                 model_name = str(model)
-            
+
             if not model_name:
                 continue
-            
+
             # Normalize model name (remove tags like :latest, :7b, etc for comparison)
             name_lower = model_name.lower()
-            
+
             # Common vision model patterns
             # Ollama Cloud only supports Qwen3-VL for vision (in preview)
             # Local Ollama supports: llava, bakllava, moondream, minicpm-v, etc.
@@ -10961,11 +10968,11 @@ def list_ollama_models():
                 vision_models.append({'name': model_name, 'model': model_name})
             else:
                 text_models.append({'name': model_name, 'model': model_name})
-            
+
             all_models.append({'name': model_name, 'model': model_name})
-        
+
         # NO FALLBACKS - only real vision models allowed
-        
+
         # For Ollama Cloud, prioritize Qwen3-VL for vision (it's the only supported vision model)
         if ollama_bridge.is_cloud:
             # Find Qwen3-VL models and move them to front
@@ -10975,7 +10982,7 @@ def list_ollama_models():
                 vision_models = [m for m in vision_models if 'qwen3-vl' not in m.get('name', '').lower() and 'qwen-vl' not in m.get('name', '').lower()]
                 # Add Qwen models to front
                 vision_models = qwen_models + vision_models
-        
+
         return jsonify({
             'models': all_models,
             'text_models': text_models,
@@ -10993,7 +11000,7 @@ def ollama_chat():
     """Send message to research assistant with complete context"""
     request_start_time = time.time()
     logger.info(f"[CRA] ===== Starting CRA chat request at {time.strftime('%H:%M:%S', time.localtime(request_start_time))} =====")
-    
+
     try:
         data = request.get_json()
         message = data.get('message', '')
@@ -11054,10 +11061,10 @@ def ollama_chat():
                     deduped.append(item)
                     last_signature = signature
             return deduped
-        
+
         if not message:
             return jsonify({'error': 'Message is required'}), 400
-        
+
         # Use user's API key if provided, otherwise use server default
         bridge_to_use = ollama_bridge
         if user_api_key:
@@ -11066,7 +11073,7 @@ def ollama_chat():
                 timeout=ollama_bridge.timeout,
                 api_key=user_api_key
             )
-        
+
         # Update time-series tracker with current state
         try:
             if shared_state_path.exists():
@@ -11075,24 +11082,24 @@ def ollama_chat():
                 time_series_tracker.extract_metrics_from_state(current_state)
         except Exception as e:
             logger.debug(f"Could not update time-series tracker: {e}")
-        
+
         # Build context
         step_start = time.time()
         logger.info(f"[CRA] [Step 1/6] Building context... ({time.time() - request_start_time:.2f}s elapsed)")
         context = context_builder.build_context(view_state=view_state, selected_event=selected_event)
         logger.info(f"[CRA] [Step 1/6] ✓ Context built in {time.time() - step_start:.2f}s")
-        
+
         # Add system knowledge
         step_start = time.time()
         logger.info(f"[CRA] [Step 2/6] Loading system knowledge... ({time.time() - request_start_time:.2f}s elapsed)")
         context['system_knowledge'] = knowledge_base.load_knowledge()
         logger.info(f"[CRA] [Step 2/6] ✓ System knowledge loaded in {time.time() - step_start:.2f}s")
-        
+
         # Add time-series trends and anomaly detection
         step_start = time.time()
         logger.info(f"[CRA] [Step 3/6] Analyzing time-series trends... ({time.time() - request_start_time:.2f}s elapsed)")
         context['time_series_trends'] = time_series_tracker.get_all_trends(window_size=20)
-        
+
         # Detect anomalies/spikes in key metrics
         anomalies = {}
         key_metrics = ['djinn_vp', 'explorer_vp', 'network_modularity', 'evolution_best_fitness']
@@ -11100,10 +11107,10 @@ def ollama_chat():
             spikes = time_series_tracker.detect_spikes(metric, threshold_multiplier=2.0)
             if spikes:
                 anomalies[metric] = spikes[-5:]  # Last 5 spikes
-        
+
         if anomalies:
             context['anomalies'] = anomalies
-        
+
         # If graph image provided, analyze it with vision model (images only, no context)
         # Vision model gets ONLY images. CRA gets vision analysis + all context.
         visual_description = None
@@ -11113,18 +11120,18 @@ def ollama_chat():
             step_start = time.time()
             logger.info(f"[CRA] [Step 4/6] ===== Starting Vision Analysis ===== ({time.time() - request_start_time:.2f}s elapsed)")
             logger.info(f"[CRA] [Vision] Using vision model: {vision_model}")
-            
+
             # Collect all images: current + evolutionary snapshots
             # Strategy: Send up to 10 snapshots for evolution analysis
             # We use analyze_sequence to bypass the 150KB cloud payload limit per request
             MAX_VISION_IMAGES = 10  # Target: 10 images for deep evolutionary analysis
-            
+
             all_images = []
-            
+
             # Track original count for trimming feedback
             original_snapshot_count = len(evolutionary_snapshots) if evolutionary_snapshots else 0
             images_trimmed = False
-            
+
             # Add evolutionary snapshots first (they're older)
             # CRA → Vision Model feedback loop: Generate contextual summaries for each snapshot
             snapshot_contexts = []  # Store CRA-generated context for each snapshot
@@ -11165,7 +11172,7 @@ def ollama_chat():
                 snapshot_contexts = [frame['context'] for frame in historical_frames]
                 all_images.extend(snapshot_images)
                 logger.info(f"[CRA] [Vision] Added {len(snapshot_images)} historical images to analysis list")
-            
+
             # Add current image last (it's the newest)
             # CRITICAL: This should be the FRESH, CURRENT graph state
             if graph_image:
@@ -11178,39 +11185,39 @@ def ollama_chat():
                     logger.info(f"Added CURRENT graph image: {len(graph_image)/1024:.1f}KB (fresh capture) | Context: {current_context[:50]}...")
                 else:
                     logger.warning(f"Current graph image too small ({len(graph_image)/1024:.1f}KB), may be blank/cached. Skipping.")
-            
+
             # Final limit check - never send more than MAX
             # CRITICAL: Preserve evenly sampled distribution - don't just take last N!
             if len(all_images) > MAX_VISION_IMAGES:
                 if graph_image and len(graph_image) >= 20000:
                     # Remove current image temporarily to preserve historical distribution
                     current_img = all_images.pop() if all_images and all_images[-1] == graph_image else None
-                    
+
                     # Re-sample evenly if we have too many historical frames
                     # This preserves evolution across entire timeline, not just recent
                     target_historical = MAX_VISION_IMAGES - 1
                     if len(all_images) > target_historical:
                         # Recreate frames with metadata for proper sampling
-                        frames_for_sampling = [{'image': img, 'context': ctx} 
+                        frames_for_sampling = [{'image': img, 'context': ctx}
                                              for img, ctx in zip(all_images, snapshot_contexts[:len(all_images)])]
                         sampled_frames = sample_evenly(frames_for_sampling, target_historical)
                         all_images = [frame['image'] for frame in sampled_frames]
                         snapshot_contexts = [frame['context'] for frame in sampled_frames]
                         logger.info(f"Re-sampled {len(all_images)} historical snapshots evenly across timeline (preserving evolution)")
-                    
+
                     # Add current image back at the end
                     if current_img:
                         all_images.append(current_img)
                     logger.debug(f"Final limit: kept {len(all_images)-1} evenly-sampled historical + 1 current (fresh) image")
                 else:
                     # No current image, re-sample evenly to preserve distribution
-                    frames_for_sampling = [{'image': img, 'context': ctx} 
+                    frames_for_sampling = [{'image': img, 'context': ctx}
                                          for img, ctx in zip(all_images, snapshot_contexts[:len(all_images)])]
                     sampled_frames = sample_evenly(frames_for_sampling, MAX_VISION_IMAGES)
                     all_images = [frame['image'] for frame in sampled_frames]
                     snapshot_contexts = [frame['context'] for frame in sampled_frames]
                     logger.info(f"Re-sampled {len(all_images)} snapshots evenly (no current image)")
-            
+
             # CRITICAL: Vision analysis should run REGARDLESS of trimming - it's outside the trimming block!
             if not all_images:
                 vision_error = "No images available for vision analysis."
@@ -11233,7 +11240,7 @@ def ollama_chat():
                         logger.info(f"[CRA] [Vision] Analyzing 1 snapshot (current state only, {total_size_kb:.1f}KB) - no history available yet")
                         if graph_image:
                             logger.info(f"[CRA] [Vision]   [CURRENT - FRESH CAPTURE: {len(graph_image.encode('utf-8'))/1024:.1f}KB]")
-                
+
                     # Minimal prompt for vision model - ONLY asks it to describe what it sees
                     # NO system context - that goes to CRA instead
                     # ENHANCED PROMPT: Make it crystal clear this is a network graph, not biological artwork
@@ -11253,7 +11260,7 @@ This is the Butterfly System's Causation Explorer - a network graph showing how 
 - Changes in graph structure over time
 
 DO NOT interpret this as biological artwork, organisms, organic structures, or butterfly shapes. This is a technical network diagram showing computational event causation."""
-                    
+
                     annotation_instruction = """
 
 ANNOTATION REQUEST: After your analysis, provide annotations in JSON format to highlight key features you described. Use annotations like a sports commentator drawing on screen - circles for clusters, arrows for flows, text labels for important nodes/patterns:
@@ -11265,7 +11272,7 @@ ANNOTATION REQUEST: After your analysis, provide annotations in JSON format to h
   ]
 }
 Annotation types: "circle" (highlight areas), "arrow" (show direction/flow), "text" (label features). Coordinates are in pixels (0,0 = top-left). Use annotations to visually emphasize your key observations."""
-                    
+
                     if len(all_images) >= 3:
                         vision_prompt = f"""{system_context}
 
@@ -11279,7 +11286,7 @@ These 2 images show the evolution of a causation graph network over time (oldest
                         vision_prompt = f"""{system_context}
 
 This is a single snapshot of a causation graph network visualization (no previous snapshots available for comparison yet). Describe what you see in the NETWORK GRAPH: What are the node colors and what system components do they represent? What is the graph structure and topology? Are there clusters, isolated nodes, or branching patterns? What do the connections show about event causation? How dense is the network? Note: This is the first snapshot, so no evolutionary analysis is possible yet.{annotation_instruction}"""
-                    
+
                     # Vision model gets images + CRA contextual summaries (feedback loop)
                     # CRA → Vision Model: CRA provides context about what each snapshot means
                     # Vision Model → CRA: Vision model provides enhanced analysis with context
@@ -11290,7 +11297,7 @@ This is a single snapshot of a causation graph network visualization (no previou
                         if len(all_images) > 1:
                             logger.info(f"[CRA] [Vision] Starting sequential analysis for {len(all_images)} images with CRA contextual summaries")
                             logger.info(f"[CRA] [Vision] This may take a while - analyzing each image sequentially...")
-                            
+
                             # Generate temporal deltas between consecutive snapshots
                             # This tells Vision what CHANGED between each snapshot
                             temporal_deltas = [None]  # First snapshot has no previous
@@ -11301,19 +11308,19 @@ This is a single snapshot of a causation graph network visualization (no previou
                                         curr_ts = snapshot.get('timestamp')
                                     else:
                                         curr_ts = None
-                                    
+
                                     if prev_ts and curr_ts:
                                         delta = context_builder.generate_temporal_delta(prev_ts, curr_ts)
                                         temporal_deltas.append(delta)
                                     else:
                                         temporal_deltas.append(None)
                                     prev_ts = curr_ts
-                                
+
                                 # Add delta for current snapshot (compared to last historical)
                                 if prev_ts:
                                     current_delta = context_builder.generate_temporal_delta(prev_ts, time.time())
                                     temporal_deltas.append(current_delta)
-                            
+
                             # Pass snapshot contexts AND temporal deltas to analyze_sequence for CRA → Vision feedback loop
                             # analyze_sequence now returns (description, per_image_annotations)
                             vision_result = bridge_to_use.analyze_sequence(vision_model, all_images, vision_prompt, snapshot_contexts, temporal_deltas)
@@ -11344,11 +11351,11 @@ Use this context to understand what the graph structure means. Match the visual 
                             visual_description = bridge_to_use.vision(vision_model, all_images, vision_prompt)
                             vision_call_time = time.time() - vision_call_start
                             logger.info(f"[CRA] [Vision] ✓ Vision API call completed in {vision_call_time:.2f}s")
-                        
+
                         if visual_description:
                             # Parse annotations from vision response
                             annotations = None
-                        
+
                             # Priority 1: Use per-image annotations from analyze_sequence if available
                             if 'per_image_annotations' in locals() and per_image_annotations:
                                 # Combine all per-image annotations into one set
@@ -11356,11 +11363,11 @@ Use this context to understand what the graph structure means. Match the visual 
                                 for img_ann in per_image_annotations:
                                     if img_ann and 'annotations' in img_ann:
                                         all_annotation_objects.extend(img_ann['annotations'])
-                                
+
                                 if all_annotation_objects:
                                     annotations = {'annotations': all_annotation_objects}
                                     logger.info(f"✓ Using {len(all_annotation_objects)} combined annotations from per-image analysis")
-                            
+
                             # Priority 2: If no per-image annotations, try to extract from final synthesized response
                             if not annotations:
                                 try:
@@ -11373,7 +11380,7 @@ Use this context to understand what the graph structure means. Match the visual 
                                         # Pattern 3: Try to find complete JSON block
                                         r'\{(?:[^{}]|(?:\{[^{}]*\}))*\s*"annotations"\s*:\s*\[[\s\S]*?\][\s\S]*?\}',
                                     ]
-                                    
+
                                     for pattern in json_patterns:
                                         json_match = re.search(pattern, visual_description, re.DOTALL)
                                         if json_match:
@@ -11385,7 +11392,7 @@ Use this context to understand what the graph structure means. Match the visual 
                                                     break
                                             except json.JSONDecodeError:
                                                 continue
-                                    
+
                                     # Strategy 2: If regex fails, try to find JSON block manually
                                     if not annotations:
                                         # Look for lines that look like JSON
@@ -11413,19 +11420,19 @@ Use this context to understand what the graph structure means. Match the visual 
                                                         brace_count = 0
                                 except Exception as e:
                                     logger.debug(f"Could not parse annotations from vision response: {e}")
-                        
+
                             # Add metadata about snapshots for CRA context
                             if len(all_images) > 1:
                                 visual_description = f"[Visual Evolution Analysis - {len(all_images)} snapshots]\n{visual_description}"
                             else:
                                 visual_description = f"[Visual Analysis - Single Snapshot (no evolution data available yet)]\n{visual_description}"
-                            
+
                             # Pass vision analysis to CRA context (CRA has all the data points)
                             context['visual_description'] = visual_description
                             if annotations:
                                 context['vision_annotations'] = annotations
                                 logger.info(f"[CRA] [Vision] ✓ Final annotations count: {len(annotations.get('annotations', []))}")
-                            
+
                             # ENHANCEMENT: Extract structured vision insights for CRA feedback loop
                             # This closes the Vision → CRA loop with queryable structured data
                             vision_insights = context_builder.extract_vision_insights(visual_description, annotations)
@@ -11435,11 +11442,11 @@ Use this context to understand what the graph structure means. Match the visual 
                         vision_error = f"Vision model error: {str(e)}"
                         logger.error(f"[CRA] [Vision] ✗ Vision model call failed: {e}", exc_info=True)
                         visual_description = None
-                    
+
                     # Check if images were trimmed and set warning
                     if original_snapshot_count > MAX_VISION_IMAGES - 1:
                         images_trimmed_warning = f"⚠️ Note: {original_snapshot_count} snapshots available, but only {len(all_images)} were sent for analysis (limit: {MAX_VISION_IMAGES} images)."
-                    
+
                     vision_phase_time = time.time() - step_start
                     if visual_description:
                         logger.info(f"[CRA] [Step 4/6] ✓ Vision analysis completed in {vision_phase_time:.2f}s ({len(visual_description)} chars)")
@@ -11450,10 +11457,10 @@ Use this context to understand what the graph structure means. Match the visual 
             logger.warning(f"[CRA] [Step 4/6] ✗ Vision model selected but no graph image provided")
         else:
             logger.info(f"[CRA] [Step 4/6] Skipped (no vision model or no graph image)")
-        
+
         # Build messages for chat
         messages = [{"role": "user", "content": message}]
-        
+
         # Send to research assistant
         logger.info(f"[CRA] [Step 6/6] ===== Sending to CRA model for synthesis ===== ({time.time() - request_start_time:.2f}s elapsed)")
         logger.info(f"[CRA] [CRA] Model: {model}, Message length: {len(message)} chars, Context size: {len(str(context))} chars")
@@ -11464,14 +11471,14 @@ Use this context to understand what the graph structure means. Match the visual 
         cra_synthesis_time = time.time() - cra_synthesis_start
         logger.info(f"[CRA] [CRA] ✓ CRA synthesis completed in {cra_synthesis_time:.2f}s")
         logger.info(f"[CRA] [Step 6/6] ✓ Response received ({len(response) if response else 0} chars)")
-        
+
         if response is None:
             logger.error(f"[CRA] [CRA] ✗ Failed to get response from Ollama after {cra_synthesis_time:.2f}s")
             return jsonify({'error': 'Failed to get response from Ollama'}), 500
-        
+
         total_time = time.time() - request_start_time
         logger.info(f"[CRA] ===== CRA request completed in {total_time:.2f}s total =====")
-        
+
         # Log breakdown
         breakdown_parts = []
         if 'vision_call_time' in locals():
@@ -11479,17 +11486,17 @@ Use this context to understand what the graph structure means. Match the visual 
         breakdown_parts.append(f"CRA={cra_synthesis_time:.2f}s ({cra_synthesis_time/total_time*100:.1f}%)")
         if breakdown_parts:
             logger.info(f"[CRA] Breakdown: {', '.join(breakdown_parts)}")
-        
+
         logger.info(f"[CRA] Response size: {len(response) if response else 0} chars")
         logger.info(f"[CRA] ===== END CRA REQUEST =====")
-        
+
         # Save chat messages to persistent context
         try:
             persistent_context.save_chat_message('user', message)
             persistent_context.save_chat_message('assistant', response)
             if visual_description:
                 persistent_context.save_chat_message('vision', visual_description)
-            
+
             # Save run summary periodically (every 10 messages or so)
             history = persistent_context.load_chat_history()
             if len(history) % 10 == 0:
@@ -11506,7 +11513,7 @@ Use this context to understand what the graph structure means. Match the visual 
                 comparative_analyzer.save_run_summary(run_summary['run_id'], run_summary)
         except Exception as e:
             logger.debug(f"Could not save chat history: {e}")
-        
+
         # Prepare evolutionary snapshots for display (with images)
         display_snapshots = []
         current_snapshot_display = None
@@ -11752,10 +11759,60 @@ def research_notepad_clear():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+def _normalize_interaction_context(raw: Any) -> Dict[str, Any]:
+    """Small, bounded metadata surface for human-choice and operation prompts."""
+    if not isinstance(raw, dict):
+        return {}
+
+    def clean_text(value: Any, limit: int = 256) -> str:
+        text = re.sub(r"\s+", " ", str(value or "")).strip()
+        return text[:limit]
+
+    normalized: Dict[str, Any] = {}
+    text_limits = {
+        'source': 64,
+        'selected_suggestion': 512,
+        'suggestion_label': 80,
+        'inside_boundary': 80,
+        'consent_condition': 160,
+    }
+    for key, limit in text_limits.items():
+        if key in raw:
+            value = clean_text(raw.get(key), limit)
+            if value:
+                normalized[key] = value
+
+    axis = clean_text(raw.get('operation_axis'), 32).lower()
+    allowed_axes = {'inside', 'around', 'above', 'below', 'between', 'through'}
+    if axis in allowed_axes:
+        normalized['operation_axis'] = axis
+
+    for key in ('human_choice', 'organism_suggestion_echo', 'inside_game_only'):
+        if key in raw:
+            normalized[key] = bool(raw.get(key))
+
+    for key in ('space_window_seconds', 'config_window_seconds'):
+        if key not in raw:
+            continue
+        try:
+            seconds = int(float(raw.get(key)))
+        except (TypeError, ValueError):
+            continue
+        normalized[key] = max(0, min(seconds, 86400))
+
+    if normalized.get('selected_suggestion'):
+        normalized['human_choice'] = True
+    if normalized and 'source' not in normalized:
+        normalized['source'] = 'butterfly_chat'
+    if normalized and 'inside_boundary' not in normalized:
+        normalized['inside_boundary'] = 'inside_game_only'
+    return normalized
+
+
 @app.route('/api/butterfly/chat', methods=['POST'])
 def butterfly_chat():
     """Chat with organism networks using Butterfly Chat router
-    
+
     Optional filters:
         min_mastery_level (int): Only include organisms at or above this mastery level
             Level 0: 6 words (ACTION_HEADS only)
@@ -11765,23 +11822,24 @@ def butterfly_chat():
             Level 4: Unlimited (semantic graduation - full vocabulary access)
     """
     try:
-        data = request.get_json()
+        data = request.get_json() or {}
         message = data.get('message', '')
         routing_strategy = data.get('routing_strategy', 'all')
         max_organisms = data.get('max_organisms', 10)
         min_mastery_level = data.get('min_mastery_level', 0)  # Filter by mastery level
-        
+        interaction_context = _normalize_interaction_context(data.get('interaction_context'))
+
         if not message:
             return jsonify({'error': 'Message is required'}), 400
-        
+
         # Get stored references from unified system integration
         organisms = app.config.get('organisms', [])
         vocabulary = app.config.get('vocabulary')
         event_emitter = app.config.get('event_emitter')
-        
+
         if not organisms:
             return jsonify({'error': 'No organism networks available. Please ensure the Butterfly system is running.'}), 503
-        
+
         # FIX: If vocabulary is None or empty, try to build from context_memory OR innate_vocab.json
         network = app.config.get('network')
         # Check if vocabulary is usable: must exist, have word_to_id dict, and have real words (not just special tokens)
@@ -11790,21 +11848,21 @@ def butterfly_chat():
             word_count = len(getattr(vocabulary, 'word_to_id', {})) if hasattr(vocabulary, 'word_to_id') else 0
             vocab_usable = word_count > 5  # More than just special tokens
             logger.info(f"[BUTTERFLY_CHAT] Vocabulary check: word_to_id has {word_count} entries, usable={vocab_usable}")
-        
+
         if not vocab_usable:
             logger.warning(f"[BUTTERFLY_CHAT] Vocabulary empty or missing (vocab_size={getattr(vocabulary, 'vocab_size', 'N/A')}), building...")
-            
+
             # Try to get context_memory and build vocabulary from language_anchors
             context_memory = None
             if network and hasattr(network, 'context_memory'):
                 context_memory = network.context_memory
-            
+
             if context_memory:
                 # Import and use the vocabulary builder
                 try:
                     from reality_simulator.language_system import LanguageVocabulary, create_vocabulary_from_context_memory
                     vocabulary = create_vocabulary_from_context_memory(context_memory)
-                    
+
                     # If language_anchors was empty, bootstrap from innate_vocab.json
                     if vocabulary.vocab_size <= 5:
                         logger.info("[BUTTERFLY_CHAT] language_anchors empty, loading from innate_vocab.json...")
@@ -11818,19 +11876,19 @@ def butterfly_chat():
                             tiers = innate_data.get('tiers', {})
                             fake_anchors = {}
                             tier_weights = {'core': 100, 'extended': 50, 'pool': 10}
-                            
+
                             # Add words from each tier with frequency hints
                             for tier_name, tier_words in tiers.items():
                                 weight = tier_weights.get(tier_name, 1)
                                 for word in tier_words:
                                     if word:
                                         fake_anchors[word] = set(range(weight))  # Simulate 'weight' organisms using this word
-                            
+
                             # Fallback: if no tiers, use flat concepts list
                             if not fake_anchors:
                                 concepts = innate_data.get('concepts', [])
                                 fake_anchors = {c: set() for c in concepts if isinstance(c, str) and c}
-                            
+
                             if fake_anchors:
                                 vocabulary.build_from_language_anchors(language_anchors=fake_anchors)
                                 logger.info(f"[BUTTERFLY_CHAT] Bootstrapped {len(fake_anchors)} words from innate_vocab.json (tier-weighted)")
@@ -11860,14 +11918,14 @@ def butterfly_chat():
                                             break
                                     except Exception as e:
                                         logger.warning(f"[BUTTERFLY_CHAT] Failed to load {fallback}: {e}")
-                    
+
                     app.config['vocabulary'] = vocabulary
                     # CRITICAL: Also set on context_memory so generate_tokens() can access it
                     context_memory.vocabulary = vocabulary
                     logger.info(f"[BUTTERFLY_CHAT] Built vocabulary: {vocabulary.vocab_size} words")
                 except Exception as e:
                     logger.error(f"[BUTTERFLY_CHAT] Failed to build vocabulary: {e}")
-        
+
         # ALWAYS ensure context_memory.vocabulary is set with a USABLE vocabulary
         # Even if context_memory already has a vocabulary, replace it if ours is better
         if network and hasattr(network, 'context_memory') and vocabulary:
@@ -11875,19 +11933,19 @@ def butterfly_chat():
             cm_vocab = getattr(cm, 'vocabulary', None)
             cm_vocab_words = len(getattr(cm_vocab, 'word_to_id', {})) if cm_vocab else 0
             our_vocab_words = len(getattr(vocabulary, 'word_to_id', {})) if vocabulary else 0
-            
+
             # Wire our vocabulary if context_memory has none, or ours is better
             if cm_vocab is None or cm_vocab_words <= 5 or our_vocab_words > cm_vocab_words:
                 cm.vocabulary = vocabulary
                 logger.info(f"[BUTTERFLY_CHAT] Wired vocabulary to context_memory (ours={our_vocab_words}, was={cm_vocab_words})")
-        
+
         if not vocabulary:
             return jsonify({'error': 'Language vocabulary not available'}), 503
-        
+
         # Wire vocabulary event_emitter if not already set (enables vocabulary_growth events)
         if vocabulary and hasattr(vocabulary, 'event_emitter') and vocabulary.event_emitter is None:
             vocabulary.event_emitter = event_emitter
-        
+
         # Create router and process message
         # Convert organisms list to dict (keyed by organism ID)
         # Apply mastery level filter if specified
@@ -11896,7 +11954,7 @@ def butterfly_chat():
         for i, org in enumerate(organisms):
             # Try to get organism ID from various attributes
             org_id = getattr(org, 'species_id', None) or getattr(org, 'id', None) or str(i)
-            
+
             # Filter by mastery level if specified
             if min_mastery_level > 0:
                 org_mastery = 0
@@ -11905,12 +11963,12 @@ def butterfly_chat():
                 if org_mastery < min_mastery_level:
                     filtered_count += 1
                     continue  # Skip this organism
-            
+
             organisms_dict[str(org_id)] = org
-        
+
         if min_mastery_level > 0:
             logger.info(f"[BUTTERFLY_CHAT] Mastery filter: min_level={min_mastery_level}, passed={len(organisms_dict)}, filtered={filtered_count}")
-        
+
         if not organisms_dict:
             return jsonify({
                 'error': f'No organisms meet mastery level {min_mastery_level}. Try a lower level or wait for organisms to advance.',
@@ -11918,7 +11976,7 @@ def butterfly_chat():
                 'min_mastery_requested': min_mastery_level,
                 'hint': 'Level 0=6 words, Level 1=26, Level 2=76, Level 3=276, Level 4=unlimited'
             }), 404
-        
+
         # Use persistent router if available (preserves conversation history)
         # Otherwise create new one and store it
         router = app.config.get('butterfly_chat_router')
@@ -11932,12 +11990,12 @@ def butterfly_chat():
             # Update organisms dict in case population changed
             router.organisms = organisms_dict
             router.vocabulary = vocabulary
-        
+
         # Wire trainer for chat-triggered learning
         neural_trainer = app.config.get('neural_trainer')
         if neural_trainer:
             router.trainer = neural_trainer
-        
+
         # Get network state for routing strategies that need it
         network = app.config.get('network')
         network_state = None
@@ -11953,30 +12011,35 @@ def butterfly_chat():
                         'strength': edge_data.get('strength', 1.0),
                         'type': edge_data.get('type', 'symbiotic')
                     }
-            
+
             # Get VP value from VP monitor if available
             vp_value = None
             if hasattr(network, 'vp_monitor') and network.vp_monitor:
                 vp_value = float(getattr(network.vp_monitor, 'violation_pressure', 0.0))
             elif hasattr(network, 'violation_pressure'):
                 vp_value = float(network.violation_pressure)
-            
+
             network_state = {
                 'language_anchors': {k: list(v) for k, v in network.context_memory.language_anchors.items()},
                 'connections': connections,  # FIXED: Now populated with actual network connections
                 'context_memory': network.context_memory,  # FIXED: Pass context_memory for generate_tokens()
                 'vp_value': vp_value  # FIXED: Pass VP value for VP-aware generation
             }
-        
+
+        if interaction_context:
+            if network_state is None:
+                network_state = {}
+            network_state['interaction_context'] = interaction_context
+
         response = router.route_message(message, routing_strategy, max_organisms, network_state=network_state)
-        
+
         # Calculate confidence and organism count for backward compatibility
         organism_responses = response.get('organism_responses', [])
         confidence = 0.0
         if organism_responses:
             confidences = [r.get('confidence', 0.0) for r in organism_responses]
             confidence = sum(confidences) / len(confidences) if confidences else 0.0
-        
+
         response_body = {
             'response': response.get('response', '<no response>'),
             'organism_responses': organism_responses,
@@ -11989,7 +12052,8 @@ def butterfly_chat():
             'debug_logs': response.get('debug_logs', []),
             'causation_trail': response.get('causation_trail', []),
             'errors': response.get('errors', []),
-            'performance': response.get('performance', {})
+            'performance': response.get('performance', {}),
+            'interaction_context': interaction_context
         }
         response_body['security'] = _record_security_receipt(
             'butterfly_chat',
@@ -11999,6 +12063,7 @@ def butterfly_chat():
                 'routing_strategy': routing_strategy,
                 'max_organisms': max_organisms,
                 'min_mastery_level': min_mastery_level,
+                'interaction_context': interaction_context,
             },
             result={
                 'response_hash': hash_payload(response.get('response', '')),
@@ -12009,7 +12074,7 @@ def butterfly_chat():
             reason='butterfly_chat_interaction',
         )
         return jsonify(response_body)
-        
+
     except Exception as e:
         logger.error(f"Error in butterfly chat: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
@@ -12020,23 +12085,24 @@ def butterfly_chat_stream():
     """
     Streaming version of butterfly chat - sends debug logs in real-time as organisms respond.
     Uses Server-Sent Events (SSE) to push updates to the frontend.
-    
+
     Optional filters:
         min_mastery_level (int): Only include organisms at or above this mastery level
     """
     import json as json_module
-    
-    data = request.get_json()
+
+    data = request.get_json() or {}
     message = data.get('message', '')
     routing_strategy = data.get('routing_strategy', 'all')
     max_organisms = data.get('max_organisms', 10)
     min_mastery_level = data.get('min_mastery_level', 0)  # Filter by mastery level
-    
+    interaction_context = _normalize_interaction_context(data.get('interaction_context'))
+
     if not message:
         def error_gen():
             yield f"data: {json_module.dumps({'type': 'error', 'error': 'Message is required'})}\n\n"
         return Response(error_gen(), mimetype='text/event-stream')
-    
+
     def generate():
         try:
             # Get stored references
@@ -12044,11 +12110,11 @@ def butterfly_chat_stream():
             vocabulary = app.config.get('vocabulary')
             event_emitter = app.config.get('event_emitter')
             network = app.config.get('network')
-            
+
             if not organisms:
                 yield f"data: {json_module.dumps({'type': 'error', 'error': 'No organism networks available'})}\n\n"
                 return
-            
+
             # Apply mastery level filter if specified
             original_count = len(organisms)
             if min_mastery_level > 0:
@@ -12060,26 +12126,26 @@ def butterfly_chat_stream():
                     if org_mastery >= min_mastery_level:
                         filtered_organisms.append(org)
                 organisms = filtered_organisms
-                
+
                 if not organisms:
                     yield f"data: {json_module.dumps({'type': 'error', 'error': f'No organisms meet mastery level {min_mastery_level}. All {original_count} organisms are below this threshold.'})}\n\n"
                     return
-            
+
             # Send initial status
             yield f"data: {json_module.dumps({'type': 'status', 'message': 'Starting organism query...', 'organism_count': len(organisms), 'filtered_from': original_count if min_mastery_level > 0 else None})}\n\n"
-            
+
             # Build vocabulary if needed (same as non-streaming version)
             context_memory = None
             if network and hasattr(network, 'context_memory'):
                 context_memory = network.context_memory
-            
+
             # Get or create router
             router = app.config.get('butterfly_chat_router')
             organisms_dict = {}
             for i, org in enumerate(organisms):
                 org_id = getattr(org, 'species_id', None) or getattr(org, 'id', None) or str(i)
                 organisms_dict[str(org_id)] = org
-            
+
             if router is None:
                 simulation_config = config_manager.get_config() if config_manager else {}
                 router = ButterflyChatRouter(organisms_dict, vocabulary, event_emitter, config=simulation_config)
@@ -12087,12 +12153,12 @@ def butterfly_chat_stream():
             else:
                 router.organisms = organisms_dict
                 router.vocabulary = vocabulary
-            
+
             # Wire trainer
             neural_trainer = app.config.get('neural_trainer')
             if neural_trainer:
                 router.trainer = neural_trainer
-            
+
             # Build network_state
             network_state = None
             vp_value = None
@@ -12107,19 +12173,24 @@ def butterfly_chat_stream():
                             'strength': edge_data.get('strength', 1.0),
                             'type': edge_data.get('type', 'symbiotic')
                         }
-                
+
                 if hasattr(network, 'vp_monitor') and network.vp_monitor:
                     vp_value = float(getattr(network.vp_monitor, 'violation_pressure', 0.0))
                 elif hasattr(network, 'violation_pressure'):
                     vp_value = float(network.violation_pressure)
-                
+
                 network_state = {
                     'language_anchors': {k: list(v) for k, v in network.context_memory.language_anchors.items()},
                     'connections': connections,
                     'context_memory': network.context_memory,
                     'vp_value': vp_value
                 }
-            
+
+            if interaction_context:
+                if network_state is None:
+                    network_state = {}
+                network_state['interaction_context'] = interaction_context
+
             # Use streaming route_message if available, otherwise fall back to regular
             if hasattr(router, 'route_message_streaming'):
                 for event in router.route_message_streaming(message, routing_strategy, max_organisms, network_state=network_state):
@@ -12127,36 +12198,36 @@ def butterfly_chat_stream():
             else:
                 # Fallback: process organisms one by one and stream updates
                 yield f"data: {json_module.dumps({'type': 'log', 'step': 'STEP_1', 'action': 'Message Received', 'data': {'message': message, 'routing_strategy': routing_strategy}})}\n\n"
-                
+
                 # Do the full route_message but stream intermediate results
                 response = router.route_message(message, routing_strategy, max_organisms, network_state=network_state)
-                
+
                 # Stream each debug log as it was captured
                 for log in response.get('debug_logs', []):
                     yield f"data: {json_module.dumps({'type': 'log', **log})}\n\n"
-                
+
                 # Stream each organism response
                 for resp in response.get('organism_responses', []):
                     yield f"data: {json_module.dumps({'type': 'organism_response', **resp})}\n\n"
-                
+
                 # Stream errors
                 for err in response.get('errors', []):
                     yield f"data: {json_module.dumps({'type': 'error_log', **err})}\n\n"
-                
+
                 # Send final response
                 organism_responses = response.get('organism_responses', [])
                 confidence = 0.0
                 if organism_responses:
                     confidences = [r.get('confidence', 0.0) for r in organism_responses]
                     confidence = sum(confidences) / len(confidences) if confidences else 0.0
-                
+
                 yield f"data: {json_module.dumps({'type': 'complete', 'response': response.get('response', '<no response>'), 'organism_count': len(organism_responses), 'confidence': confidence, 'causation_trail': response.get('causation_trail', []), 'performance': response.get('performance', {})})}\n\n"
-            
+
         except Exception as e:
             import traceback
             logger.error(f"Error in butterfly chat stream: {e}", exc_info=True)
             yield f"data: {json_module.dumps({'type': 'error', 'error': str(e), 'traceback': traceback.format_exc()})}\n\n"
-    
+
     return Response(generate(), mimetype='text/event-stream', headers={
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
@@ -12168,46 +12239,47 @@ def butterfly_chat_stream():
 def chat_with_organism(organism_id):
     """
     Direct chat with a specific organism by ID.
-    
+
     This allows 1:1 conversations with individual organisms,
     letting users engage directly with a creature's learned language
     and personality.
     """
     try:
         from reality_simulator.language.butterfly_chat import ButterflyChatRouter
-        
+
         data = request.get_json() or {}
         user_message = data.get('message', '').strip()
-        
+        interaction_context = _normalize_interaction_context(data.get('interaction_context'))
+
         if not user_message:
             return jsonify({'error': 'No message provided'}), 400
-        
+
         # Get organisms from unified_system (same source as /api/organisms endpoint)
         unified_system = app.config.get('unified_system')
         organisms = []
         organisms_dict = {}
-        
+
         if unified_system and hasattr(unified_system, 'get_current_organisms'):
             live_organisms = unified_system.get_current_organisms()
             for org_id, org in live_organisms.items():
                 organisms.append(org)
                 organisms_dict[str(org_id)] = org
-        
+
         # Fallback to app.config if unified_system not available
         if not organisms:
             organisms = app.config.get('organisms', [])
             for org in organisms:
                 oid = str(getattr(org, 'species_id', None) or getattr(org, 'id', None) or '')
                 organisms_dict[oid] = org
-        
+
         vocabulary = app.config.get('vocabulary')
-        
+
         if not organisms:
             return jsonify({'error': 'No organisms available'}), 503
-        
+
         # Find the target organism by ID
         target_organism = organisms_dict.get(str(organism_id))
-        
+
         if not target_organism:
             # Try iterating if dict lookup fails
             for org in organisms:
@@ -12215,20 +12287,23 @@ def chat_with_organism(organism_id):
                 if org_id == str(organism_id):
                     target_organism = org
                     break
-        
+
         if not target_organism:
             available_ids = list(organisms_dict.keys())[:5]
             return jsonify({'error': f'Organism {organism_id} not found. Available: {available_ids}'}), 404
-        
-        # Get organism metadata for response
-        language_system = getattr(target_organism, 'language_system', None)
+        # Get organism metadata for response. Atomic language is the microscope/drill vocabulary.
         vocab_size = 0
-        if language_system and hasattr(language_system, 'vocabulary'):
+        atomic_language = getattr(target_organism, 'atomic_language', None)
+        if atomic_language and hasattr(atomic_language, 'atoms'):
+            vocab_size = len(atomic_language.atoms)
+        else:
+            language_system = getattr(target_organism, 'language_system', None)
             try:
-                vocab_size = len(language_system.vocabulary)
+                if language_system and hasattr(language_system, 'vocabulary'):
+                    vocab_size = len(language_system.vocabulary)
             except (TypeError, AttributeError):
                 vocab_size = 0
-        
+
         organism_info = {
             'id': organism_id,
             'generation': getattr(target_organism, 'generation', 0),
@@ -12236,12 +12311,12 @@ def chat_with_organism(organism_id):
             'vocabulary_size': vocab_size,
             'personality': getattr(target_organism, 'personality_type', 'unknown')
         }
-        
+
         # Get context_memory from network (CRITICAL for token generation!)
         network = app.config.get('network')
         context_memory = None
         vp_value = None
-        
+
         if network and hasattr(network, 'context_memory'):
             context_memory = network.context_memory
             # Get VP value
@@ -12249,7 +12324,7 @@ def chat_with_organism(organism_id):
                 vp_value = float(getattr(network.vp_monitor, 'violation_pressure', 0.0))
             elif hasattr(network, 'violation_pressure'):
                 vp_value = float(network.violation_pressure)
-        
+
         # FALLBACK: If no context_memory but we have vocabulary, create minimal wrapper
         # This enables token generation even when network isn't fully initialized
         if context_memory is None and vocabulary is not None:
@@ -12258,33 +12333,57 @@ def chat_with_organism(organism_id):
                     self.vocabulary = vocab
             context_memory = MinimalContextMemory(vocabulary)
             logger.info(f"[ORGANISM_CHAT] Created minimal context_memory wrapper with vocabulary (size={getattr(vocabulary, 'vocab_size', 'unknown')})")
-        
+
+        network_state = None
+        if context_memory is not None:
+            connections = {}
+            if network and hasattr(network, 'connections'):
+                connections = network.connections
+            language_anchors = {}
+            if hasattr(context_memory, 'language_anchors'):
+                language_anchors = {k: list(v) for k, v in context_memory.language_anchors.items()}
+            network_state = {
+                'language_anchors': language_anchors,
+                'connections': connections,
+                'context_memory': context_memory,
+                'vp_value': vp_value
+            }
+
+        if interaction_context:
+            if network_state is None:
+                network_state = {}
+            network_state['interaction_context'] = interaction_context
+
+
         # Debug logging to understand token generation context
         logger.info(f"[ORGANISM_CHAT] organism_id={organism_id}, context_memory={context_memory is not None}, vocab={vocabulary is not None}")
         if context_memory and hasattr(context_memory, 'vocabulary') and context_memory.vocabulary:
             cm_vocab = context_memory.vocabulary
             logger.info(f"[ORGANISM_CHAT] context_memory.vocabulary: vocab_size={getattr(cm_vocab, 'vocab_size', 'N/A')}, word_to_id_len={len(getattr(cm_vocab, 'word_to_id', {}))}")
-        
+
         # Build detailed debug info for frontend display - TRACE EVERYTHING
         debug_info = {
             # Context sources
             'context_memory_source': 'network' if (network and hasattr(network, 'context_memory')) else ('fallback' if context_memory else 'none'),
             'vp_value': vp_value,
-            
+
             # Organism brain status
             'organism_has_brain': hasattr(target_organism, 'brain') and target_organism.brain is not None,
             'organism_has_language_head': False,
             'organism_experience_count': 0,
-            
+
             # Atomic language status (THE KEY SYSTEM)
             'has_atomic_language': hasattr(target_organism, 'atomic_language') and target_organism.atomic_language is not None,
             'atomic_language_atom_count': 0,
-            
+
             # Knowledge web status
             'has_knowledge_web': False,
             'knowledge_web_concept_count': 0,
+
+            # Bounded human-choice / operation-sequence context
+            'interaction_context': interaction_context,
         }
-        
+
         # TRACE: Brain details
         if hasattr(target_organism, 'brain') and target_organism.brain:
             brain = target_organism.brain
@@ -12293,66 +12392,75 @@ def chat_with_organism(organism_id):
             if fc_lang:
                 debug_info['fc_language_out_features'] = fc_lang.out_features
             debug_info['brain_vocab_size'] = getattr(brain, 'vocab_size', 'N/A')
-        
+
         # TRACE: Experience buffer
         if hasattr(target_organism, 'experience_buffer'):
             try:
                 debug_info['organism_experience_count'] = len(target_organism.experience_buffer)
             except:
                 pass
-        
+
         # TRACE: Atomic language (THE REAL VOCABULARY)
         if hasattr(target_organism, 'atomic_language') and target_organism.atomic_language:
             als = target_organism.atomic_language
             debug_info['atomic_language_atom_count'] = len(als.atoms)
             debug_info['atomic_language_sample_atoms'] = list(als.atoms.keys())[:10]
             # NOTE: atom_formation_details populated AFTER response to show only used atoms
-        
+
         # TRACE: Knowledge web
         if context_memory and hasattr(context_memory, 'knowledge_web') and context_memory.knowledge_web:
             kw = context_memory.knowledge_web
             debug_info['has_knowledge_web'] = True
             debug_info['knowledge_web_concept_count'] = len(kw.concepts) if hasattr(kw, 'concepts') else 0
-        
+
         # NOTE: generate_tokens now builds organism-specific vocab from atomic_language
         # No need to manipulate shared context_memory.vocabulary here anymore
         vocabulary = None
         if context_memory and hasattr(context_memory, 'vocabulary'):
             vocabulary = context_memory.vocabulary
             debug_info['context_memory_vocab_size'] = vocabulary.vocab_size if vocabulary else 0
-        
+
         # Log THIS organism's actual vocab (from atomic_language, not shared)
         if hasattr(target_organism, 'atomic_language') and target_organism.atomic_language:
             org_vocab_size = len(target_organism.atomic_language.atoms)
             debug_info['organism_personal_vocab_size'] = org_vocab_size
             debug_info['organism_sample_words'] = list(target_organism.atomic_language.atoms.keys())[:15]
             logger.info(f"[ORGANISM_CHAT] Organism {organism_id} has {org_vocab_size} personal words in atomic_language")
-        
+
+        heard_words = []
+        for heard_word in re.findall(r"[A-Za-z0-9_'-]+", user_message.lower()):
+            if len(heard_word) >= 2 and heard_word not in heard_words:
+                heard_words.append(heard_word)
+        before_atoms = set(getattr(getattr(target_organism, 'atomic_language', None), 'atoms', {}).keys())
+        before_vocab_count = len(before_atoms)
+
+
         # Create organisms dict for router
         organisms_dict = {}
         for i, org in enumerate(organisms):
             oid = str(getattr(org, 'species_id', None) or getattr(org, 'id', None) or i)
             organisms_dict[oid] = org
-        
+
         # Initialize router with vocabulary and config
         simulation_config = config_manager.get_config() if config_manager else {}
         router = ButterflyChatRouter(organisms_dict, vocabulary, config=simulation_config)
-        
+
         logger.info(f"[ORGANISM_CHAT_API] Calling process_message_through_organism for {organism_id}, context_memory={context_memory is not None}, vocab={vocabulary is not None}")
-        
+
         # Process message through single organism (pass context_memory!)
         response_data = router.process_message_through_organism(
-            target_organism, 
+            target_organism,
             user_message,
             context_memory=context_memory,
-            vp_value=vp_value
+            vp_value=vp_value,
+            network_state=network_state
         )
-        
+
         logger.info(f"[ORGANISM_CHAT_API] Got response: {response_data.get('response', '')[:50]}, confidence={response_data.get('confidence', 0)}")
-        
+
         # Build conversation response
         organism_response = response_data.get('response', '')
-        
+
         # NOW gather atom formation details for words ACTUALLY USED in response
         if hasattr(target_organism, 'atomic_language') and target_organism.atomic_language:
             als = target_organism.atomic_language
@@ -12377,11 +12485,42 @@ def chat_with_organism(organism_id):
             debug_info['atom_formation_details'] = atom_details
             debug_info['response_unique_words'] = len(response_words)
             debug_info['atoms_found_for_response'] = len(atom_details)
-        
+
+            after_atoms = set(als.atoms.keys())
+            after_vocab_count = len(after_atoms)
+            heard_atom_details = []
+            heard_known = 0
+            for word in heard_words[:32]:
+                atom = als.atoms.get(word)
+                if atom:
+                    heard_known += 1
+                    heard_atom_details.append({
+                        'word': word,
+                        'known': True,
+                        'was_new': word not in before_atoms,
+                        'strength': round(float(getattr(atom, 'strength', 0.0)), 3),
+                        'source': str(getattr(atom, 'source', 'unknown')),
+                        'usage_count': int(getattr(atom, 'usage_count', 0)),
+                        'associations': len(getattr(atom, 'associations', {}) or {}),
+                        'frame': str(getattr(atom, 'semantic_frame', 'unknown'))
+                    })
+                else:
+                    heard_atom_details.append({'word': word, 'known': False, 'was_new': False})
+            debug_info['heard_atom_details'] = heard_atom_details
+            debug_info['chat_vocabulary_delta'] = {
+                'before_count': before_vocab_count,
+                'after_count': after_vocab_count,
+                'new_count': max(0, after_vocab_count - before_vocab_count),
+                'heard_count': len(heard_words),
+                'heard_known_count': heard_known,
+                'new_words': sorted(list(after_atoms - before_atoms))[:32]
+            }
+
+
         # Add router debug logs to our debug info
         debug_info['router_debug_logs'] = response_data.get('debug_logs', [])
         debug_info['router_errors'] = response_data.get('errors', [])
-        
+
         response_body = {
             'success': True,
             'organism_id': organism_id,
@@ -12392,7 +12531,8 @@ def chat_with_organism(organism_id):
             'emotional_state': response_data.get('emotional_state', {}),
             'causation_trail': response_data.get('causation_trail', []),
             'confidence': response_data.get('confidence', 0),
-            'debug': debug_info
+            'debug': debug_info,
+            'vocabulary_delta': debug_info.get('chat_vocabulary_delta', {})
         }
         response_body['security'] = _record_security_receipt(
             'organism_chat',
@@ -12400,16 +12540,17 @@ def chat_with_organism(organism_id):
             payload={
                 'organism_id': organism_id,
                 'message_hash': hash_payload(user_message),
+                'interaction_context': interaction_context,
             },
             result={
                 'response_hash': hash_payload(organism_response),
                 'confidence': response_data.get('confidence', 0),
-                'vocabulary_size': organism_info.get('vocabulary_size', 0),
+                'vocabulary_size': debug_info.get('chat_vocabulary_delta', {}).get('after_count', organism_info.get('vocabulary_size', 0)),
             },
             reason='organism_chat_interaction',
         )
         return jsonify(response_body)
-        
+
     except Exception as e:
         logger.error(f"Error in organism chat {organism_id}: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
@@ -12426,7 +12567,7 @@ def ollama_vision():
         prompt = data.get('prompt', 'Describe what you see in this causation graph visualization.')
         user_api_key = data.get('api_key') or data.get('ollama_api_key')
         custom_base_url = data.get('ollama_base_url')
-        
+
         normalized_images = []
         if image_base64:
             normalized_images.append(image_base64)
@@ -12442,7 +12583,7 @@ def ollama_vision():
         if not normalized_images:
             logger.warning(f"/api/ollama/vision received request without images (keys: {list(data.keys())})")
             return jsonify({'error': 'Image is required'}), 400
-        
+
         # Use user's API key if provided, otherwise use server default
         bridge_to_use = ollama_bridge
         if user_api_key or custom_base_url:
@@ -12451,7 +12592,7 @@ def ollama_vision():
                 timeout=ollama_bridge.timeout,
                 api_key=user_api_key
             )
-        
+
         try:
             logger.info(f"/api/ollama/vision analyzing {len(normalized_images)} image(s) with model {model}")
             if len(normalized_images) == 1:
@@ -12487,74 +12628,74 @@ def annotate_image():
         data = request.get_json()
         image_base64 = data.get('image')
         annotations = data.get('annotations', [])
-        
+
         if not image_base64:
             return jsonify({'error': 'Image is required'}), 400
-        
+
         if not PIL_AVAILABLE:
             return jsonify({'error': 'PIL/Pillow not available for image annotation'}), 500
-        
+
         try:
             # Decode base64 image
             import base64
             from io import BytesIO
-            
+
             # Remove data URL prefix if present
             if ',' in image_base64:
                 image_base64 = image_base64.split(',')[1]
-            
+
             image_data = base64.b64decode(image_base64)
             img = Image.open(BytesIO(image_data))
-            
+
             # Convert to RGB if necessary
             if img.mode != 'RGB':
                 img = img.convert('RGB')
-            
+
             # Draw annotations
             from PIL import ImageDraw, ImageFont
-            
+
             draw = ImageDraw.Draw(img)
-            
+
             # Try to load a font, fallback to default if not available
             try:
                 font = ImageFont.truetype("arial.ttf", 16)
             except (IOError, OSError):
                 font = ImageFont.load_default()
-            
+
             for ann in annotations:
                 ann_type = ann.get('type')
                 color = ann.get('color', '#FF0000')
-                
+
                 # Convert hex color to RGB tuple
                 if color.startswith('#'):
                     color = tuple(int(color[i:i+2], 16) for i in (1, 3, 5))
                 else:
                     color = (255, 0, 0)  # Default red
-                
+
                 if ann_type == 'circle':
                     x = ann.get('x', 0)
                     y = ann.get('y', 0)
                     radius = ann.get('radius', 20)
                     label = ann.get('label', '')
-                    
+
                     # Draw circle
                     bbox = [x - radius, y - radius, x + radius, y + radius]
                     draw.ellipse(bbox, outline=color, width=3)
-                    
+
                     # Draw label if provided
                     if label:
                         draw.text((x + radius + 5, y - 10), label, fill=color, font=font)
-                
+
                 elif ann_type == 'arrow':
                     x1 = ann.get('x1', 0)
                     y1 = ann.get('y1', 0)
                     x2 = ann.get('x2', 0)
                     y2 = ann.get('y2', 0)
                     label = ann.get('label', '')
-                    
+
                     # Draw arrow line
                     draw.line([(x1, y1), (x2, y2)], fill=color, width=3)
-                    
+
                     # Draw arrowhead (simple triangle)
                     import math
                     angle = math.atan2(y2 - y1, x2 - x1)
@@ -12564,18 +12705,18 @@ def annotate_image():
                     arrow_x2 = x2 - arrow_size * math.cos(angle + math.pi/6)
                     arrow_y2 = y2 - arrow_size * math.sin(angle + math.pi/6)
                     draw.polygon([(x2, y2), (arrow_x1, arrow_y1), (arrow_x2, arrow_y2)], fill=color)
-                    
+
                     # Draw label at midpoint
                     if label:
                         mid_x = (x1 + x2) / 2
                         mid_y = (y1 + y2) / 2
                         draw.text((mid_x, mid_y - 15), label, fill=color, font=font)
-                
+
                 elif ann_type == 'text':
                     x = ann.get('x', 0)
                     y = ann.get('y', 0)
                     text = ann.get('text', '')
-                    
+
                     # Draw text with background for visibility
                     bbox = draw.textbbox((x, y), text, font=font)
                     padding = 4
@@ -12584,22 +12725,22 @@ def annotate_image():
                         fill=(0, 0, 0, 180)  # Semi-transparent black background
                     )
                     draw.text((x, y), text, fill=color, font=font)
-            
+
             # Convert back to base64
             output = BytesIO()
             img.save(output, format='PNG')
             output.seek(0)
             annotated_base64 = base64.b64encode(output.getvalue()).decode('utf-8')
-            
+
             return jsonify({
                 'annotated_image': f'data:image/png;base64,{annotated_base64}',
                 'annotations_applied': len(annotations)
             })
-            
+
         except Exception as e:
             logger.error(f"Error annotating image: {e}", exc_info=True)
             return jsonify({'error': f'Failed to annotate image: {str(e)}'}), 500
-            
+
     except Exception as e:
         logger.error(f"Error in annotate_image endpoint: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
@@ -12612,10 +12753,10 @@ def compare_runs_endpoint():
         data = request.get_json()
         run1_id = data.get('run1_id')
         run2_id = data.get('run2_id')
-        
+
         if not run1_id or not run2_id:
             return jsonify({'error': 'Both run1_id and run2_id are required'}), 400
-        
+
         report = comparative_analyzer.generate_comparison_report(run1_id, run2_id)
         return jsonify({'report': report})
     except Exception as e:
@@ -12651,11 +12792,11 @@ def get_system_context():
     try:
         view_state = request.args.get('view_state')
         selected_event = request.args.get('selected_event')
-        
+
         view_state_dict = json.loads(view_state) if view_state else {}
         context = context_builder.build_context(view_state=view_state_dict, selected_event=selected_event)
         context['system_knowledge'] = knowledge_base.load_knowledge()[:1000] + "..."  # Truncated for display
-        
+
         return jsonify(context)
     except Exception as e:
         logger.error(f"Error getting system context: {e}", exc_info=True)
@@ -12664,45 +12805,28 @@ def get_system_context():
 
 @app.route('/api/simulation/status', methods=['GET'])
 def get_simulation_status():
-    """Get simulation running status"""
+    """Get simulation control-signal status without writing receipts."""
     try:
         control_file = project_root / 'data' / '.simulation_control.json'
         control_file.parent.mkdir(parents=True, exist_ok=True)
-        auto_start = os.environ.get('CONVERGENCE_AUTO_START', '').strip().lower() in {
-            '1', 'true', 'yes', 'on', 'running', 'auto'
-        }
-        
-        # Create control file with a cloud-aware default if it doesn't exist.
-        # Local/operator sessions still default to stopped; hosted demos can opt
-        # into a live backend without the browser immediately stopping it.
+
+        # Status checks must be read-only. A missing control file means no
+        # explicit run signal has been written yet; do not create STOPPED state here.
         if not control_file.exists():
-            running = bool(auto_start)
-            with open(control_file, 'w') as f:
-                json.dump({
-                    'running': running,
-                    'paused': not running,
-                    'timestamp': time.time(),
-                    'source': 'auto_start' if running else 'default_stopped'
-                }, f, indent=2)
-            return jsonify({
-                'running': running,
-                'paused': not running,
-                'status': 'running' if running else 'stopped',
-                'auto_start': auto_start
-            })
-        
+            return jsonify({'running': False, 'paused': True, 'status': 'stopped', 'missing_control_file': True})
+
         with open(control_file, 'r') as f:
             control = json.load(f)
             running = bool(control.get('running', False))
+            paused = bool(control.get('paused', True))
             return jsonify({
                 'running': running,
-                'paused': control.get('paused', not running),
-                'status': 'running' if running else 'stopped',
-                'auto_start': auto_start
+                'paused': paused,
+                'status': 'running' if running and not paused else 'stopped'
             })
     except Exception as e:
         logger.error(f"Error getting simulation status: {e}", exc_info=True)
-        return jsonify({'running': False, 'paused': True, 'status': 'stopped', 'error': str(e)}), 500
+        return jsonify({'running': False, 'paused': True, 'error': str(e)}), 500
 
 
 @app.route('/api/simulation/start', methods=['POST'])
@@ -12786,19 +12910,19 @@ def find_ffmpeg():
     """Find ffmpeg executable, checking PATH, environment variable, and common Windows locations."""
     import shutil
     import platform
-    
+
     # First check environment variable
     ffmpeg_path = os.environ.get('FFMPEG_PATH')
     if ffmpeg_path and os.path.exists(ffmpeg_path):
         logger.info(f"Using FFmpeg from environment variable: {ffmpeg_path}")
         return ffmpeg_path
-    
+
     # Check PATH
     ffmpeg_path = shutil.which('ffmpeg')
     if ffmpeg_path:
         logger.info(f"Found FFmpeg in PATH: {ffmpeg_path}")
         return ffmpeg_path
-    
+
     # If not in PATH, check common Windows installation locations
     if platform.system() == 'Windows':
         common_paths = [
@@ -12808,7 +12932,7 @@ def find_ffmpeg():
             r'C:\tools\ffmpeg\bin\ffmpeg.exe',
             r'C:\bin\ffmpeg.exe',
         ]
-        
+
         # Check winget installation path
         winget_base = os.path.expanduser(r'~\AppData\Local\Microsoft\WinGet\Packages')
         if os.path.exists(winget_base):
@@ -12824,20 +12948,20 @@ def find_ffmpeg():
                                     return candidate
             except Exception as e:
                 logger.warning(f"Error searching winget path: {e}")
-        
+
         # Check common paths
         for path in common_paths:
             if os.path.exists(path):
                 logger.info(f"Found FFmpeg in common location: {path}")
                 return path
-        
+
         # Check ProgramData (chocolatey sometimes installs here)
         programdata = os.environ.get('ProgramData', r'C:\ProgramData')
         choco_ffmpeg = os.path.join(programdata, r'chocolatey\bin\ffmpeg.exe')
         if os.path.exists(choco_ffmpeg):
             logger.info(f"Found FFmpeg via Chocolatey: {choco_ffmpeg}")
             return choco_ffmpeg
-    
+
     return None
 
 @app.route('/api/export/create_snapshot_video', methods=['POST'])
@@ -12856,11 +12980,11 @@ def create_snapshot_video():
         fps = max(1, min(fps, 60))
         if not images or len(images) < 1:
             return jsonify({'error': 'At least one snapshot is required to create a video.'}), 400
-        
+
         # Find ffmpeg executable
         import platform
         ffmpeg_path = find_ffmpeg()
-        
+
         # Verify ffmpeg works
         if ffmpeg_path:
             try:
@@ -12869,7 +12993,7 @@ def create_snapshot_video():
             except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired) as e:
                 logger.warning(f"FFmpeg found at {ffmpeg_path} but verification failed: {e}")
                 ffmpeg_path = None
-        
+
         if not ffmpeg_path:
             # Provide detailed error with search locations
             searched_locations = []
@@ -12953,18 +13077,18 @@ def create_video_from_frames():
     try:
         import subprocess
         import tempfile
-        
+
         # Find ffmpeg executable
         import platform
         ffmpeg_path = find_ffmpeg()
-        
+
         # Verify ffmpeg works
         if ffmpeg_path:
             try:
                 result = subprocess.run([ffmpeg_path, '-version'], capture_output=True, check=True, timeout=5)
             except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
                 ffmpeg_path = None
-        
+
         if not ffmpeg_path:
             return jsonify({
                 'error': 'FFmpeg not found. Please install FFmpeg to create videos.',
@@ -12975,37 +13099,37 @@ def create_video_from_frames():
                 },
                 'troubleshooting': 'If FFmpeg is installed, ensure it is in your system PATH or restart your terminal/IDE after installation.'
             }), 400
-        
+
         # Get frames from request (base64 encoded PNGs)
         data = request.json
         frames = data.get('frames', [])  # Array of base64 PNG strings
         fps = data.get('fps', 30)
         output_name = data.get('output_name', f'causation_video_{int(time.time())}.mp4')
-        
+
         if not frames:
             return jsonify({'error': 'No frames provided'}), 400
-        
+
         # Create temporary directory for frames
         with tempfile.TemporaryDirectory() as temp_dir:
             frame_files = []
-            
+
             # Save each frame as PNG file
             for i, frame_data in enumerate(frames):
                 # Remove data URL prefix if present
                 if ',' in frame_data:
                     frame_data = frame_data.split(',')[1]
-                
+
                 # Decode base64
                 frame_bytes = base64.b64decode(frame_data)
                 frame_path = os.path.join(temp_dir, f'frame_{i:04d}.png')
-                
+
                 with open(frame_path, 'wb') as f:
                     f.write(frame_bytes)
                 frame_files.append(frame_path)
-            
+
             # Create video using FFmpeg
             output_path = os.path.join(temp_dir, output_name)
-            
+
             cmd = [
                 ffmpeg_path,
                 '-y',  # Overwrite output
@@ -13016,21 +13140,21 @@ def create_video_from_frames():
                 '-r', str(fps),
                 output_path
             ]
-            
+
             result = subprocess.run(cmd, capture_output=True, text=True)
-            
+
             if result.returncode != 0:
                 return jsonify({
                     'error': 'FFmpeg encoding failed',
                     'details': result.stderr
                 }), 500
-            
+
             # Read video file and return as base64
             with open(output_path, 'rb') as f:
                 video_data = base64.b64encode(f.read()).decode('utf-8')
-            
+
             file_size = os.path.getsize(output_path) / (1024 * 1024)  # MB
-            
+
             return jsonify({
                 'success': True,
                 'video_data': video_data,
@@ -13040,7 +13164,7 @@ def create_video_from_frames():
                 'fps': fps,
                 'duration': round(len(frames) / fps, 2)
             })
-            
+
     except Exception as e:
         logger.error(f"Error creating video: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
@@ -13317,10 +13441,10 @@ def cra_get_system_state():
         cpu_count = psutil.cpu_count()
         memory = psutil.virtual_memory()
         disk = psutil.disk_usage('/')
-        
+
         # Get per-CPU usage for detailed analysis
         cpu_per_core = psutil.cpu_percent(interval=0.1, percpu=True)
-        
+
         # Get process-specific stats (this Python process)
         process = psutil.Process()
         process_memory = process.memory_info()
@@ -13349,13 +13473,13 @@ def cra_get_system_state():
                 with open(shared_state_path, 'r') as f:
                     shared_state = json.load(f)
                     data = shared_state.get('data', {})
-                    
+
                     # Extract Butterfly System resource usage
                     if 'lattice' in data:
                         l = data['lattice']
                         butterfly_metrics['lattice_cpu'] = l.get('cpu_usage', 0)
                         butterfly_metrics['lattice_ram'] = l.get('ram_usage', 0)
-                    
+
                     butterfly_metrics['frame_count'] = shared_state.get('frame_count', 0)
                     butterfly_metrics['simulation_fps'] = shared_state.get('simulation_fps', 0.0)
         except Exception as e:
@@ -13668,13 +13792,13 @@ def config_actions():
         try:
             with open(config_actions_log_path, 'r', encoding='utf-8') as log_file:
                 lines = log_file.readlines()
-            
+
             # Parse all lines
             for line in lines:
                 parts = line.strip().split('|')
                 if len(parts) < 7:
                     continue
-                
+
                 # Try to parse JSON values for old_value and new_value
                 old_val = parts[5]
                 new_val = parts[6]
@@ -13683,13 +13807,13 @@ def config_actions():
                         old_val = json.loads(old_val)
                 except (json.JSONDecodeError, ValueError):
                     pass  # Keep as string if not valid JSON
-                
+
                 try:
                     if new_val and new_val not in ('-', '', 'None', 'null'):
                         new_val = json.loads(new_val)
                 except (json.JSONDecodeError, ValueError):
                     pass  # Keep as string if not valid JSON
-                
+
                 entry = {
                     'timestamp': parts[0],
                     'correlation_id': parts[1],
@@ -13702,21 +13826,21 @@ def config_actions():
                     'reason': parts[8] if len(parts) > 8 else '',
                     'status': parts[9] if len(parts) > 9 else ''
                 }
-                
+
                 # Filter by correlation_id if provided
                 if correlation_id_filter:
                     if entry['correlation_id'] == correlation_id_filter:
                         actions.append(entry)
                 else:
                     actions.append(entry)
-            
+
             # If filtering by correlation_id, return all matches; otherwise limit
             if not correlation_id_filter:
                 actions = actions[-max_entries:]
             else:
                 # Return all actions with this correlation_id (no limit when filtering)
                 pass
-                
+
         except Exception as exc:
             logger.error(f"Error reading config actions log: {exc}", exc_info=True)
             return jsonify({'success': False, 'error': str(exc)}), 500
@@ -13988,10 +14112,10 @@ def cra_get_vp_history():
     try:
         # Get number of breaths to retrieve (default 50)
         breaths = int(request.args.get('breaths', 50))
-        
+
         # Try to load VP history from shared state or logs
         vp_history = []
-        
+
         # Method 1: Try to read from shared state if it contains VP history
         if shared_state_path.exists():
             try:
@@ -14002,7 +14126,7 @@ def cra_get_vp_history():
                         vp_history = state['data']['djinn_kernel']['vp_history'][-breaths:]
             except (IOError, json.JSONDecodeError, KeyError, TypeError):
                 pass
-        
+
         # Method 2: Parse from logs if available
         if not vp_history:
             logs_dir = Path('data/logs')
@@ -14030,7 +14154,7 @@ def cra_get_vp_history():
                     vp_history = vp_history[-breaths:]
                 except Exception as e:
                     logger.debug(f"Could not parse VP history from logs: {e}")
-        
+
         return jsonify({
             'success': True,
             'vp_history': vp_history,
@@ -14052,14 +14176,14 @@ def cra_get_network_trends():
     try:
         # Get number of data points (default 50)
         points = int(request.args.get('points', 50))
-        
+
         trends = {
             'modularity': [],
             'clustering_coefficient': [],
             'connections_per_organism': [],
             'organism_count': []
         }
-        
+
         # Parse from logs
         logs_dir = Path('data/logs')
         reality_log = logs_dir / 'reality_sim.log'
@@ -14075,7 +14199,7 @@ def cra_get_network_trends():
                                 'value': float(mod_match.group(2)),
                                 'timestamp': re.search(r'(\d{2}:\d{2}:\d{2})', line).group(1) if re.search(r'(\d{2}:\d{2}:\d{2})', line) else None
                             })
-                        
+
                         # Extract clustering
                         clust_match = re.search(r'clust(ering)?[=:]?\s*([0-9.]+)', line.lower())
                         if clust_match:
@@ -14083,7 +14207,7 @@ def cra_get_network_trends():
                                 'value': float(clust_match.group(2)),
                                 'timestamp': re.search(r'(\d{2}:\d{2}:\d{2})', line).group(1) if re.search(r'(\d{2}:\d{2}:\d{2})', line) else None
                             })
-                        
+
                         # Extract organism count
                         org_match = re.search(r'org(anisms)?[=:]?\s*(\d+)', line.lower())
                         if org_match:
@@ -14091,7 +14215,7 @@ def cra_get_network_trends():
                                 'value': int(org_match.group(2)),
                                 'timestamp': re.search(r'(\d{2}:\d{2}:\d{2})', line).group(1) if re.search(r'(\d{2}:\d{2}:\d{2})', line) else None
                             })
-                        
+
                         # Extract connections
                         conn_match = re.search(r'conn(ections)?[=:]?\s*(\d+)', line.lower())
                         if conn_match and trends['organism_count']:
@@ -14102,13 +14226,13 @@ def cra_get_network_trends():
                                     'value': conn_count / trends['organism_count'][-1]['value'],
                                     'timestamp': re.search(r'(\d{2}:\d{2}:\d{2})', line).group(1) if re.search(r'(\d{2}:\d{2}:\d{2})', line) else None
                                 })
-                
+
                 # Limit to requested points
                 for key in trends:
                     trends[key] = trends[key][-points:]
             except Exception as e:
                 logger.debug(f"Could not parse network trends from logs: {e}")
-        
+
         return jsonify({
             'success': True,
             'trends': trends,
@@ -14129,7 +14253,7 @@ def cra_get_memory_breakdown():
     try:
         import psutil
         import os
-        
+
         breakdown = {
             'total_memory_gb': round(psutil.virtual_memory().total / (1024**3), 2),
             'used_memory_gb': round(psutil.virtual_memory().used / (1024**3), 2),
@@ -14137,14 +14261,14 @@ def cra_get_memory_breakdown():
             'memory_percent': psutil.virtual_memory().percent,
             'components': {}
         }
-        
+
         # Try to get process-specific memory if possible
         try:
             current_process = psutil.Process(os.getpid())
             breakdown['process_memory_mb'] = round(current_process.memory_info().rss / (1024**2), 2)
         except (psutil.NoSuchProcess, psutil.AccessDenied, AttributeError):
             pass
-        
+
         # Parse component memory from logs if available
         logs_dir = Path('data/logs')
         for log_file in ['reality_sim.log', 'explorer.log', 'djinn_kernel.log']:
@@ -14165,7 +14289,7 @@ def cra_get_memory_breakdown():
                                     }
                 except (IOError, UnicodeDecodeError, AttributeError):
                     pass
-        
+
         return jsonify({
             'success': True,
             'memory_breakdown': breakdown,
@@ -14190,12 +14314,12 @@ def cra_get_event_throughput():
             'event_types': {},
             'component_distribution': {}
         }
-        
+
         # Get graph stats
         if explorer:
             throughput['total_events'] = len(explorer.events)
             throughput['causation_links'] = explorer.causation_graph.number_of_edges()
-            
+
             # Calculate events per second from graph
             if explorer.events:
                 timestamps = [event.timestamp for event in explorer.events.values()]
@@ -14203,14 +14327,14 @@ def cra_get_event_throughput():
                     time_span = max(timestamps) - min(timestamps)
                     if time_span > 0:
                         throughput['events_per_second'] = len(explorer.events) / time_span
-            
+
             # Event type distribution
             for event_id, event in explorer.events.items():
                 etype = event.event_type
                 throughput['event_types'][etype] = throughput['event_types'].get(etype, 0) + 1
                 comp = event.component
                 throughput['component_distribution'][comp] = throughput['component_distribution'].get(comp, 0) + 1
-        
+
         return jsonify({
             'success': True,
             'throughput': throughput,
@@ -14234,7 +14358,7 @@ def cra_get_breath_cycles():
             'cycle_history': [],
             'inhale_exhale_ratio': 0
         }
-        
+
         # Parse from logs
         logs_dir = Path('data/logs')
         explorer_log = logs_dir / 'explorer.log'
@@ -14245,7 +14369,7 @@ def cra_get_breath_cycles():
                     breath_times = []
                     inhale_count = 0
                     exhale_count = 0
-                    
+
                     for i, line in enumerate(lines):
                         # Look for breath cycle mentions
                         if 'breath' in line.lower() and 'cycle' in line.lower():
@@ -14258,16 +14382,16 @@ def cra_get_breath_cycles():
                                         'cycle': cycle_num,
                                         'timestamp': timestamp_match.group(1)
                                     })
-                        
+
                         # Count inhale/exhale
                         if 'inhale' in line.lower():
                             inhale_count += 1
                         elif 'exhale' in line.lower():
                             exhale_count += 1
-                    
+
                     cycles['total_cycles'] = breath_times[-1]['cycle'] if breath_times else 0
                     cycles['inhale_exhale_ratio'] = inhale_count / exhale_count if exhale_count > 0 else 0
-                    
+
                     # Calculate average duration
                     if len(breath_times) >= 2:
                         # Parse timestamps and calculate intervals
@@ -14283,13 +14407,13 @@ def cra_get_breath_cycles():
                                     intervals.append(abs(t2_sec - t1_sec))
                             except (ValueError, IndexError, KeyError, AttributeError):
                                 pass
-                        
+
                         if intervals:
                             cycles['average_duration_seconds'] = sum(intervals) / len(intervals)
                             cycles['cycle_history'] = breath_times[-50:]  # Last 50 cycles
             except Exception as e:
                 logger.debug(f"Could not parse breath cycles from logs: {e}")
-        
+
         # Also check shared state
         if shared_state_path.exists():
             try:
@@ -14300,7 +14424,7 @@ def cra_get_breath_cycles():
                         cycles['total_cycles'] = explorer_data['breath_cycle']
             except (IOError, json.JSONDecodeError, KeyError, TypeError):
                 pass
-        
+
         return jsonify({
             'success': True,
             'breath_cycles': cycles,
@@ -14317,7 +14441,7 @@ def cra_get_breath_cycles():
 @app.route('/api/cra/diagnostics/memory_stability', methods=['GET'])
 def cra_get_memory_stability():
     """Get ContextMemory stability metrics from the SymbioticNetwork
-    
+
     Returns metrics about how language memory shapes organism selection pressure:
     - anchor_density: Ratio of organisms referenced in language memory
     - language_coherence: Consistency of organism-to-concept mappings
@@ -14341,30 +14465,30 @@ def cra_get_memory_stability():
             'generation': 0,
             'source': 'none'
         }
-        
+
         # Try to get from shared state first
         if shared_state_path.exists():
             try:
                 with open(shared_state_path, 'r') as f:
                     state = json.load(f)
                     reality_sim = state.get('data', {}).get('reality_sim', {})
-                    
+
                     # Check for memory stability metrics in shared state
                     memory_metrics = reality_sim.get('memory_stability', {})
                     if memory_metrics:
                         metrics.update(memory_metrics)
                         metrics['source'] = 'shared_state'
-                    
+
                     # Also get linguistic integration ratio from network stats
                     network_stats = reality_sim.get('network_stats', {})
                     if 'linguistic_integration_ratio' in network_stats:
                         metrics['linguistic_integration_ratio'] = network_stats['linguistic_integration_ratio']
-                    
+
                     # Get generation
                     metrics['generation'] = reality_sim.get('generation', 0)
             except Exception as e:
                 logger.debug(f"Could not read memory metrics from shared state: {e}")
-        
+
         # Parse from console output if available (look for [MEMORY_STABILITY] lines)
         logs_dir = Path('data/logs')
         system_log = logs_dir / 'system.log'
@@ -14372,7 +14496,7 @@ def cra_get_memory_stability():
             try:
                 with open(system_log, 'r', encoding='utf-8') as f:
                     lines = f.readlines()[-500:]  # Last 500 lines
-                    
+
                     for line in reversed(lines):
                         if '[MEMORY_STABILITY]' in line:
                             # Parse: [MEMORY_STABILITY] Gen N - Anchor Density: 0.XXX, Language Coherence: 0.XXX, Cluster Stability: 0.XXX
@@ -14380,7 +14504,7 @@ def cra_get_memory_stability():
                             anchor_match = re.search(r'Anchor Density:\s*([\d.]+)', line)
                             coherence_match = re.search(r'Language Coherence:\s*([\d.]+)', line)
                             stability_match = re.search(r'Cluster Stability:\s*([\d.]+)', line)
-                            
+
                             if gen_match:
                                 metrics['generation'] = int(gen_match.group(1))
                             if anchor_match:
@@ -14389,12 +14513,12 @@ def cra_get_memory_stability():
                                 metrics['language_coherence'] = float(coherence_match.group(1))
                             if stability_match:
                                 metrics['cluster_stability'] = float(stability_match.group(1))
-                            
+
                             metrics['source'] = 'system_log'
                             break  # Found most recent entry
             except Exception as e:
                 logger.debug(f"Could not parse memory stability from logs: {e}")
-        
+
         return jsonify({
             'success': True,
             'memory_stability': metrics,
@@ -14412,7 +14536,7 @@ def cra_get_memory_stability():
 def get_language_teacher_diagnostics():
     """
     Get comprehensive Language Teacher statistics and status.
-    
+
     Returns:
         - enabled: Whether language teacher is active
         - use_semantic_embeddings: Phase 2 status
@@ -14429,12 +14553,12 @@ def get_language_teacher_diagnostics():
                 'available': False,
                 'error': 'Language teacher not initialized'
             })
-        
+
         teacher = network.language_teacher
-        
+
         # Get stats
         stats = teacher.get_stats() if hasattr(teacher, 'get_stats') else {}
-        
+
         # Get experience buffer info if available
         experience_buffer_info = {}
         if hasattr(teacher, 'semantic_teacher') and teacher.semantic_teacher is not None:
@@ -14444,7 +14568,7 @@ def get_language_teacher_diagnostics():
                     'size': len(exp_buf) if hasattr(exp_buf, '__len__') else 0,
                     'ready_for_training': len(exp_buf) >= teacher.min_experiences if hasattr(teacher, 'min_experiences') else False
                 }
-        
+
         return jsonify({
             'enabled': teacher.enabled if hasattr(teacher, 'enabled') else False,
             'use_semantic_embeddings': teacher.use_semantic_embeddings if hasattr(teacher, 'use_semantic_embeddings') else False,
@@ -14476,7 +14600,7 @@ def get_language_teacher_diagnostics():
 def get_knowledge_web_diagnostics():
     """
     Get comprehensive Linguistic Knowledge Web statistics and status.
-    
+
     Returns:
         - enabled: Whether knowledge web is active
         - concepts: Concept count and breakdown by semantic frame
@@ -14492,7 +14616,7 @@ def get_knowledge_web_diagnostics():
                 'available': False,
                 'error': 'Language teacher not initialized'
             })
-        
+
         teacher = network.language_teacher
         if not hasattr(teacher, 'knowledge_web') or teacher.knowledge_web is None:
             return jsonify({
@@ -14500,21 +14624,21 @@ def get_knowledge_web_diagnostics():
                 'available': False,
                 'error': 'Knowledge web not initialized'
             })
-        
+
         web = teacher.knowledge_web
-        
+
         # Count concepts by semantic frame
         concepts_by_frame = {}
         for concept in web.concepts.values():
             frame = concept.semantic_frame
             concepts_by_frame[frame] = concepts_by_frame.get(frame, 0) + 1
-        
+
         # Count relations by type
         relations_by_type = {}
         for relation in web.relations:
             rel_type = relation.relation_type
             relations_by_type[rel_type] = relations_by_type.get(rel_type, 0) + 1
-        
+
         return jsonify({
             'enabled': True,
             'available': True,
@@ -14554,7 +14678,7 @@ def get_knowledge_web_diagnostics():
 def get_language_system_diagnostics():
     """
     Get comprehensive language system diagnostics (teacher + knowledge web + vocabulary + associations).
-    
+
     Returns:
         - teacher: Language teacher diagnostics
         - knowledge_web: Knowledge web diagnostics
@@ -14569,7 +14693,7 @@ def get_language_system_diagnostics():
                 'available': False,
                 'error': 'Network not available'
             })
-        
+
         # Get teacher diagnostics
         teacher_diag = {}
         if hasattr(network, 'language_teacher') and network.language_teacher:
@@ -14579,7 +14703,7 @@ def get_language_system_diagnostics():
                 'learning_confidence': teacher.learning_confidence if hasattr(teacher, 'learning_confidence') else 0.0,
                 'stats': teacher.get_stats() if hasattr(teacher, 'get_stats') else {}
             }
-        
+
         # Get knowledge web diagnostics
         web_diag = {}
         if hasattr(network, 'language_teacher') and network.language_teacher:
@@ -14591,17 +14715,17 @@ def get_language_system_diagnostics():
                     'concepts_count': len(web.concepts),
                     'relations_count': len(web.relations)
                 }
-        
+
         # Get vocabulary and associations
         vocab_stats = {}
         association_stats = {}
         if hasattr(network, 'context_memory') and network.context_memory:
             cm = network.context_memory
-            
+
             # Vocabulary stats
             vocab_size = len(cm.language_anchors) if hasattr(cm, 'language_anchors') else 0
             total_word_freq = sum(cm.word_frequencies.values()) if hasattr(cm, 'word_frequencies') else 0
-            
+
             vocab_stats = {
                 'vocab_size': vocab_size,
                 'total_word_frequency': total_word_freq,
@@ -14612,13 +14736,13 @@ def get_language_system_diagnostics():
                     reverse=True
                 )[:20])
             }
-            
+
             # Association stats
             node_associations = cm.node_word_associations if hasattr(cm, 'node_word_associations') else {}
             organisms_with_words = len(node_associations)
             total_associations = sum(len(words) for words in node_associations.values())
             avg_words_per_organism = total_associations / organisms_with_words if organisms_with_words > 0 else 0
-            
+
             association_stats = {
                 'organisms_with_words': organisms_with_words,
                 'total_associations': total_associations,
@@ -14626,7 +14750,7 @@ def get_language_system_diagnostics():
                 'max_words_per_organism': max((len(words) for words in node_associations.values()), default=0),
                 'min_words_per_organism': min((len(words) for words in node_associations.values()), default=0)
             }
-        
+
         return jsonify({
             'available': True,
             'teacher': teacher_diag,
@@ -14741,13 +14865,13 @@ def cra_get_config_tuner():
 @app.route('/api/cra/diagnostics/agent_swarm', methods=['GET'])
 def cra_get_agent_swarm_stats():
     """Get Agent Swarm language learning statistics
-    
+
     Returns comprehensive metrics about agent language learning:
     - semantic_reward_stats: Breakdown of semantic reward components (overlap, coherence, length)
     - knowledge_transfer_stats: Broadcast counts, recipients, reward transferred
     - creative_vocab_stats: Vocabulary expansion, phrases generated, compounds created
     - population_stats: Organism language adoption, chat experiences, training triggers
-    
+
     These metrics enable:
     1. CRA to display real-time language learning health
     2. AutoTune to optimize language-related parameters based on learning outcomes
@@ -14761,18 +14885,18 @@ def cra_get_agent_swarm_stats():
             'population_stats': {},
             'source': 'none'
         }
-        
+
         # Try to get from shared state first
         if shared_state_path.exists():
             try:
                 with open(shared_state_path, 'r') as f:
                     state = json.load(f)
                     reality_sim = state.get('data', {}).get('reality_sim', {})
-                    
+
                     # Check for butterfly_chat agent swarm data
                     butterfly_data = reality_sim.get('butterfly_chat', {})
                     swarm_stats = butterfly_data.get('swarm_stats', {})
-                    
+
                     if swarm_stats:
                         result.update({
                             'available': True,
@@ -14786,12 +14910,12 @@ def cra_get_agent_swarm_stats():
                         })
             except Exception as e:
                 logger.debug(f"Could not read butterfly_chat from shared state: {e}")
-        
+
         # Calculate derived metrics for AutoTune integration
         semantic = result.get('semantic_reward_stats', {})
         transfer = result.get('knowledge_transfer_stats', {})
         population = result.get('population_stats', {})
-        
+
         # Language learning health score (0-1)
         health_factors = []
         if semantic.get('avg_total_reward', 0) > 0:
@@ -14800,16 +14924,16 @@ def cra_get_agent_swarm_stats():
             health_factors.append(min(1.0, transfer.get('transfer_efficiency', 0)))
         if population.get('language_adoption_rate', 0) > 0:
             health_factors.append(min(1.0, population.get('language_adoption_rate', 0)))
-        
+
         learning_health = sum(health_factors) / max(1, len(health_factors)) if health_factors else 0.0
-        
+
         result['derived_metrics'] = {
             'learning_health_score': learning_health,
             'total_interactions': population.get('total_chat_experiences', 0),
             'training_ratio': population.get('chat_training_triggered', 0) / max(1, population.get('total_chat_experiences', 1)),
             'recommendation': _get_language_recommendation(result)
         }
-        
+
         return jsonify({
             'success': True,
             'agent_swarm': result,
@@ -14829,23 +14953,23 @@ def _get_language_recommendation(stats: dict) -> str:
     semantic = stats.get('semantic_reward_stats', {})
     transfer = stats.get('knowledge_transfer_stats', {})
     population = stats.get('population_stats', {})
-    
+
     issues = []
-    
+
     # Check semantic reward health
     if semantic.get('avg_total_reward', 0) < 0.3:
         issues.append('Low semantic reward - consider reducing coherence threshold')
     if semantic.get('avg_word_overlap', 0) < 0.1:
         issues.append('Poor word overlap - vocabulary may need expansion')
-    
+
     # Check knowledge transfer health
     if transfer.get('total_broadcasts', 0) > 0 and transfer.get('transfer_efficiency', 0) < 0.3:
         issues.append('Low transfer efficiency - network connectivity may be sparse')
-    
+
     # Check population health
     if population.get('language_adoption_rate', 0) < 0.5:
         issues.append('Low language adoption - bootstrap learning may need tuning')
-    
+
     if not issues:
         return 'Language learning metrics are healthy'
     return '; '.join(issues)
@@ -14854,7 +14978,7 @@ def _get_language_recommendation(stats: dict) -> str:
 @app.route('/api/cra/diagnostics/neural_autotune', methods=['GET'])
 def cra_get_neural_autotune():
     """Get Neural → AutoTune integration metrics
-    
+
     Returns metrics about neural training feedback to the config system:
     - avg_loss: Moving average of training loss
     - improvement_rate: Positive = loss decreasing (learning)
@@ -14876,18 +15000,18 @@ def cra_get_neural_autotune():
             'atomic_config_connected': False,
             'source': 'none'
         }
-        
+
         # Try to get from shared state
         if shared_state_path.exists():
             try:
                 with open(shared_state_path, 'r') as f:
                     state = json.load(f)
                     reality_sim = state.get('data', {}).get('reality_sim', {})
-                    
+
                     # Check for neural trainer autotune metrics
                     neural_data = reality_sim.get('neural_trainer', {})
                     autotune_metrics = neural_data.get('autotune_metrics', {})
-                    
+
                     if autotune_metrics:
                         result.update({
                             'available': True,
@@ -14908,7 +15032,7 @@ def cra_get_neural_autotune():
                         })
             except Exception as e:
                 logger.debug(f"Could not read neural autotune from shared state: {e}")
-        
+
         # Calculate health indicators
         result['health'] = {
             'is_learning': result.get('improvement_rate', 0) > 0,
@@ -14916,7 +15040,7 @@ def cra_get_neural_autotune():
             'has_trained': result.get('training_steps_completed', 0) > 0,
             'recommendation': _get_neural_recommendation(result)
         }
-        
+
         return jsonify({
             'success': True,
             'neural_autotune': result,
@@ -14934,21 +15058,21 @@ def cra_get_neural_autotune():
 def _get_neural_recommendation(metrics: dict) -> str:
     """Generate recommendation based on neural training metrics."""
     issues = []
-    
+
     improvement_rate = metrics.get('improvement_rate', 0)
     loss_variance = metrics.get('loss_variance', 0)
     training_steps = metrics.get('training_steps_completed', 0)
-    
+
     if training_steps < 10:
         return 'Not enough training steps for analysis'
-    
+
     if improvement_rate <= 0:
         issues.append('Training is stagnating - consider adjusting learning rate')
     if loss_variance > 0.5:
         issues.append('High loss variance - training may be unstable')
     if metrics.get('avg_loss', 0) > 1.0:
         issues.append('High average loss - model may need architecture changes')
-    
+
     if not issues:
         return 'Neural training metrics are healthy - model is learning'
     return '; '.join(issues)
@@ -14961,7 +15085,7 @@ def _get_neural_recommendation(metrics: dict) -> str:
 @app.route('/api/ml/status', methods=['GET'])
 def ml_get_status():
     """Get ML analyzer status - shows if sklearn is available and configured
-    
+
     Returns:
         - available: Whether scikit-learn is installed
         - enabled: Whether ML analysis is currently enabled in config
@@ -14985,7 +15109,7 @@ def ml_get_status():
             'reducer_algorithm': 'none',
             'source': 'none'
         }
-        
+
         # Check if ml_utils module is available
         try:
             from reality_simulator.ml_utils import is_sklearn_available, HDBSCAN_AVAILABLE
@@ -14994,7 +15118,7 @@ def ml_get_status():
             status['hdbscan_available'] = HDBSCAN_AVAILABLE
         except ImportError:
             status['available'] = False
-        
+
         # Get config from current config
         try:
             with open('config.json', 'r') as f:
@@ -15010,7 +15134,7 @@ def ml_get_status():
                 status['source'] = 'config'
         except Exception as e:
             logger.debug(f"Could not read scikit config: {e}")
-        
+
         return jsonify({
             'success': True,
             'ml_status': status
@@ -15026,14 +15150,14 @@ def ml_get_status():
 @app.route('/api/ml/analysis', methods=['GET'])
 def ml_get_analysis():
     """Get latest ML analysis results - clustering, anomalies, reduction
-    
+
     Returns latest analysis from SymbioticNetwork's ML analyzer if available.
     Query params:
         - force: If 'true', forces a fresh analysis (rate-limited to 5s intervals)
     """
     try:
         force = request.args.get('force', 'false').lower() == 'true'
-        
+
         result = {
             'enabled': False,
             'clustering': None,
@@ -15043,7 +15167,7 @@ def ml_get_analysis():
             'timestamp': None,
             'source': 'none'
         }
-        
+
         # Try to get from shared state
         if shared_state_path.exists():
             try:
@@ -15056,7 +15180,7 @@ def ml_get_analysis():
                         result['source'] = 'shared_state'
             except Exception as e:
                 logger.debug(f"Could not read ML analysis from shared state: {e}")
-        
+
         return jsonify({
             'success': True,
             'ml_analysis': result
@@ -15072,7 +15196,7 @@ def ml_get_analysis():
 @app.route('/api/cra/diagnostics/ml_autotune', methods=['GET'])
 def cra_get_ml_autotune():
     """Get Scikit-learn → AutoTune integration metrics
-    
+
     Returns metrics about ML analysis feedback to the config system:
     - avg_cluster_count: Moving average of cluster count
     - avg_anomaly_ratio: Moving average of anomaly proportion
@@ -15092,18 +15216,18 @@ def cra_get_ml_autotune():
             'atomic_config_connected': False,
             'source': 'none'
         }
-        
+
         # Try to get from shared state
         if shared_state_path.exists():
             try:
                 with open(shared_state_path, 'r') as f:
                     state = json.load(f)
                     reality_sim = state.get('data', {}).get('reality_sim', {})
-                    
+
                     # Check for ML analyzer autotune metrics
                     ml_data = reality_sim.get('ml_analyzer', {})
                     autotune_metrics = ml_data.get('autotune_metrics', {})
-                    
+
                     if autotune_metrics:
                         result.update({
                             'available': True,
@@ -15119,7 +15243,7 @@ def cra_get_ml_autotune():
                         })
             except Exception as e:
                 logger.debug(f"Could not read ML autotune from shared state: {e}")
-        
+
         # Calculate health indicators
         result['health'] = {
             'clusters_stable': result.get('cluster_stability', 0) > 0.7,
@@ -15127,7 +15251,7 @@ def cra_get_ml_autotune():
             'clustering_quality': 'good' if result.get('avg_silhouette_score', 0) > 0.5 else ('fair' if result.get('avg_silhouette_score', 0) > 0.25 else 'poor'),
             'recommendation': _get_ml_recommendation(result)
         }
-        
+
         return jsonify({
             'success': True,
             'ml_autotune': result,
@@ -15145,7 +15269,7 @@ def cra_get_ml_autotune():
 @app.route('/api/cra/diagnostics/checkpoint_status', methods=['GET'])
 def cra_get_checkpoint_status():
     """Get neural checkpoint and persistence status for CRA monitoring
-    
+
     Returns metrics about the checkpointing system:
     - enabled: Whether checkpointing is enabled in config
     - auto_resume: Whether auto-resume on startup is enabled
@@ -15165,7 +15289,7 @@ def cra_get_checkpoint_status():
             'config': {},
             'source': 'filesystem'
         }
-        
+
         # Check config for checkpointing settings
         config_file = Path('config.json')
         if config_file.exists():
@@ -15176,22 +15300,22 @@ def cra_get_checkpoint_status():
                     result['enabled'] = checkpoint_config.get('enabled', False)
                     result['auto_resume'] = checkpoint_config.get('auto_resume', True)
                     result['config'] = {
-                        'interval_generations': checkpoint_config.get('auto_save_interval_generations', 
+                        'interval_generations': checkpoint_config.get('auto_save_interval_generations',
                                                 checkpoint_config.get('interval_generations', 100)),
                         'interval_time_seconds': checkpoint_config.get('auto_save_interval_minutes', 30) * 60,
                         'max_checkpoints': checkpoint_config.get('max_checkpoints', 10),
-                        'base_directory': checkpoint_config.get('checkpoint_dir', 
+                        'base_directory': checkpoint_config.get('checkpoint_dir',
                                           checkpoint_config.get('base_directory', 'data/neural_checkpoints'))
                     }
             except Exception as e:
                 logger.debug(f"Could not read checkpoint config: {e}")
-        
+
         # Scan checkpoint directory
         base_dir = Path(result.get('config', {}).get('base_directory', 'data/neural_checkpoints'))
         if base_dir.exists():
             checkpoints = sorted([d for d in base_dir.iterdir() if d.is_dir() and d.name.startswith('checkpoint_')], reverse=True)
             result['checkpoints_count'] = len(checkpoints)
-            
+
             # Calculate total size and gather checkpoint info
             total_size = 0
             checkpoint_list = []
@@ -15200,7 +15324,7 @@ def cra_get_checkpoint_status():
                 ckpt_size = sum(f.stat().st_size for f in ckpt_dir.rglob('*') if f.is_file())
                 total_size += ckpt_size
                 ckpt_info['size_mb'] = round(ckpt_size / (1024 * 1024), 2)
-                
+
                 # Read metadata if available
                 metadata_file = ckpt_dir / 'metadata.json'
                 if metadata_file.exists():
@@ -15216,14 +15340,14 @@ def cra_get_checkpoint_status():
                     except Exception:
                         pass
                 checkpoint_list.append(ckpt_info)
-            
+
             result['checkpoints_list'] = checkpoint_list[:5]  # Limit to 5 most recent for brevity
             result['total_size_mb'] = round(total_size / (1024 * 1024), 2)
-            
+
             # Set latest checkpoint info
             if checkpoint_list:
                 result['latest_checkpoint'] = checkpoint_list[0]
-        
+
         # Add health indicators
         result['health'] = {
             'checkpointing_active': result['enabled'] and result['checkpoints_count'] > 0,
@@ -15231,7 +15355,7 @@ def cra_get_checkpoint_status():
             'storage_healthy': result['total_size_mb'] < 500,  # Warn if > 500MB
             'recommendation': ''
         }
-        
+
         # Check if latest checkpoint is recent (within 2x interval)
         if result['latest_checkpoint'] and result['latest_checkpoint'].get('timestamp'):
             try:
@@ -15243,7 +15367,7 @@ def cra_get_checkpoint_status():
                 result['health']['checkpoint_age_seconds'] = int(age_seconds)
             except Exception:
                 pass
-        
+
         # Generate recommendation
         if not result['enabled']:
             result['health']['recommendation'] = 'Enable checkpointing in config to prevent training loss on interruption'
@@ -15255,7 +15379,7 @@ def cra_get_checkpoint_status():
             result['health']['recommendation'] = 'High checkpoint storage usage - consider reducing max_checkpoints or clearing old checkpoints'
         else:
             result['health']['recommendation'] = 'Checkpointing healthy - neural state will be preserved on interruption'
-        
+
         return jsonify({
             'success': True,
             'checkpoint_status': result,
@@ -15273,7 +15397,7 @@ def cra_get_checkpoint_status():
 @app.route('/api/checkpoint/save', methods=['POST'])
 def manual_checkpoint_save():
     """Force an immediate checkpoint save (useful before stopping simulation)
-    
+
     This triggers a checkpoint save regardless of the normal interval settings.
     Useful for:
     - Saving before intentionally stopping the simulation
@@ -15289,18 +15413,18 @@ def manual_checkpoint_save():
         # Signal the simulation to save a checkpoint
         signal_file = project_root / 'data' / '.checkpoint_signal.json'
         signal_file.parent.mkdir(parents=True, exist_ok=True)
-        
+
         signal_data = {
             'action': 'save_now',
             'timestamp': datetime.now().isoformat(),
             'reason': payload.get('reason', 'manual_trigger')
         }
-        
+
         with open(signal_file, 'w') as f:
             json.dump(signal_data, f, indent=2)
-        
+
         logger.info(f"[CHECKPOINT] Manual save signal sent: {signal_data['reason']}")
-        
+
         # Also try to directly trigger if shared state has trainer reference
         # (This is a fallback - the signal file is the primary mechanism)
         checkpoint_triggered = False
@@ -15314,7 +15438,7 @@ def manual_checkpoint_save():
                         checkpoint_triggered = True
             except Exception:
                 pass
-        
+
         response = {
             'success': True,
             'message': 'Neural checkpoint save signal sent',
@@ -15343,11 +15467,11 @@ def manual_checkpoint_save():
 @app.route('/api/checkpoint/restore', methods=['POST'])
 def manual_checkpoint_restore():
     """Restore from a specific checkpoint
-    
+
     Request body:
     - checkpoint_name: Name of checkpoint directory to restore (e.g., 'checkpoint_20250615_143022')
                       If not provided, restores from latest checkpoint
-    
+
     NOTE: This signals the simulation to restore on next restart.
     If the simulation is running with the latest code, it will attempt an
     in-process neural checkpoint restore. This is not a full population/evolution
@@ -15359,11 +15483,11 @@ def manual_checkpoint_restore():
         guarded = _guard_action_submission('checkpoint_restore', payload)
         if guarded:
             return guarded
-        
+
         # Get checkpoint name from request
         checkpoint_name = payload.get('checkpoint_name')
         checkpoint_path = payload.get('checkpoint_path')
-        
+
         # Find the checkpoint to restore
         if checkpoint_path:
             target_checkpoint = Path(checkpoint_path)
@@ -15397,7 +15521,7 @@ def manual_checkpoint_restore():
                 return jsonify({
                     'success': False,
                     'error': f'Checkpoint not found: {checkpoint_name}',
-                    'available_checkpoints': [d.name for d in checkpoint_dir.iterdir() 
+                    'available_checkpoints': [d.name for d in checkpoint_dir.iterdir()
                                               if d.is_dir() and d.name.startswith('checkpoint_')]
                                               if checkpoint_dir.exists() else []
                 }), 404
@@ -15408,8 +15532,8 @@ def manual_checkpoint_restore():
                     'success': False,
                     'error': 'No checkpoint directory found'
                 }), 404
-            
-            checkpoints = sorted([d for d in checkpoint_dir.iterdir() 
+
+            checkpoints = sorted([d for d in checkpoint_dir.iterdir()
                                  if d.is_dir() and d.name.startswith('checkpoint_')],
                                key=lambda x: x.name, reverse=True)
             if not checkpoints:
@@ -15419,18 +15543,18 @@ def manual_checkpoint_restore():
                 }), 404
             target_checkpoint = checkpoints[0]
             checkpoint_name = target_checkpoint.name
-        
+
         # Read checkpoint metadata
         metadata = {}
         metadata_file = target_checkpoint / 'metadata.json'
         if metadata_file.exists():
             with open(metadata_file, 'r') as f:
                 metadata = json.load(f)
-        
+
         # Signal the simulation to restore this checkpoint
         signal_file = project_root / 'data' / '.checkpoint_signal.json'
         signal_file.parent.mkdir(parents=True, exist_ok=True)
-        
+
         signal_data = {
             'action': 'restore',
             'checkpoint_path': str(target_checkpoint),
@@ -15443,12 +15567,12 @@ def manual_checkpoint_restore():
                 'saved_timestamp': metadata.get('timestamp')
             }
         }
-        
+
         with open(signal_file, 'w') as f:
             json.dump(signal_data, f, indent=2)
-        
+
         logger.info(f"[CHECKPOINT] Restore signal sent for: {checkpoint_name}")
-        
+
         response = {
             'success': True,
             'message': f'Neural checkpoint restore signal sent for {checkpoint_name}',
@@ -15483,7 +15607,7 @@ def list_checkpoints():
     """List all available checkpoints with metadata"""
     try:
         checkpoint_dir = Path(project_root / 'data' / 'neural_checkpoints')
-        
+
         if not checkpoint_dir.exists():
             return jsonify({
                 'success': True,
@@ -15491,17 +15615,17 @@ def list_checkpoints():
                 'count': 0,
                 'message': 'No checkpoint directory found'
             })
-        
+
         checkpoints = []
         for ckpt_dir in sorted(checkpoint_dir.iterdir(), key=lambda x: x.name, reverse=True):
             if ckpt_dir.is_dir() and ckpt_dir.name.startswith('checkpoint_'):
                 ckpt_info = {
                     'name': ckpt_dir.name,
                     'path': str(ckpt_dir),
-                    'size_mb': round(sum(f.stat().st_size for f in ckpt_dir.rglob('*') 
+                    'size_mb': round(sum(f.stat().st_size for f in ckpt_dir.rglob('*')
                                         if f.is_file()) / (1024 * 1024), 2)
                 }
-                
+
                 # Read metadata if available
                 metadata_file = ckpt_dir / 'metadata.json'
                 if metadata_file.exists():
@@ -15515,7 +15639,7 @@ def list_checkpoints():
                             ckpt_info['best_loss'] = meta.get('best_loss')
                     except Exception:
                         pass
-                
+
                 # Check what files exist
                 ckpt_info['files'] = {
                     'neural_brains': (ckpt_dir / 'neural_brains.pt').exists(),
@@ -15524,9 +15648,9 @@ def list_checkpoints():
                     'concept_system': (ckpt_dir / 'concept_system.pt').exists(),
                     'metadata': metadata_file.exists()
                 }
-                
+
                 checkpoints.append(ckpt_info)
-        
+
         return jsonify({
             'success': True,
             'checkpoints': checkpoints,
@@ -15545,22 +15669,22 @@ def list_checkpoints():
 def _get_ml_recommendation(metrics: dict) -> str:
     """Generate recommendation based on ML analysis metrics."""
     issues = []
-    
+
     cluster_stability = metrics.get('cluster_stability', 0)
     anomaly_ratio = metrics.get('avg_anomaly_ratio', 0)
     silhouette = metrics.get('avg_silhouette_score', 0)
     analysis_count = metrics.get('analysis_count', 0)
-    
+
     if analysis_count < 5:
         return 'Not enough analyses for recommendations'
-    
+
     if cluster_stability < 0.5:
         issues.append('Unstable cluster count - population may be highly dynamic')
     if anomaly_ratio > 0.3:
         issues.append('High anomaly ratio - many organisms behaving unusually')
     if silhouette < 0.25:
         issues.append('Poor clustering quality - phenotypes may be overlapping')
-    
+
     if not issues:
         return 'ML analysis metrics are healthy - population structure is stable'
     return '; '.join(issues)
@@ -15569,7 +15693,7 @@ def _get_ml_recommendation(metrics: dict) -> str:
 @app.route('/api/ml/clusters', methods=['GET'])
 def ml_get_clusters():
     """Get current clustering results - phenotype groups in organism population
-    
+
     Returns:
         - n_clusters: Number of distinct clusters found
         - cluster_sizes: Count of organisms per cluster
@@ -15585,7 +15709,7 @@ def ml_get_clusters():
             'timestamp': None,
             'source': 'none'
         }
-        
+
         # Try to get from shared state
         if shared_state_path.exists():
             try:
@@ -15598,7 +15722,7 @@ def ml_get_clusters():
                         result['source'] = 'shared_state'
             except Exception as e:
                 logger.debug(f"Could not read clustering from shared state: {e}")
-        
+
         return jsonify({
             'success': True,
             'clusters': result
@@ -15614,7 +15738,7 @@ def ml_get_clusters():
 @app.route('/api/ml/anomalies', methods=['GET'])
 def ml_get_anomalies():
     """Get current anomaly detection results - unusual organisms in population
-    
+
     Returns:
         - anomaly_count: Number of organisms flagged as anomalies
         - anomaly_ratio: Proportion of population flagged
@@ -15630,7 +15754,7 @@ def ml_get_anomalies():
             'timestamp': None,
             'source': 'none'
         }
-        
+
         # Try to get from shared state
         if shared_state_path.exists():
             try:
@@ -15645,7 +15769,7 @@ def ml_get_anomalies():
                         result['source'] = 'shared_state'
             except Exception as e:
                 logger.debug(f"Could not read anomalies from shared state: {e}")
-        
+
         return jsonify({
             'success': True,
             'anomalies': result
@@ -15661,7 +15785,7 @@ def ml_get_anomalies():
 @app.route('/api/ml/reduction', methods=['GET'])
 def ml_get_reduction():
     """Get dimensionality reduction results - organism coordinates in reduced space
-    
+
     Returns:
         - n_components: Number of dimensions in reduced space
         - algorithm: Reduction algorithm used (pca/tsne)
@@ -15678,7 +15802,7 @@ def ml_get_reduction():
             'timestamp': None,
             'source': 'none'
         }
-        
+
         # Try to get from shared state
         if shared_state_path.exists():
             try:
@@ -15693,7 +15817,7 @@ def ml_get_reduction():
                         result['source'] = 'shared_state'
             except Exception as e:
                 logger.debug(f"Could not read reduction from shared state: {e}")
-        
+
         return jsonify({
             'success': True,
             'reduction': result
@@ -15727,11 +15851,11 @@ def get_phase_sync_data():
     shared_state = _read_shared_state_safe()
     if not shared_state or 'data' not in shared_state:
         return jsonify({'error': 'No data available'})
-    
+
     phase_sync = shared_state['data'].get('phase_sync', {})
     if not phase_sync:
         return jsonify({'error': 'Phase sync data not available'})
-    
+
     return jsonify({
         'network': {
             'collapse_proximity': phase_sync.get('network', {}).get('collapse_proximity', 0.0),
@@ -15764,7 +15888,7 @@ def get_exploration_ratio():
     shared_state = _read_shared_state_safe()
     if not shared_state or 'data' not in shared_state:
         return jsonify({'error': 'No data available'})
-    
+
     exploration = shared_state['data'].get('exploration_tracking', {})
     if not exploration:
         # Fallback: calculate from phase_sync if exploration_tracking not available
@@ -15782,7 +15906,7 @@ def get_exploration_ratio():
                 'progress': reality_exp / 500.0
             })
         return jsonify({'error': 'Exploration tracking data not available'})
-    
+
     return jsonify(exploration)
 
 
@@ -15792,11 +15916,11 @@ def get_unified_health():
     shared_state = _read_shared_state_safe()
     if not shared_state or 'data' not in shared_state:
         return jsonify({'error': 'No data available'})
-    
+
     health = shared_state['data'].get('unified_health', {})
     if not health:
         return jsonify({'error': 'Unified health data not available'})
-    
+
     return jsonify(health)
 
 
@@ -15806,11 +15930,11 @@ def get_transition_status():
     shared_state = _read_shared_state_safe()
     if not shared_state or 'data' not in shared_state:
         return jsonify({'error': 'No data available'})
-    
+
     transition = shared_state['data'].get('transition_status', {})
     if not transition:
         return jsonify({'error': 'Transition status data not available'})
-    
+
     return jsonify(transition)
 
 
@@ -15820,19 +15944,19 @@ def get_collapse_prediction():
     shared_state = _read_shared_state_safe()
     if not shared_state or 'data' not in shared_state:
         return jsonify({'error': 'No data available'})
-    
+
     phase_sync = shared_state['data'].get('phase_sync', {})
     if not phase_sync:
         return jsonify({'error': 'Phase sync data not available'})
-    
+
     network = phase_sync.get('network', {})
     collapse_proximity = network.get('collapse_proximity', 0.0)
-    
+
     # Estimate generations to collapse
     organism_count = network.get('organism_count', 0)
     collapse_threshold = 500
     estimated_generations = max(0, collapse_threshold - organism_count)
-    
+
     # Warning level based on proximity
     if collapse_proximity < 0.5:
         warning_level = 'green'  # Far from collapse
@@ -15842,7 +15966,7 @@ def get_collapse_prediction():
         warning_level = 'orange'  # Close
     else:
         warning_level = 'red'  # Imminent!
-    
+
     return jsonify({
         'will_collapse': organism_count < collapse_threshold,
         'estimated_generations': estimated_generations,
@@ -15859,12 +15983,12 @@ def get_vp_diagnostics():
     shared_state = _read_shared_state_safe()
     if not shared_state or 'data' not in shared_state:
         return jsonify({'error': 'No data available'})
-    
+
     djinn_data = shared_state['data'].get('djinn_kernel', {})
-    
+
     # Try to get VP diagnostics from shared state
     vp_diagnostics = djinn_data.get('vp_diagnostics', {})
-    
+
     # If not in shared state, try to read from VP diagnostic log
     if not vp_diagnostics:
         try:
@@ -15887,7 +16011,7 @@ def get_vp_diagnostics():
                                     pass
         except Exception as e:
             logger.debug(f"Error reading VP diagnostics log: {e}")
-    
+
     return jsonify({
         'diagnostics_available': bool(vp_diagnostics),
         'diagnostics': vp_diagnostics,
@@ -15902,18 +16026,18 @@ def get_vp_components():
     shared_state = _read_shared_state_safe()
     if not shared_state or 'data' not in shared_state:
         return jsonify({'error': 'No data available'})
-    
+
     djinn_data = shared_state['data'].get('djinn_kernel', {})
-    
+
     # Get component breakdown from VP history if available
     vp_history = djinn_data.get('vp_history', [])
     component_breakdown = {}
-    
+
     # Look for component breakdown in most recent VP history entry
     if vp_history:
         latest = vp_history[-1] if isinstance(vp_history[-1], dict) else {}
         component_breakdown = latest.get('component_breakdown', {})
-    
+
     return jsonify({
         'component_decomposition_enabled': bool(component_breakdown),
         'component_breakdown': component_breakdown,
@@ -15934,23 +16058,23 @@ def get_vp_stabilization():
     shared_state = _read_shared_state_safe()
     if not shared_state or 'data' not in shared_state:
         return jsonify({'error': 'No data available'})
-    
+
     djinn_data = shared_state['data'].get('djinn_kernel', {})
-    
+
     # Get VP history
     vp_history = djinn_data.get('vp_history', [])
-    
+
     # Extract stabilization info if available
     stabilization_history = []
     if vp_history:
         # Last 10 VP values
         recent = vp_history[-10:] if len(vp_history) >= 10 else vp_history
         stabilization_history = [entry.get('total_vp', 0.0) if isinstance(entry, dict) else entry for entry in recent]
-    
+
     # Get config to check if stabilization is enabled
     config = shared_state.get('data', {}).get('config', {})
     vp_config = config.get('vp_monitoring', {})
-    
+
     return jsonify({
         'stabilization_enabled': vp_config.get('stabilization_enabled', False),
         'stabilization_history': stabilization_history,
@@ -15965,14 +16089,14 @@ def get_vp_thresholds():
     shared_state = _read_shared_state_safe()
     if not shared_state or 'data' not in shared_state:
         return jsonify({'error': 'No data available'})
-    
+
     config = shared_state.get('data', {}).get('config', {})
     vp_config = config.get('vp_monitoring', {})
-    
+
     # Get current phase
     explorer_data = shared_state.get('data', {}).get('explorer', {})
     current_phase = explorer_data.get('phase', 'genesis')
-    
+
     # Base thresholds
     base_thresholds = {
         'VP0': 0.25,
@@ -15981,7 +16105,7 @@ def get_vp_thresholds():
         'VP3': 1.00,
         'VP4': float('inf')
     }
-    
+
     # Phase-specific adjustments
     phase_adjustments = {}
     if current_phase == 'genesis':
@@ -15998,7 +16122,7 @@ def get_vp_thresholds():
             'VP2': 0.65,
             'VP3': 0.90
         }
-    
+
     return jsonify({
         'adaptive_thresholds_enabled': vp_config.get('adaptive_thresholds_enabled', False),
         'current_phase': current_phase,
@@ -16014,16 +16138,16 @@ def cra_set_graph_filters():
     """Set graph filter settings - allows CRA to manipulate graph view when explicitly requested"""
     try:
         data = request.get_json()
-        
+
         # Validate request structure
         if not data:
             return jsonify({'error': 'No filter data provided'}), 400
-        
+
         # Extract filter settings
         components = data.get('components', {})
         causation_types = data.get('causation_types', {})
         display = data.get('display', {})
-        
+
         # Build response with instructions for frontend
         filter_update = {
             'components': {
@@ -16048,9 +16172,9 @@ def cra_set_graph_filters():
                 'show_temporal_paths': display.get('show_temporal_paths', False)
             }
         }
-        
+
         logger.info(f"CRA requested graph filter update: {filter_update}")
-        
+
         return jsonify({
             'success': True,
             'filters': filter_update,
@@ -16140,14 +16264,14 @@ def cra_set_viz_settings():
     """Set visualization settings - allows CRA to manipulate visualization when explicitly requested"""
     try:
         data = request.get_json()
-        
+
         # Validate request structure
         if not data:
             return jsonify({'error': 'No visualization settings data provided'}), 400
-        
+
         # Extract visualization settings (all optional, only update what's provided)
         viz_settings = {}
-        
+
         # Link appearance
         if 'linkBaseWidth' in data:
             viz_settings['linkBaseWidth'] = float(data['linkBaseWidth'])
@@ -16163,7 +16287,7 @@ def cra_set_viz_settings():
             viz_settings['linkDepthMultiplier'] = float(data['linkDepthMultiplier'])
         if 'linkNodeConnMultiplier' in data:
             viz_settings['linkNodeConnMultiplier'] = float(data['linkNodeConnMultiplier'])
-        
+
         # Node appearance
         if 'nodeBaseSize' in data:
             viz_settings['nodeBaseSize'] = float(data['nodeBaseSize'])
@@ -16179,7 +16303,7 @@ def cra_set_viz_settings():
             viz_settings['nodeStrokeWidth'] = float(data['nodeStrokeWidth'])
         if 'nodeStrokeOpacity' in data:
             viz_settings['nodeStrokeOpacity'] = float(data['nodeStrokeOpacity'])
-        
+
         # Depth effects
         if 'depthStrength' in data:
             viz_settings['depthStrength'] = float(data['depthStrength'])
@@ -16189,7 +16313,7 @@ def cra_set_viz_settings():
             viz_settings['depthSizeRange'] = float(data['depthSizeRange'])
         if 'depthParallaxAmount' in data:
             viz_settings['depthParallaxAmount'] = float(data['depthParallaxAmount'])
-        
+
         # Visual effects
         if 'enableShadows' in data:
             viz_settings['enableShadows'] = bool(data['enableShadows'])
@@ -16201,7 +16325,7 @@ def cra_set_viz_settings():
             viz_settings['shadowBlur'] = float(data['shadowBlur'])
         if 'glowIntensity' in data:
             viz_settings['glowIntensity'] = float(data['glowIntensity'])
-        
+
         # Color settings
         if 'frontColorBrightness' in data:
             viz_settings['frontColorBrightness'] = float(data['frontColorBrightness'])
@@ -16209,7 +16333,7 @@ def cra_set_viz_settings():
             viz_settings['backColorBrightness'] = float(data['backColorBrightness'])
         if 'colorSaturation' in data:
             viz_settings['colorSaturation'] = float(data['colorSaturation'])
-        
+
         # Performance
         if 'maxVisibleLinks' in data:
             viz_settings['maxVisibleLinks'] = int(data['maxVisibleLinks'])
@@ -16217,7 +16341,7 @@ def cra_set_viz_settings():
             viz_settings['maxVisibleNodes'] = int(data['maxVisibleNodes'])
         if 'renderQuality' in data:
             viz_settings['renderQuality'] = str(data['renderQuality'])
-        
+
         # Animation
         if 'enableTransitions' in data:
             viz_settings['enableTransitions'] = bool(data['enableTransitions'])
@@ -16225,10 +16349,10 @@ def cra_set_viz_settings():
             viz_settings['transitionDuration'] = int(data['transitionDuration'])
         if 'animationSpeed' in data:
             viz_settings['animationSpeed'] = float(data['animationSpeed'])
-        
+
         # Component colors
-        component_color_keys = ['componentColor_reality_sim', 'componentColor_explorer', 'componentColor_djinn_kernel', 
-                               'componentColor_breath', 'componentColor_neural', 'componentColor_ml_analysis', 
+        component_color_keys = ['componentColor_reality_sim', 'componentColor_explorer', 'componentColor_djinn_kernel',
+                               'componentColor_breath', 'componentColor_neural', 'componentColor_ml_analysis',
                                'componentColor_language', 'componentColor_butterfly_chat', 'componentColor_config_tuner',
                                'componentColor_health_monitor', 'componentColor_system', 'componentColor_highlander',
                                'componentColor_alliance', 'componentColor_confederation', 'componentColor_combat',
@@ -16237,18 +16361,18 @@ def cra_set_viz_settings():
         for key in component_color_keys:
             if key in data:
                 viz_settings[key] = str(data[key])
-        
+
         # Link colors
-        link_color_keys = ['linkColor_threshold', 'linkColor_correlation', 'linkColor_direct', 'linkColor_temporal', 
-                          'linkColor_neural', 'linkColor_ml', 'linkColor_language', 'linkColor_linguistic', 
+        link_color_keys = ['linkColor_threshold', 'linkColor_correlation', 'linkColor_direct', 'linkColor_temporal',
+                          'linkColor_neural', 'linkColor_ml', 'linkColor_language', 'linkColor_linguistic',
                           'linkColor_battle', 'linkColor_alliance', 'linkColor_confederation', 'linkColor_arena',
                           'linkColor_proton', 'linkColor_unknown']
         for key in link_color_keys:
             if key in data:
                 viz_settings[key] = str(data[key])
-        
+
         logger.info(f"CRA requested visualization settings update: {viz_settings}")
-        
+
         return jsonify({
             'success': True,
             'viz_settings': viz_settings,
@@ -16385,7 +16509,7 @@ if __name__ == '__main__':
 
     # Respect FLASK_DEBUG environment variable, default to False for safety
     debug_mode = os.environ.get('FLASK_DEBUG', 'false').lower() in ('true', '1', 'yes')
-    
+
     try:
         if SOCKETIO_AVAILABLE:
             print("🔌 WebSocket support enabled for CRA real-time streaming")
@@ -16402,4 +16526,3 @@ if __name__ == '__main__':
         # Cleanup on shutdown
         stop_event_streaming()
         print("✅ Cleanup complete")
-
