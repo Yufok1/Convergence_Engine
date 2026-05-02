@@ -6673,13 +6673,59 @@
                     <div id="chatTabContent" style="display: block;">
                         <div style="margin-bottom: 10px;">
                             <div style="margin-bottom: 8px;">
+                                <label style="color: #0ff; display: block; margin-bottom: 5px; font-size: 0.9em;">Chat
+                                    Provider:</label>
+                                <select id="craProviderSelect" onchange="onCRAProviderChange()"
+                                    style="width: 100%; background: #111; color: #0f0; border: 1px solid #0ff; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
+                                    <option value="ollama" selected>Ollama (default)</option>
+                                    <option value="huggingface">HuggingFace Inference</option>
+                                </select>
+                                <div id="hfSettings"
+                                    style="display: none; margin-top: 8px; padding: 8px; background: #001016; border: 1px dashed #0ff;">
+                                    <label
+                                        style="color: #0ff; display: block; margin-bottom: 4px; font-size: 0.85em;">HF
+                                        Token <span style="color: #fa0;">(session only, never saved)</span>:</label>
+                                    <input type="password" id="hfApiKey" placeholder="hf_..." autocomplete="off"
+                                        oninput="onHfApiKeyChange()"
+                                        style="width: 100%; padding: 5px; background: #111; border: 1px solid #0aa; color: #0ff; font-size: 0.85em; margin-bottom: 8px;">
+                                    <label
+                                        style="color: #0ff; display: block; margin-bottom: 4px; font-size: 0.85em;">Inference
+                                        Provider:</label>
+                                    <select id="hfInferenceProvider" onchange="onHfInferenceProviderChange()"
+                                        style="width: 100%; background: #111; color: #0f0; border: 1px solid #0aa; padding: 5px; font-size: 0.85em; margin-bottom: 4px;">
+                                        <option value="">Auto (HF picks)</option>
+                                        <option value="together">Together AI</option>
+                                        <option value="fireworks-ai">Fireworks</option>
+                                        <option value="replicate">Replicate</option>
+                                        <option value="nebius">Nebius</option>
+                                        <option value="novita">Novita</option>
+                                        <option value="sambanova">SambaNova</option>
+                                        <option value="hyperbolic">Hyperbolic</option>
+                                        <option value="cerebras">Cerebras</option>
+                                        <option value="hf-inference">HF Inference</option>
+                                    </select>
+                                    <div style="font-size: 0.72em; color: #fa0; margin-top: 4px;">
+                                        Token lives in this browser tab only. Closing the tab clears it. It is sent
+                                        with each chat request and is not stored on the server.
+                                    </div>
+                                    <div style="font-size: 0.72em; color: #888; margin-top: 4px;">
+                                        <a href="https://huggingface.co/settings/tokens" target="_blank"
+                                            style="color: #0ff;">Get HF token →</a>
+                                    </div>
+                                </div>
+                                <div style="font-size: 0.75em; color: #888; margin-top: 4px;">
+                                    Ollama is the default; HuggingFace adds 30+ inference providers (Together,
+                                    Fireworks, etc.) routed through one OpenAI-compatible API.
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 8px;">
                                 <label style="color: #0ff; display: block; margin-bottom: 5px; font-size: 0.9em;">Research
                                     Model:</label>
                                 <select id="researchModelSelect"
                                     style="width: 100%; background: #111; color: #0f0; border: 1px solid #0ff; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
                                     <option value="">Loading models...</option>
                                 </select>
-                                <div style="font-size: 0.75em; color: #888; margin-top: 3px;">
+                                <div style="font-size: 0.75em; color: #888; margin-top: 3px;" id="researchModelHint">
                                     Text model for answering questions about the system
                                 </div>
                             </div>
@@ -24505,6 +24551,40 @@
             }
 
             // Send chat message
+            // CRA chat-provider session state — lives in this browser tab only,
+            // never written to localStorage or sessionStorage. Closing the tab clears it.
+            const craSession = {
+                provider: 'ollama',
+                hfApiKey: '',
+                hfInferenceProvider: ''
+            };
+
+            function onCRAProviderChange() {
+                const sel = document.getElementById('craProviderSelect');
+                if (!sel) return;
+                craSession.provider = sel.value;
+                const hfPanel = document.getElementById('hfSettings');
+                if (hfPanel) {
+                    hfPanel.style.display = (sel.value === 'huggingface') ? 'block' : 'none';
+                }
+                const hint = document.getElementById('researchModelHint');
+                if (hint) {
+                    hint.textContent = (sel.value === 'huggingface')
+                        ? 'For HuggingFace, type a HF model id (e.g. meta-llama/Llama-3.3-70B-Instruct, Qwen/Qwen2.5-72B-Instruct)'
+                        : 'Text model for answering questions about the system';
+                }
+            }
+
+            function onHfApiKeyChange() {
+                const inp = document.getElementById('hfApiKey');
+                if (inp) craSession.hfApiKey = inp.value || '';
+            }
+
+            function onHfInferenceProviderChange() {
+                const sel = document.getElementById('hfInferenceProvider');
+                if (sel) craSession.hfInferenceProvider = sel.value || '';
+            }
+
             async function sendChatMessage() {
                 const input = document.getElementById('chatInput');
                 const message = input.value.trim();
@@ -24688,7 +24768,11 @@
                     view_state: viewState,
                     selected_event: selectedEvent,
                     graph_image: graphImage,  // CURRENT state (just captured)
-                    evolutionary_snapshots: evolutionarySnapshots  // Historical snapshots (from localStorage)
+                    evolutionary_snapshots: evolutionarySnapshots,  // Historical snapshots (from localStorage)
+                    // CRA provider dispatch — session-only state, no persistence.
+                    provider: craSession.provider || 'ollama',
+                    hf_api_key: craSession.hfApiKey || undefined,
+                    inference_provider: craSession.hfInferenceProvider || undefined
                 };
 
                 // Send to backend

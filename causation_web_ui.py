@@ -5315,6 +5315,84 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         return prompt
 
 
+class HuggingFaceBridge:
+    """HTTP client for HuggingFace Inference Router (OpenAI-compatible chat).
+
+    Public-demo posture: API key is per-request (session-only), never persisted.
+    Pass api_key directly; do NOT rely on environment fallback in user-facing
+    paths. The allow_env_fallback flag exists only for local/admin use.
+
+    Inference provider routing (mirrors Champion Council plug pattern):
+      base url        = https://router.huggingface.co/v1            (HF picks)
+      provider routed = https://router.huggingface.co/{provider}/v1 (forced)
+    Common providers: together, fireworks-ai, replicate, nebius, novita,
+    sambanova, hyperbolic, hf-inference, cerebras.
+    """
+
+    DEFAULT_BASE = "https://router.huggingface.co"
+    DEFAULT_MODEL = "meta-llama/Llama-3.3-70B-Instruct"
+
+    def __init__(self, base_url: str = None, timeout: float = None,
+                 api_key: str = None, inference_provider: str = None,
+                 allow_env_fallback: bool = False):
+        self.timeout = timeout or float(os.getenv("HF_TIMEOUT", "120.0"))
+        self.inference_provider = inference_provider  # e.g. "together", may be None
+        if base_url:
+            self.base_url = base_url.rstrip('/')
+        else:
+            base = os.getenv("HF_BASE_URL", self.DEFAULT_BASE).rstrip('/')
+            if self.inference_provider:
+                self.base_url = f"{base}/{self.inference_provider}/v1"
+            else:
+                self.base_url = f"{base}/v1"
+        # Public-demo: only fall back to env if explicitly allowed.
+        self.api_key = api_key
+        if not self.api_key and allow_env_fallback:
+            self.api_key = os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_API_KEY")
+        self.headers = {"Content-Type": "application/json"}
+        if self.api_key:
+            self.headers["Authorization"] = f"Bearer {self.api_key}"
+
+    def is_configured(self) -> bool:
+        return bool(self.api_key)
+
+    def chat(self, model: str, messages: List[Dict[str, str]],
+             context: Dict[str, Any] = None,
+             max_tokens: int = None) -> Optional[str]:
+        """OpenAI-compatible chat completion. Signature matches OllamaBridge.chat
+        so /api/ollama/chat dispatch is drop-in.
+
+        If `context` includes a 'system' string, it is prepended as a system
+        message (matches how OllamaBridge consumes context dicts).
+        """
+        if not self.api_key:
+            logger.warning("[HuggingFaceBridge] No API key — public-demo flow "
+                           "requires user-provided HF token per session.")
+            return None
+        outbound = []
+        if context and isinstance(context, dict):
+            sys_text = context.get("system") or context.get("system_prompt")
+            if sys_text:
+                outbound.append({"role": "system", "content": str(sys_text)})
+        if isinstance(messages, list):
+            outbound.extend(messages)
+        payload = {
+            "model": model or self.DEFAULT_MODEL,
+            "messages": outbound,
+            "max_tokens": max_tokens or 1024,
+        }
+        url = f"{self.base_url}/chat/completions"
+        try:
+            response = requests.post(url, json=payload,
+                                     headers=self.headers, timeout=self.timeout)
+            response.raise_for_status()
+            data = response.json()
+            return data["choices"][0]["message"]["content"]
+        except Exception as exc:
+            logger.error(f"[HuggingFaceBridge] chat failed: {exc}")
+            return None
+
+
 class LogParser:
     """Parse log files in pipe-delimited format"""
 
@@ -11065,14 +11143,31 @@ def ollama_chat():
         if not message:
             return jsonify({'error': 'Message is required'}), 400
 
-        # Use user's API key if provided, otherwise use server default
-        bridge_to_use = ollama_bridge
-        if user_api_key:
+        # Provider dispatch — Ollama is the default, HuggingFace is the second
+        # implementation. Public-demo posture: API keys are session-only, passed
+        # in the request body, never persisted server-side.
+        provider = (data.get('provider') or 'ollama').strip().lower()
+        inference_provider = data.get('inference_provider')  # optional HF sub-provider
+        hf_api_key = data.get('hf_api_key')  # separate slot from Ollama key
+
+        if provider in ('huggingface', 'hf'):
+            bridge_to_use = HuggingFaceBridge(
+                api_key=hf_api_key or user_api_key,
+                inference_provider=inference_provider,
+            )
+            if not bridge_to_use.is_configured():
+                return jsonify({
+                    'error': 'HuggingFace token required for this session. Paste your HF token (starts with "hf_") in the API key field. The token is held in this browser session only and is never saved.',
+                    'provider': 'huggingface'
+                }), 400
+        elif user_api_key:
             bridge_to_use = OllamaBridge(
                 base_url=ollama_bridge.base_url,
                 timeout=ollama_bridge.timeout,
                 api_key=user_api_key
             )
+        else:
+            bridge_to_use = ollama_bridge
 
         # Update time-series tracker with current state
         try:
@@ -12784,6 +12879,45 @@ def get_chat_history_endpoint():
     except Exception as e:
         logger.error(f"Error loading chat history: {e}", exc_info=True)
         return jsonify({'error': str(e), 'history': []}), 500
+
+
+@app.route('/api/chat/history', methods=['POST'])
+def post_chat_history_endpoint():
+    """Append a chat message externally (shadow-CRA / Champion Council / agent bridge).
+
+    Lets external agents seed the CRA chat panel when /api/ollama/chat is
+    unreachable (Ollama down on HF Space) or when an MCP-side agent wants its
+    voice mirrored into the operator-facing chat surface.
+
+    Body: {"role": "assistant"|"user"|"system"|"shadow_cra", "message": str,
+           "source": optional str}
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        role = data.get('role', 'shadow_cra')
+        message = data.get('message', '')
+        source = data.get('source', 'external_agent')
+
+        if not message:
+            return jsonify({'error': 'message is required', 'success': False}), 400
+
+        annotated = message
+        if source and source != 'external_agent':
+            annotated = f"[{source}] {message}"
+
+        persistent_context.save_chat_message(role, annotated)
+        history = persistent_context.load_chat_history()
+
+        return jsonify({
+            'success': True,
+            'role': role,
+            'source': source,
+            'history_count': len(history),
+            'last_entry': history[-1] if history else None
+        })
+    except Exception as e:
+        logger.error(f"Error appending chat history: {e}", exc_info=True)
+        return jsonify({'error': str(e), 'success': False}), 500
 
 
 @app.route('/api/system/context')
