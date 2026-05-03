@@ -1,5 +1,74 @@
-Butterfly System Quick Reference
-================================
+Convergence Engine Quick Reference
+==================================
+
+Cheat code
+----------
+techlady
+
+If JupyterLab asks for a token, type:
+
+techlady
+
+That is the whole door. No paywall. No maze.
+
+Code wheel
+----------
+Only one code is active at a time.
+The current code is the one to try first.
+
+Current code:
+
+techlady
+
+Reserve codes:
+
+techlit
+crayonlab
+gamegenie
+wordfood
+tinydoor
+livinglab
+organismgarden
+cocooncode
+jupyterjoy
+
+Entry is right there.
+It only asks for one small sign that you read the door.
+
+Read me first
+-------------
+This is the short path into the Convergence Engine.
+It is written like a cheat sheet because the goal is to play, test, and learn by touching the system.
+
+Do the main path first.
+Use the optional parts later.
+
+Accessibility notes
+-------------------
+- Plain text only.
+- Commands are one per line.
+- No color-only meaning.
+- No tables.
+- Short headings for screen readers.
+- Optional steps say optional.
+
+JupyterLab front door
+---------------------
+For a Hugging Face JupyterLab Space, set this Space secret:
+
+JUPYTER_TOKEN=techlady
+
+For a local JupyterLab door:
+
+python -m pip install jupyterlab
+jupyter lab --ip 0.0.0.0 --port 7860 --ServerApp.token=techlady --ServerApp.password='' --no-browser
+
+Open the JupyterLab URL.
+Use the token:
+
+techlady
+
+Then open a Terminal inside JupyterLab and use the commands below.
 
 Tools
 -----
@@ -7,7 +76,6 @@ Netron:
 https://netron.app/
 
 Optional public tunnel for the web UI:
-sudo apt-get update && sudo apt-get install -y openssh-client
 
 ssh -R 80:localhost:5000 nokey@localhost.run
 
@@ -16,9 +84,17 @@ Clone and setup
 git clone https://github.com/Yufok1/Convergence_Engine.git
 cd Convergence_Engine
 
+Windows PowerShell:
+
 python -m venv .venv
-source .venv/bin/activate    
 .\.venv\Scripts\Activate.ps1
+
+Linux, macOS, or Hugging Face terminal:
+
+python -m venv .venv
+source .venv/bin/activate
+
+Install the engine parts:
 
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
@@ -26,24 +102,40 @@ python check_setup.py
 
 Vocabulary and language bootstrap
 ---------------------------------
+Run these once after a fresh clone:
+
 python build_curated_dataset.py
 python merge_nuclear_vocab.py
 python generate_innate_vocab.py
 
 Optional smaller vocabulary:
+
 python distill_vocabulary.py --input data/seeded_knowledge_web_250k.json --output data/knowledge_web_distilled.json --target 50000
 
 Optional expanded knowledge web:
+
 python reality_simulator/language/expand_knowledge_web.py --input data/seeded_knowledge_web_250k.json --output data/seeded_knowledge_web_expanded.json --concepts 50000 --min-weight 1.5
 
 Recovery boot order
 -------------------
+Check first:
+
 python unified_entry.py --config config.json --check-only --no-viz
+
+Then start the world:
+
 python unified_entry.py --config config.json --no-viz --debug
+
+Open the web view:
+
+http://localhost:5000
 
 Hardware profiles
 -----------------
-Use the base config first, then switch to a matching rented-box profile:
+Use the base config first.
+Only switch to a rented-box profile when that machine actually matches the file.
+
+Common profile names:
 
 - config_vast_rtx3060_genesis.json
 - config_vast_rtx4090_1tb_genesis.json
@@ -51,7 +143,9 @@ Use the base config first, then switch to a matching rented-box profile:
 - config_vast_xeon_1.5tb_genesis.json
 - config_shadow_epyc_genesis.json
 
-Only use config_vast_xeon_1.5tb_genesis.json on a genuinely huge machine.
+Only use this on a genuinely huge machine:
+
+config_vast_xeon_1.5tb_genesis.json
 
 Direct large-box launch
 -----------------------
@@ -59,22 +153,39 @@ python unified_entry.py --config config_vast_xeon_1.5tb_genesis.json --no-viz --
 
 Useful extras
 -------------
+Open another terminal in the same repo.
+Activate `.venv` again.
+
+Status and dashboard:
+
 python live_dashboard.py
 python causation_web_ui.py
 python cra_cli.py status
 python cra_cli.py sitrep
-python cra_cli.py repl --model llama3.2
-python cra_cli.py standin-chat "cooperate" --max-organisms 1
-python cra_cli.py butterfly-chat "cooperate" --max-organisms 1
-python cra_cli.py organism-chat <organism_id> "cooperate"
 python cra_cli.py training-status
 python cra_cli.py exporter-status
 python cra_cli.py organisms --limit 10
 python cra_cli.py alliances
+
+Talk and poke:
+
+python cra_cli.py repl --model llama3.2
+python cra_cli.py standin-chat "cooperate" --max-organisms 1
+python cra_cli.py butterfly-chat "cooperate" --max-organisms 1
+python cra_cli.py organism-chat <organism_id> "cooperate"
+
+Tune a small thing:
+
 python cra_cli.py config-set /simulation/max_frames 5000
+
+Write a science note:
+
 python cra_cli.py notepad --summary
 python cra_cli.py notepad-add observation "Run started #baseline"
 python cra_cli.py scientific-receipt --title "Baseline run receipt"
+
+Export organisms
+----------------
 python cra_cli.py compile-cocoon --top-n 5 --format cocoon
 python cra_cli.py compile-cocoon --top-n 5 --format package
 python cra_cli.py compile-cocoon --alliance-id <id1> --alliance-id <id2> --format cocoon
@@ -82,21 +193,51 @@ python cra_cli.py compile-cocoon --alliance "Alliance Name" --alliance-id <id2> 
 python cra_cli.py cocoon-validate Children/cocoon_ensemble_<timestamp>.zip
 python cra_cli.py compile-learning --organism-id <id>
 
-Cocoon + Champion Council
--------------------------
+Cocoon plus Champion Council
+----------------------------
 Fresh exports include:
-- connector-word curriculum in vocabulary.json
-- bake-time alliance composition with selected_alliances/alliance_ids; unallied organisms are excluded unless --include-unallied is set
-- game_contracts.json for Council adapters
-- curriculum/*.json and training_logs/schema.json for staged language coaching
-- native HTTP endpoints: /health, /act, /learn, /chat, /teach, /vocab, /curriculum, /training/logs, /curriculum/score, /snapshot, /save, /export, /capabilities
 
-Run an exported Cocoon:
+- connector-word curriculum in vocabulary.json
+- bake-time alliance composition with selected_alliances and alliance_ids
+- game_contracts.json for Council adapters
+- curriculum/*.json and training_logs/schema.json
+- native HTTP endpoints for health, action, learning, chat, teach, vocab, curriculum, training logs, score, snapshot, save, export, and capabilities
+
+Run an exported Cocoon
+----------------------
 python cocoon.py --mode info --max-organisms 1
 python cocoon.py --mode serve --port 8080
 python cocoon.py --mode sphere --headless --balls 1 --misses 1 --train
 python cocoon.py --mode gym --env CartPole-v1 --episodes 1 --no-learn
 
-Persist live learned state:
+Persist live learned state
+--------------------------
 curl -X POST http://localhost:8080/save
 curl -X POST http://localhost:8080/export -H "Content-Type: application/json" -d '{"path":"evolved_cocoon.py"}'
+
+Tiny rescue card
+----------------
+If setup fails:
+
+python check_setup.py
+
+If the world feels empty:
+
+python build_curated_dataset.py
+python merge_nuclear_vocab.py
+python generate_innate_vocab.py
+
+If the web view is stale:
+
+python causation_web_ui.py
+
+If you get lost:
+
+python cra_cli.py sitrep
+
+The whole trick
+---------------
+Code: techlady
+Build the language food.
+Start the world.
+Play Pokemon AI, baby.
