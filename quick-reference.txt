@@ -7,6 +7,8 @@ Netron:
 https://netron.app/
 
 Optional public tunnel for the web UI:
+sudo apt-get update && sudo apt-get install -y openssh-client
+
 ssh -R 80:localhost:5000 nokey@localhost.run
 
 Clone and setup
