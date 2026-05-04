@@ -16789,11 +16789,11 @@ if __name__ == '__main__':
             print("🔌 WebSocket support enabled for CRA real-time streaming")
             # Use_reloader=False to avoid threading issues on Windows during development
             # Set to True if you want auto-reload (may show socket errors on Windows)
-            socketio.run(app, debug=debug_mode, port=5000, use_reloader=False)
+            socketio.run(app, host='0.0.0.0', debug=debug_mode, port=5000, use_reloader=False)
         else:
             print("📡 WebSocket not available - using HTTP polling for CRA")
             # Use_reloader=False to avoid threading issues on Windows during development
-            app.run(debug=debug_mode, port=5000, use_reloader=False)
+            app.run(host='0.0.0.0', debug=debug_mode, port=5000, use_reloader=False)
     except KeyboardInterrupt:
         print("\n🛑 Shutting down gracefully...")
     finally:

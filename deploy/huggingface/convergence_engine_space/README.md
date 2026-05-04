@@ -648,7 +648,21 @@ Optional public tunnel
 
 Only use this if you need a public URL for the web UI. The Space already has SSH installed. Do not run `sudo`.
 
-Run:
+The web UI must be running before the tunnel can serve anything. Open a second terminal, activate the venv, and start the web UI first:
+
+```bash
+. /home/user/.venvs/convergence-engine/bin/activate
+```
+
+```bash
+cd /data/work/Convergence_Engine
+```
+
+```bash
+python causation_web_ui.py
+```
+
+Wait until you see `Running on http://0.0.0.0:5000`. Then open a third terminal and run:
 
 ```bash
 ssh -R 80:localhost:5000 nokey@localhost.run
@@ -659,6 +673,8 @@ If it asks to continue connecting, type:
 ```text
 yes
 ```
+
+The tunnel prints a URL like `https://xxxx.lhr.life`. Open that in your browser. If the page is blank, the web UI is not running — go back and check the terminal where you started `causation_web_ui.py`.
 
 Optional smaller vocabulary
 ---------------------------
