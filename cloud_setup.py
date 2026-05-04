@@ -274,6 +274,16 @@ def setup_cloud_environment(project_root: Optional[Path] = None, verbose: bool =
         hf_bucket = Path('/data').resolve()
         if hf_bucket.exists() and hf_bucket in project_root.parents:
             data_path = project_root / 'data'
+            if data_path.is_symlink():
+                old_target = data_path.resolve()
+                if hf_bucket != old_target and hf_bucket not in old_target.parents:
+                    data_path.unlink()
+                    data_path.mkdir(parents=True, exist_ok=True)
+                    if old_target.exists() and old_target.is_dir():
+                        for item in old_target.iterdir():
+                            dest = data_path / item.name
+                            if not dest.exists():
+                                shutil.move(str(item), str(dest))
             data_path.mkdir(parents=True, exist_ok=True)
             for subdir in ['logs', 'checkpoints', 'neural_checkpoints', 'kernel',
                            'profiles', 'knowledge', 'decision_logs', 'causation_explorer']:
