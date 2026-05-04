@@ -17,6 +17,7 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
+DATA_DIR = PROJECT_ROOT / "data"
 
 
 def run_step(script_path: str) -> int:
@@ -33,6 +34,7 @@ def run_pipeline():
     print("="*70)
     print("🦋 BUTTERFLY VOCABULARY PIPELINE")
     print("="*70)
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
     
     # Step 1: Build raw vocabulary from WordNet
     print("\n[1/3] Building raw vocabulary from WordNet...")

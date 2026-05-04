@@ -120,8 +120,10 @@ def build_vocabulary_file(output_path: str):
         }
     }
     
-    # Write to file
-    with open(output_path, 'w', encoding='utf-8') as f:
+    # Write to file. Keep this idempotent for copy-paste setup paths.
+    output_file = Path(output_path)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(vocabulary, f, indent=2, ensure_ascii=False)
     
     print(f"\n✅ Vocabulary built successfully!")

@@ -248,6 +248,7 @@ def setup_cloud_environment(project_root: Optional[Path] = None, verbose: bool =
     
     if project_root is None:
         project_root = Path(__file__).parent
+    project_root = project_root.resolve()
     
     if sys.platform == 'win32':
         # Skip cloud setup on Windows
@@ -264,6 +265,40 @@ def setup_cloud_environment(project_root: Optional[Path] = None, verbose: bool =
         print("=" * 50)
         print("🚀 Convergence Engine - Auto Setup")
         print("=" * 50)
+
+    # Hugging Face persistent storage is mounted at /data. If the repo lives
+    # under /data (for example /data/work/Convergence_Engine), keep ./data in
+    # the repo so user-visible state stays on the bucket. Do not silently move
+    # runtime state to /dev/shm, which is fast but not persistent.
+    try:
+        hf_bucket = Path('/data').resolve()
+        if hf_bucket.exists() and hf_bucket in project_root.parents:
+            data_path = project_root / 'data'
+            data_path.mkdir(parents=True, exist_ok=True)
+            for subdir in ['logs', 'checkpoints', 'neural_checkpoints', 'kernel',
+                           'profiles', 'knowledge', 'decision_logs', 'causation_explorer']:
+                (data_path / subdir).mkdir(parents=True, exist_ok=True)
+            sys_info = get_system_info()
+            recommended = recommend_config(sys_info, project_root)
+            if verbose:
+                print("\n📦 Hugging Face bucket detected: /data")
+                print("   ✅ Keeping ./data on the mounted bucket")
+                print(f"\n💻 System: {sys_info['ram_gb']}GB RAM, {sys_info['cpu_threads']} threads")
+                print(f"⚙️  Recommended config: {recommended}")
+                print("\n" + "=" * 50)
+                print("✅ Setup complete!")
+                print("=" * 50 + "\n")
+            return {
+                'storage_path': str(data_path),
+                'storage_type': 'huggingface_bucket',
+                'storage_space_gb': get_disk_space_gb(str(hf_bucket)),
+                'recommended_config': recommended,
+                'system_info': sys_info,
+                'setup_performed': True,
+            }
+    except Exception as e:
+        if verbose:
+            print(f"⚠️ Hugging Face bucket check skipped: {e}")
     
     # Detect storage options
     options = detect_storage_options()

@@ -5,7 +5,7 @@ Cheat code
 ----------
 techlady
 
-If JupyterLab asks for a token, type:
+If JupyterLab asks for a password, type:
 
 techlady
 
@@ -52,11 +52,53 @@ Accessibility notes
 - Short headings for screen readers.
 - Optional steps say optional.
 
+Brotology rule
+--------------
+The name is a joke.
+The method is not.
+
+Be funny.
+Be honest.
+Read the room before you touch the machine.
+
+The banger raid order is:
+
+1. get status
+2. get sitrep
+3. poke one thing
+4. watch what changed
+
+Use these first when you are unsure:
+
+cd /data/work/Convergence_Engine
+python cra_cli.py status
+python cra_cli.py sitrep
+
 JupyterLab front door
 ---------------------
 For a Hugging Face JupyterLab Space, set this Space secret:
 
 JUPYTER_TOKEN=techlady
+
+The Space uses that secret as the Jupyter password.
+
+Bucket lane:
+
+Keep the mounted bucket at /data with read and write access.
+JupyterLab opens in /data/work.
+Clone the repo there so Convergence_Engine/data lives on the bucket.
+If the bucket is missing, the door can still run, but rebuilds can wipe the work.
+
+Important:
+
+/data is the Hugging Face bucket.
+/data/work is the working room inside the bucket.
+/data/work/Convergence_Engine is the engine room.
+/data/work/Convergence_Engine/data is the engine data room.
+
+If a command mentions cra_cli.py, unified_entry.py, or build_curated_dataset.py, run it from:
+
+/data/work/Convergence_Engine
 
 For a local JupyterLab door:
 
@@ -64,7 +106,7 @@ python -m pip install jupyterlab
 jupyter lab --ip 0.0.0.0 --port 7860 --ServerApp.token=techlady --ServerApp.password='' --no-browser
 
 Open the JupyterLab URL.
-Use the token:
+Use the password:
 
 techlady
 
@@ -77,12 +119,33 @@ https://netron.app/
 
 Optional public tunnel for the web UI:
 
+sudo apt-get update && sudo apt-get install -y openssh-client
 ssh -R 80:localhost:5000 nokey@localhost.run
 
 Clone and setup
 ---------------
+Go to the bucket work room:
+
+cd /data/work
+
+If the repo is not there yet:
+
 git clone https://github.com/Yufok1/Convergence_Engine.git
-cd Convergence_Engine
+
+If clone says the destination already exists, that is okay.
+It means the repo is already there.
+
+Enter the engine room:
+
+cd /data/work/Convergence_Engine
+
+Confirm the room:
+
+pwd
+
+You should see:
+
+/data/work/Convergence_Engine
 
 Windows PowerShell:
 
@@ -91,12 +154,13 @@ python -m venv .venv
 
 Linux, macOS, or Hugging Face terminal:
 
-python -m venv .venv
-source .venv/bin/activate
+python -m venv /home/user/.venvs/convergence-engine
+. /home/user/.venvs/convergence-engine/bin/activate
 
 Install the engine parts:
 
 python -m pip install --upgrade pip
+python -m pip install --upgrade setuptools wheel
 python -m pip install -r requirements.txt
 python check_setup.py
 
@@ -104,6 +168,12 @@ Vocabulary and language bootstrap
 ---------------------------------
 Run these once after a fresh clone:
 
+cd /data/work/Convergence_Engine
+mkdir -p data
+cp config.json data/config.json
+mkdir -p /data/nltk_data
+export NLTK_DATA=/data/nltk_data
+python -m nltk.downloader -d /data/nltk_data wordnet omw-1.4
 python build_curated_dataset.py
 python merge_nuclear_vocab.py
 python generate_innate_vocab.py
@@ -120,6 +190,10 @@ Recovery boot order
 -------------------
 Check first:
 
+cd /data/work/Convergence_Engine
+. /home/user/.venvs/convergence-engine/bin/activate
+mkdir -p data
+cp config.json data/config.json
 python unified_entry.py --config config.json --check-only --no-viz
 
 Then start the world:
