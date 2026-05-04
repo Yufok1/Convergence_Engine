@@ -2468,6 +2468,8 @@ class NeuralOrganism(Organism):
                                         atomic_word_set = {w for w, _ in atomic_similar}
                                         similar_words = list(set(similar_words) | atomic_word_set)
                                         
+                                        current_state = None
+
                                         # Also get words matching current state
                                         if len(self.state_history) > 0:
                                             current_state = self.state_history[-1] if isinstance(self.state_history[-1], np.ndarray) else None

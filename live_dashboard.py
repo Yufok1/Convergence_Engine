@@ -10,6 +10,11 @@ import os
 import sys
 from pathlib import Path
 
+REPO_ROOT = Path(__file__).resolve().parent
+os.chdir(REPO_ROOT)
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 try:
     from rich.console import Console
     from rich.table import Table

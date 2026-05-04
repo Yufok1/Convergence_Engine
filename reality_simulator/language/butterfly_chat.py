@@ -534,13 +534,36 @@ class ButterflyChatRouter:
         self.conversation_history.append(conversation_entry)
         
         total_time = (time.time() - start_time) * 1000
+        fatal_errors = [
+            error for error in self.errors
+            if error.get('error_type') != 'CAUSATION_EVENT_WARNING'
+        ]
+        organisms_responded = len(organism_responses)
+        empty_response = not str(aggregated_response or '').strip()
+        success = not fatal_errors and organisms_responded > 0 and not empty_response
+        failure_reason = None
+        if not success:
+            if fatal_errors:
+                failure_reason = fatal_errors[0].get('error_type') or 'fatal_error'
+            elif organisms_responded == 0:
+                failure_reason = 'no_organism_responses'
+            elif empty_response:
+                failure_reason = 'empty_response'
+            else:
+                failure_reason = 'unknown_failure'
+        status = 'ok' if success else 'error'
         self._log_debug("STEP_7", "Message Routing Complete", {
             "total_time_ms": total_time,
             "response_length": len(aggregated_response),
-            "success": True
+            "success": success,
+            "status": status,
+            "failure_reason": failure_reason
         })
 
         return {
+            'success': success,
+            'status': status,
+            'failure_reason': failure_reason,
             'response': aggregated_response,
             'organism_responses': organism_responses,
             'tokens_used': prompt_tokens,

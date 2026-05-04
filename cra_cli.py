@@ -916,10 +916,45 @@ def summarize_chat(data: Dict[str, Any]) -> None:
         print(data["vision_analysis"])
 
 
+def butterfly_chat_failed(data: Dict[str, Any]) -> bool:
+    routing = data.get("routing_info") or {}
+    responded = routing.get("organisms_responded", data.get("organism_count", 0))
+    try:
+        organisms_responded = int(responded or 0)
+    except (TypeError, ValueError):
+        organisms_responded = 0
+
+    response = str(data.get("response") or "").strip()
+    if response == "<no response>":
+        response = ""
+
+    return (
+        data.get("success") is False
+        or data.get("status") == "error"
+        or organisms_responded == 0
+        or not response
+    )
+
+
 def summarize_butterfly_chat(data: Dict[str, Any]) -> None:
     response = data.get("response") or ""
+    failed = butterfly_chat_failed(data)
+    printed_response = False
+    if failed:
+        print_heading("Butterfly Chat Failed")
+        reason = data.get("failure_reason") or data.get("status") or "unknown_failure"
+        print(f"Reason: {reason}")
+        routing = data.get("routing_info") or {}
+        if routing:
+            print(f"Organisms queried: {routing.get('organisms_queried', 0)}")
+            print(f"Organisms responded: {routing.get('organisms_responded', 0)}")
+        if response.strip():
+            print(response.strip())
+            printed_response = True
+
     if response:
-        print(response.strip())
+        if not printed_response:
+            print(response.strip())
     else:
         print_json(data)
         return
@@ -1723,7 +1758,7 @@ def main() -> int:
                 print_json(data)
             else:
                 summarize_butterfly_chat(data)
-            return 0
+            return 1 if butterfly_chat_failed(data) else 0
 
         if args.command == "organism-chat":
             message = read_message(args)

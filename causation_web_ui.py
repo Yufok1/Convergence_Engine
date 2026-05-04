@@ -12134,9 +12134,15 @@ def butterfly_chat():
         if organism_responses:
             confidences = [r.get('confidence', 0.0) for r in organism_responses]
             confidence = sum(confidences) / len(confidences) if confidences else 0.0
+        route_success = bool(response.get('success', False))
+        route_status = response.get('status') or ('ok' if route_success else 'error')
+        route_failure_reason = response.get('failure_reason')
 
         response_body = {
-            'response': response.get('response', '<no response>'),
+            'success': route_success,
+            'status': route_status,
+            'failure_reason': route_failure_reason,
+            'response': response.get('response', ''),
             'organism_responses': organism_responses,
             'routing_info': response.get('routing_info', {}),
             'routing_strategy': routing_strategy,
@@ -12165,7 +12171,10 @@ def butterfly_chat():
                 'organism_count': len(organism_responses),
                 'confidence': confidence,
                 'error_count': len(response.get('errors', [])),
+                'status': route_status,
+                'failure_reason': route_failure_reason,
             },
+            status='ok' if route_success else 'error',
             reason='butterfly_chat_interaction',
         )
         return jsonify(response_body)
