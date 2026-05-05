@@ -6459,26 +6459,11 @@
                                     style="color: #0ff;">Get HF token →</a>
                             </div>
                         </div>
-                        <label id="ollamaCloudLabel" style="display: block; margin-bottom: 5px; color: #0ff;">
-                            <input type="checkbox" id="ollamaCloudMode" onchange="toggleCloudMode()"
-                                style="margin-right: 5px;">
-                            <span>Use Ollama Cloud</span>
-                        </label>
-                        <div id="cloudSettings"
-                            style="display: none; margin-top: 10px; padding: 10px; background: #000; border: 1px solid #0aa;">
-                            <label style="display: block; margin-bottom: 5px; color: #0ff; font-size: 0.9em;">Ollama API
-                                Key:</label>
-                            <input type="password" id="ollamaApiKey" placeholder="Enter your Ollama API key"
-                                style="width: 100%; padding: 5px; background: #111; border: 1px solid #0aa; color: #0ff; font-size: 0.85em; margin-bottom: 10px;">
-                            <button onclick="saveOllamaConfig()"
-                                style="width: 100%; padding: 5px; background: #0aa; border: 1px solid #0ff; color: #0ff; cursor: pointer; font-size: 0.85em;">
-                                💾 Save & Apply
-                            </button>
-                            <div id="configStatus" style="margin-top: 5px; font-size: 0.8em; color: #0aa;"></div>
-                        </div>
-                        <div id="ollamaGetKeyLink" style="margin-top: 10px; font-size: 0.75em; color: #0aa;">
-                            <a href="https://ollama.com/settings/keys" target="_blank" style="color: #0ff;">Get Ollama
-                                API Key →</a>
+                        <div id="ollamaCloudInfo" style="display: none; margin-top: 8px; padding: 8px; background: #001016; border: 1px dashed #0aa; font-size: 0.8em; color: #0aa;">
+                            Ollama Cloud uses your saved API key from server config. No local Ollama needed.
+                            <div style="margin-top: 6px;">
+                                <a href="https://ollama.com/settings/keys" target="_blank" style="color: #0ff;">Get/manage Ollama API Key →</a>
+                            </div>
                         </div>
                     </div>
                     <div id="ollamaConnectionStatus"
@@ -24573,13 +24558,9 @@
                 const hfPanel = document.getElementById('hfSettings');
                 if (hfPanel) hfPanel.style.display = isHF ? 'block' : 'none';
 
-                // Hide Ollama cloud controls when HF is active so we don't clutter
-                const olCloudLabel = document.getElementById('ollamaCloudLabel');
-                const olCloudPanel = document.getElementById('cloudSettings');
-                const olGetKey = document.getElementById('ollamaGetKeyLink');
-                if (olCloudLabel) olCloudLabel.style.display = isHF ? 'none' : 'block';
-                if (olGetKey) olGetKey.style.display = isHF ? 'none' : 'block';
-                if (olCloudPanel && isHF) olCloudPanel.style.display = 'none';
+                // Show Ollama cloud info when Ollama is selected
+                const olCloudInfo = document.getElementById('ollamaCloudInfo');
+                if (olCloudInfo) olCloudInfo.style.display = isHF ? 'none' : 'block';
 
                 const hint = document.getElementById('researchModelHint');
                 if (hint) {
