@@ -8,7 +8,7 @@ source venv/bin/activate
 
 python live_dashboard.py
 
-git clone https://oauth2:glpat-DC9OiPTkqwTwq7-OBUiny286MQp1OmpjM283Cw.01.1201qvgsh@gitlab.com/Toasteedo/Convergence_Engine.git
+git clone https://github.com/Yufok1/Convergence_Engine
 
 cd Convergence_Engine 
  
