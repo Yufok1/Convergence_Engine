@@ -10318,18 +10318,6 @@ if TORCH_AVAILABLE:
         
         def _iterate(self, xi: torch.Tensor, beta: float) -> torch.Tensor:
             keys = self.key_proj(self.patterns)
-            export_mode = False
-            try:
-                export_mode = bool(torch.onnx.is_in_onnx_export())
-            except Exception:
-                export_mode = False
-            try:
-                export_mode = export_mode or bool(torch.jit.is_tracing())
-            except Exception:
-                pass
-            
-            converged = False
-            delta = 0.0
             for i in range(self.max_iterations):
                 xi_prev = xi
                 queries = self.query_proj(xi)
@@ -10339,27 +10327,21 @@ if TORCH_AVAILABLE:
                 xi = xi + self.dropout(self.out_proj(retrieved))
                 xi = self.norm(xi)
                 
-                if not export_mode:
-                    delta = (xi - xi_prev).abs().mean().item()
-                    if delta < self.convergence_threshold:
-                        converged = True
-                        self._last_iterations = i + 1
-                        self._last_converged = True
-                        self._last_delta = delta
-                        break
+                # Keep convergence tracking inside the tensor graph. Calling .item()
+                # or branching on tensor-derived values here breaks torch.export/ONNX.
+                self._last_delta_tensor = (xi - xi_prev).abs().mean()
             
-            if not converged:
-                self._last_iterations = self.max_iterations
-                self._last_converged = False
-                self._last_delta = delta
+            self._last_iterations = self.max_iterations
+            self._last_converged = False
             
             return xi
         
         def get_convergence_info(self) -> Dict[str, Any]:
+            delta = self._last_delta_tensor.item() if hasattr(self, '_last_delta_tensor') else 0.0
             return {
                 'iterations': self._last_iterations,
                 'converged': self._last_converged,
-                'final_delta': self._last_delta,
+                'final_delta': delta,
                 'max_iterations': self.max_iterations,
                 'threshold': self.convergence_threshold
             }
