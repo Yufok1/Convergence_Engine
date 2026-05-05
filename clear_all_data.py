@@ -503,14 +503,17 @@ def clear_all_data():
     
     # 17. Clear __pycache__ directories to prevent stale bytecode issues
     # (Ray import can fail with stale .pyc files)
+    # Only clear top-level and one level deep to avoid hanging on deep/slow filesystems
     pycache_count = 0
-    for pycache_dir in base_dir.rglob('__pycache__'):
-        if pycache_dir.is_dir():
+    pycache_dirs_to_check = [base_dir] + [d for d in base_dir.iterdir() if d.is_dir() and d.name not in ('.git', '.venv', 'node_modules', '__pycache__')]
+    for parent in pycache_dirs_to_check:
+        pycache = parent / '__pycache__'
+        if pycache.is_dir():
             try:
-                shutil.rmtree(pycache_dir)
+                shutil.rmtree(pycache)
                 pycache_count += 1
             except Exception:
-                pass  # Ignore pycache deletion failures
+                pass
     if pycache_count > 0:
         cleared_items.append(f"  ✅ Python cache: {pycache_count} directories")
         print(f"🐍 Cleared {pycache_count} __pycache__ directories")
