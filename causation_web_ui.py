@@ -59,6 +59,60 @@ RESEARCH_NOTE_TYPES = {
     "cra",
 }
 
+_HIDDEN_REASONING_BLOCK_RE = re.compile(
+    r"<(?:think|thinking|analysis|reasoning|scratchpad)\b[^>]*>.*?</(?:think|thinking|analysis|reasoning|scratchpad)>",
+    re.IGNORECASE | re.DOTALL,
+)
+_HIDDEN_REASONING_TAG_RE = re.compile(
+    r"</?(?:think|thinking|analysis|reasoning|scratchpad)\b[^>]*>",
+    re.IGNORECASE,
+)
+
+
+def _normalize_response_for_comparison(text: str) -> str:
+    return re.sub(r"\s+", " ", text or "").strip()
+
+
+def _collapse_duplicated_response(text: str) -> str:
+    """Collapse common provider failures where the same final answer is emitted twice."""
+    if not text:
+        return text
+
+    stripped = text.strip()
+    if len(stripped) < 20:
+        return stripped
+
+    midpoint = len(stripped) // 2
+    for split_at in range(max(1, midpoint - 250), min(len(stripped) - 1, midpoint + 250)):
+        left = stripped[:split_at].strip()
+        right = stripped[split_at:].strip()
+        if left and _normalize_response_for_comparison(left) == _normalize_response_for_comparison(right):
+            return left
+
+    paragraphs = re.split(r"(\n\s*\n)", stripped)
+    collapsed = []
+    last_payload = None
+    for idx in range(0, len(paragraphs), 2):
+        payload = paragraphs[idx].strip()
+        separator = paragraphs[idx + 1] if idx + 1 < len(paragraphs) else ""
+        if payload:
+            normalized = _normalize_response_for_comparison(payload)
+            if normalized != last_payload:
+                collapsed.append(payload)
+                last_payload = normalized
+        if separator and collapsed:
+            collapsed.append(separator)
+    return "".join(collapsed).strip()
+
+
+def sanitize_model_response(text: Optional[str]) -> Optional[str]:
+    """Strip leaked hidden reasoning and obvious duplicate completions before UI persistence."""
+    if not isinstance(text, str):
+        return text
+    cleaned = _HIDDEN_REASONING_BLOCK_RE.sub("", text)
+    cleaned = _HIDDEN_REASONING_TAG_RE.sub("", cleaned).strip()
+    return _collapse_duplicated_response(cleaned)
+
 
 def _notepad_timestamp() -> str:
     return datetime.utcnow().isoformat() + "Z"
@@ -3000,6 +3054,19 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "\n# YOUR ROLE: Convergence Research Assistant (CRA)\n"
         prompt += "="*80
         prompt += "\n\n"
+        prompt += "## NON-NEGOTIABLE DATA-SCIENTIST RESPONSE DISCIPLINE\n\n"
+        prompt += "- Never output hidden reasoning, scratchpads, chain-of-thought, or `<think>`/`<analysis>` style blocks. Provide conclusions and concise methodology only.\n"
+        prompt += "- Do not repeat your final answer. If provider output appears duplicated, return one clean answer.\n"
+        prompt += "- Separate what is **observed** from what is **derived** and what is **interpretation**. Give formulas for derived metrics when useful.\n"
+        prompt += "- If shared state, logs, UI text, and graph context disagree, call it a source mismatch. Quote the conflicting values with their sources/timestamps instead of forcing reconciliation.\n"
+        prompt += "- Do not invent APIs, shell commands, code calls, thresholds, phase gates, timelines, or authority you did not observe in the supplied context.\n"
+        prompt += "- Never say you deployed, injected, rewound, force-enabled, modified, or controlled the engine unless the current runtime gives you an executed result confirming that action.\n"
+        prompt += "- Configuration examples in this prompt are examples only. Do not emit CONFIG_UPDATE, SNAPSHOT_CONFIG_UPDATE, ILLUMINATE, or ORGANISM_CHAT markers unless the user explicitly asks for that specific action and you can fill valid runtime values.\n"
+        prompt += "- Treat Butterfly Chat as the confirmed direct organism communication surface when context shows the chat UI, `/api/butterfly/chat`, `/api/butterfly/chat/stream`, `/api/organism/<id>/chat`, or routing logs such as STEP_1..STEP_6. Do not claim direct organism dialog is missing when those surfaces are present.\n"
+        prompt += "- For organism-dialogue logs, analyze like a data scientist: routing strategy, total organisms available, selected_count, max_organisms, mastery filter, confidence range, empty-response count, repetition loops, long outliers, latency outliers, top tokens, and any organism IDs worth follow-up.\n"
+        prompt += "- Interpret organism text as grounded proto-language unless evidence shows fluent semantic language. Avoid translating tokens into intentions beyond the data.\n"
+        prompt += "- Do not infer that the engine is stopped from FPS=0 or a missing UI control flag alone. Fresh shared-state writes and fresh logs are stronger evidence of live telemetry.\n"
+        prompt += "- If the user says 'do all three' or similar, resolve it from the immediately preceding options. If the options are unavailable, state the ambiguity briefly and proceed with the safest observable analysis.\n\n"
         prompt += "## CRITICAL ARCHITECTURAL UNDERSTANDING:\n\n"
         prompt += "**YOU MUST UNDERSTAND THE DISTINCTION BETWEEN TWO SEPARATE SYSTEMS:**\n\n"
         prompt += "**1. THE BUTTERFLY SYSTEM (`unified_entry.py`) - THE SYSTEM BEING MONITORED:**\n"
@@ -11599,6 +11666,7 @@ Use this context to understand what the graph structure means. Match the visual 
         # Use high token limit (8192) to allow full comprehensive analysis without truncation
         response = bridge_to_use.chat(model, messages, context, max_tokens=8192)
         cra_synthesis_time = time.time() - cra_synthesis_start
+        response = sanitize_model_response(response)
         logger.info(f"[CRA] [CRA] ✓ CRA synthesis completed in {cra_synthesis_time:.2f}s")
         logger.info(f"[CRA] [Step 6/6] ✓ Response received ({len(response) if response else 0} chars)")
 

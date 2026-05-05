@@ -24722,6 +24722,14 @@
                 const message = input.value.trim();
 
                 if (!message) return;
+                if (chatRequestInFlight) {
+                    updateChatStatus('CRA request already in progress...');
+                    return;
+                }
+
+                chatRequestInFlight = true;
+                const chatSendButton = document.getElementById('chatSendButton');
+                if (chatSendButton) chatSendButton.disabled = true;
 
                 // Clear input
                 input.value = '';
@@ -24922,6 +24930,9 @@
                         if (data.error) {
                             addChatMessage('assistant', `Error: ${data.error}`, true);
                             return;
+                        }
+                        if (typeof data.response === 'string') {
+                            data.response = sanitizeCraDisplayText(data.response);
                         }
 
                         // Parse visual description to extract per-image descriptions
@@ -25607,6 +25618,11 @@
                         console.error('Error sending chat message:', err);
                         updateChatStatus('Error sending message.');
                         addChatMessage('assistant', `Error: ${err.message}`, true);
+                    })
+                    .finally(() => {
+                        chatRequestInFlight = false;
+                        const chatSendButton = document.getElementById('chatSendButton');
+                        if (chatSendButton) chatSendButton.disabled = false;
                     });
             }
 
@@ -26052,6 +26068,51 @@
             window.RECON_MESSAGES = RECON_MESSAGES;
 
             // Simple markdown renderer for chat messages
+            function normalizeResponseForComparison(text) {
+                return String(text || '').replace(/\s+/g, ' ').trim();
+            }
+
+            function collapseDuplicatedResponse(text) {
+                const stripped = String(text || '').trim();
+                if (stripped.length < 20) return stripped;
+
+                const midpoint = Math.floor(stripped.length / 2);
+                const start = Math.max(1, midpoint - 250);
+                const end = Math.min(stripped.length - 1, midpoint + 250);
+                for (let splitAt = start; splitAt < end; splitAt++) {
+                    const left = stripped.slice(0, splitAt).trim();
+                    const right = stripped.slice(splitAt).trim();
+                    if (left && normalizeResponseForComparison(left) === normalizeResponseForComparison(right)) {
+                        return left;
+                    }
+                }
+
+                const paragraphs = stripped.split(/\n\s*\n/);
+                const collapsed = [];
+                let lastPayload = null;
+                paragraphs.forEach(paragraph => {
+                    const payload = paragraph.trim();
+                    if (!payload) return;
+                    const normalized = normalizeResponseForComparison(payload);
+                    if (normalized !== lastPayload) {
+                        collapsed.push(payload);
+                        lastPayload = normalized;
+                    }
+                });
+                return collapsed.join('\n\n').trim();
+            }
+
+            function sanitizeCraDisplayText(text) {
+                if (typeof text !== 'string') return text;
+                const hiddenReasoningBlock = /<(think|thinking|analysis|reasoning|scratchpad)\b[^>]*>[\s\S]*?<\/\1>/gi;
+                const hiddenReasoningTag = /<\/?(think|thinking|analysis|reasoning|scratchpad)\b[^>]*>/gi;
+                const cleaned = text
+                    .replace(hiddenReasoningBlock, '')
+                    .replace(hiddenReasoningTag, '')
+                    .trim();
+                return collapseDuplicatedResponse(cleaned);
+            }
+
             function renderMarkdown(text) {
                 if (!text) return '';
 
@@ -26113,6 +26174,7 @@
             let userIsScrolling = false;
             let scrollTimeout = null;
             let chatMessagesDiv = null;
+            let chatRequestInFlight = false;
 
             // Track if user has manually scrolled up (disable auto-scroll until they return to bottom)
             let userHasScrolledUp = false;
@@ -26269,6 +26331,10 @@
                         console.error('Chat messages container not found');
                         return;
                     }
+                }
+
+                if ((role === 'assistant' || role === 'vision') && !isError) {
+                    message = sanitizeCraDisplayText(message);
                 }
 
                 // Queue the update instead of immediate DOM manipulation
