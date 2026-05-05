@@ -1654,6 +1654,41 @@ class ConfigManager:
 template_dir = Path(__file__).parent / 'templates'
 app = Flask(__name__, template_folder=str(template_dir))
 
+# Enable gzip compression — the HTML template is ~1.5MB inline, which chokes
+# tunnels and slow connections.  With gzip it drops to ~150-200KB.
+try:
+    from flask_compress import Compress
+    Compress(app)
+    logger.info("Flask-Compress enabled — responses will be gzipped")
+except ImportError:
+    # Fallback: manual gzip via after_request
+    import gzip as _gzip
+
+    @app.after_request
+    def _gzip_response(response):
+        if (
+            response.status_code < 200
+            or response.status_code >= 300
+            or response.direct_passthrough
+            or 'Content-Encoding' in response.headers
+            or not response.content_type.startswith(('text/', 'application/json', 'application/javascript'))
+        ):
+            return response
+        accept_encoding = request.headers.get('Accept-Encoding', '')
+        if 'gzip' not in accept_encoding.lower():
+            return response
+        data = response.get_data()
+        if len(data) < 500:
+            return response
+        compressed = _gzip.compress(data, compresslevel=6)
+        response.set_data(compressed)
+        response.headers['Content-Encoding'] = 'gzip'
+        response.headers['Content-Length'] = len(compressed)
+        response.headers['Vary'] = 'Accept-Encoding'
+        return response
+
+    logger.info("Manual gzip compression enabled (install flask-compress for better performance)")
+
 # Global error handler to ensure all exceptions return JSON (not HTML error pages)
 @app.errorhandler(Exception)
 def handle_exception(e):
