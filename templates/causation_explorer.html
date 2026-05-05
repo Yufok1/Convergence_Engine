@@ -6416,11 +6416,10 @@
                             Provider:</label>
                         <select id="craProviderSelect" onchange="onCRAProviderChange()"
                             style="width: 100%; background: #111; color: #0f0; border: 1px solid #0ff; padding: 4px; font-size: 0.85em; margin-bottom: 8px;">
-                            <option value="ollama" selected>Ollama</option>
-                            <option value="huggingface">HuggingFace Inference</option>
+                            <option value="huggingface" selected>HuggingFace Inference</option>
                         </select>
                         <div id="hfSettings"
-                            style="display: none; margin-bottom: 8px; padding: 8px; background: #001016; border: 1px dashed #0ff;">
+                            style="display: block; margin-bottom: 8px; padding: 8px; background: #001016; border: 1px dashed #0ff;">
                             <label
                                 style="color: #0ff; display: block; margin-bottom: 4px; font-size: 0.8em;">HF
                                 Token <span style="color: #fa0;">(session only)</span>:</label>
@@ -6459,31 +6458,10 @@
                                     style="color: #0ff;">Get HF token →</a>
                             </div>
                         </div>
-                        <label id="ollamaCloudLabel" style="display: block; margin-bottom: 5px; color: #0ff;">
-                            <input type="checkbox" id="ollamaCloudMode" onchange="toggleCloudMode()"
-                                style="margin-right: 5px;">
-                            <span>Use Ollama Cloud</span>
-                        </label>
-                        <div id="cloudSettings"
-                            style="display: none; margin-top: 10px; padding: 10px; background: #000; border: 1px solid #0aa;">
-                            <label style="display: block; margin-bottom: 5px; color: #0ff; font-size: 0.9em;">Ollama API
-                                Key:</label>
-                            <input type="password" id="ollamaApiKey" placeholder="Enter your Ollama API key"
-                                style="width: 100%; padding: 5px; background: #111; border: 1px solid #0aa; color: #0ff; font-size: 0.85em; margin-bottom: 10px;">
-                            <button onclick="saveOllamaConfig()"
-                                style="width: 100%; padding: 5px; background: #0aa; border: 1px solid #0ff; color: #0ff; cursor: pointer; font-size: 0.85em;">
-                                💾 Save & Apply
-                            </button>
-                            <div id="configStatus" style="margin-top: 5px; font-size: 0.8em; color: #0aa;"></div>
-                        </div>
-                        <div id="ollamaGetKeyLink" style="margin-top: 10px; font-size: 0.75em; color: #0aa;">
-                            <a href="https://ollama.com/settings/keys" target="_blank" style="color: #0ff;">Get Ollama
-                                API Key →</a>
-                        </div>
                     </div>
-                    <div id="ollamaConnectionStatus"
+                    <div id="craProviderStatus"
                         style="margin-top: 10px; padding: 5px; background: #000; border: 1px solid #0aa; font-size: 0.85em; color: #0aa;">
-                        Loading...
+                        HuggingFace active
                     </div>
                 </div>
 
@@ -15438,116 +15416,9 @@
                 return image;
             }
 
-            // Load available Ollama models
+            // Legacy entrypoint retained for older handlers; CRA now uses HuggingFace defaults only.
             function loadOllamaModels() {
-                fetch('/api/ollama/models')
-                    .then(response => response.json())
-                    .then(data => {
-                        availableModels = {
-                            text: data.text_models || [],
-                            vision: data.vision_models || []
-                        };
-
-                        // Populate model selectors
-                        const researchSelect = document.getElementById('researchModelSelect');
-                        const visionSelect = document.getElementById('visionModelSelect');
-
-                        // Clear existing options
-                        researchSelect.innerHTML = '';
-                        visionSelect.innerHTML = '';
-
-                        // Add text models
-                        if (availableModels.text && availableModels.text.length > 0) {
-                            availableModels.text.forEach(model => {
-                                const modelName = typeof model === 'string' ? model : (model.name || model.model || '');
-                                if (modelName) {
-                                    const option = document.createElement('option');
-                                    option.value = modelName;
-                                    // Mark cloud models with 🌐 indicator
-                                    const isCloud = modelName.toLowerCase().includes('-cloud') || modelName.toLowerCase().endsWith(':cloud');
-                                    option.textContent = isCloud ? `🌐 ${modelName}` : modelName;
-                                    researchSelect.appendChild(option);
-                                }
-                            });
-                            // Set first model as default if available
-                            if (researchSelect.options.length > 0) {
-                                researchSelect.selectedIndex = 0;
-                            }
-                        } else {
-                            // No text models found
-                            const option = document.createElement('option');
-                            option.value = '';
-                            option.textContent = 'No models available';
-                            researchSelect.appendChild(option);
-                        }
-
-                        const noVisionOption = document.createElement('option');
-                        noVisionOption.value = '__none__';
-                        noVisionOption.textContent = 'No vision analysis';
-                        visionSelect.appendChild(noVisionOption);
-
-                        // Add vision models
-                        if (availableModels.vision && availableModels.vision.length > 0) {
-                            availableModels.vision.forEach(model => {
-                                const modelName = typeof model === 'string' ? model : (model.name || model.model || '');
-                                if (modelName) {
-                                    const option = document.createElement('option');
-                                    option.value = modelName;
-                                    // Mark cloud models with 🌐 indicator
-                                    const isCloud = modelName.toLowerCase().includes('-cloud') || modelName.toLowerCase().endsWith(':cloud');
-                                    option.textContent = isCloud ? `🌐 ${modelName}` : modelName;
-                                    visionSelect.appendChild(option);
-                                }
-                            });
-                        } else {
-                            // No vision models found - add all models as fallback
-                            if (data.models && data.models.length > 0) {
-                                data.models.forEach(model => {
-                                    const modelName = typeof model === 'string' ? model : (model.name || model.model || '');
-                                    if (modelName) {
-                                        const option = document.createElement('option');
-                                        option.value = modelName;
-                                        // Mark cloud models with 🌐 indicator
-                                        const isCloud = modelName.toLowerCase().includes('-cloud') || modelName.toLowerCase().endsWith(':cloud');
-                                        option.textContent = isCloud ? `🌐 ${modelName}` : modelName;
-                                        visionSelect.appendChild(option);
-                                    }
-                                });
-                            } else {
-                                const option = document.createElement('option');
-                                option.value = '__none__';
-                                option.textContent = 'No vision models available';
-                                visionSelect.appendChild(option);
-                            }
-                        }
-
-                        visionSelect.value = '__none__';
-
-                        // Update status and show cloud vision hint
-                        const totalModels = (availableModels.text?.length || 0) + (availableModels.vision?.length || 0);
-                        if (totalModels > 0) {
-                            updateChatStatus(`Loaded ${totalModels} model(s)`);
-
-                            // Show hint for Ollama Cloud users about vision models
-                            if (data.is_cloud && data.cloud_vision_hint) {
-                                const hintDiv = document.getElementById('visionModelHint');
-                                if (hintDiv) {
-                                    hintDiv.innerHTML = `Vision model for cloud: <span style="color: #0ff; font-weight: bold;">${data.cloud_vision_hint}</span> is recommended`;
-                                    hintDiv.style.color = '#0aa';
-                                }
-                            }
-                        } else {
-                            updateChatStatus('No models found. Make sure Ollama is running and models are downloaded.');
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Error loading Ollama models:', err);
-                        const researchSelect = document.getElementById('researchModelSelect');
-                        const visionSelect = document.getElementById('visionModelSelect');
-                        researchSelect.innerHTML = '<option value="">Error loading models</option>';
-                        visionSelect.innerHTML = '<option value="__none__">No vision analysis</option>';
-                        updateChatStatus('Error loading models. Make sure Ollama is running.');
-                    });
+                loadHfDefaultModels();
             }
 
             function getSelectedVisionModel() {
@@ -24557,39 +24428,101 @@
             // CRA chat-provider session state — lives in this browser tab only,
             // never written to localStorage or sessionStorage. Closing the tab clears it.
             const craSession = {
-                provider: 'ollama',
+                provider: 'huggingface',
                 hfApiKey: '',
                 hfInferenceProvider: '',
                 hubSearchTimer: null,
                 lastHubResults: []
             };
+            const HF_DEFAULT_TEXT_MODEL = 'meta-llama/Llama-3.3-70B-Instruct';
+            const HF_DEFAULT_VISION_MODELS = [
+                'Qwen/Qwen2.5-VL-7B-Instruct',
+                'Qwen/Qwen2.5-VL-72B-Instruct',
+                'meta-llama/Llama-3.2-11B-Vision-Instruct',
+                'meta-llama/Llama-3.2-90B-Vision-Instruct'
+            ];
+
+            function getActiveCraProvider() {
+                const sel = document.getElementById('craProviderSelect');
+                if (sel && sel.value !== 'huggingface') {
+                    sel.value = 'huggingface';
+                }
+                craSession.provider = 'huggingface';
+                return 'huggingface';
+            }
+
+            function getSessionHfApiKey() {
+                const inp = document.getElementById('hfApiKey');
+                const val = inp ? (inp.value || '') : '';
+                craSession.hfApiKey = val;
+                return val;
+            }
+
+            function getSessionHfInferenceProvider() {
+                const sel = document.getElementById('hfInferenceProvider');
+                const val = sel ? (sel.value || '') : '';
+                craSession.hfInferenceProvider = val;
+                return val;
+            }
+
+            function populateHfVisionModels() {
+                const visionSelect = document.getElementById('visionModelSelect');
+                const hint = document.getElementById('visionModelHint');
+                if (!visionSelect) return;
+                visionSelect.innerHTML = '<option value="__none__">No vision analysis</option>';
+                HF_DEFAULT_VISION_MODELS.forEach(modelName => {
+                    const option = document.createElement('option');
+                    option.value = modelName;
+                    option.textContent = modelName;
+                    visionSelect.appendChild(option);
+                });
+                if (hint) {
+                    hint.textContent = 'Optional HuggingFace vision model. Leave disabled unless graph screenshot analysis is needed.';
+                    hint.style.color = '#888';
+                }
+            }
+
+            function loadHfDefaultModels() {
+                const researchInput = document.getElementById('researchModelSelect');
+                if (researchInput && !researchInput.value.trim()) {
+                    researchInput.value = HF_DEFAULT_TEXT_MODEL;
+                }
+                renderHubDatalist([
+                    { id: HF_DEFAULT_TEXT_MODEL, downloads: null, likes: null },
+                    { id: 'Qwen/Qwen2.5-7B-Instruct', downloads: null, likes: null },
+                    { id: 'mistralai/Mixtral-8x7B-Instruct-v0.1', downloads: null, likes: null }
+                ]);
+                populateHfVisionModels();
+                updateChatStatus('HuggingFace provider selected');
+            }
 
             function onCRAProviderChange() {
                 const sel = document.getElementById('craProviderSelect');
                 if (!sel) return;
-                craSession.provider = sel.value;
-                const isHF = sel.value === 'huggingface';
+                sel.value = 'huggingface';
+                craSession.provider = 'huggingface';
 
                 const hfPanel = document.getElementById('hfSettings');
-                if (hfPanel) hfPanel.style.display = isHF ? 'block' : 'none';
+                if (hfPanel) hfPanel.style.display = 'block';
 
-                // Hide Ollama cloud controls when HF is active so we don't clutter
                 const olCloudLabel = document.getElementById('ollamaCloudLabel');
                 const olCloudPanel = document.getElementById('cloudSettings');
                 const olGetKey = document.getElementById('ollamaGetKeyLink');
-                if (olCloudLabel) olCloudLabel.style.display = isHF ? 'none' : 'block';
-                if (olGetKey) olGetKey.style.display = isHF ? 'none' : 'block';
-                if (olCloudPanel && isHF) olCloudPanel.style.display = 'none';
+                if (olCloudLabel) olCloudLabel.style.display = 'none';
+                if (olGetKey) olGetKey.style.display = 'none';
+                if (olCloudPanel) olCloudPanel.style.display = 'none';
 
                 const hint = document.getElementById('researchModelHint');
                 if (hint) {
-                    hint.innerHTML = isHF
-                        ? 'HuggingFace mode: type to search the live HF Hub catalog (or load this provider\'s models with the button under Inference Provider).'
-                        : 'Type a model id (e.g. <code>Qwen/Qwen2.5-7B-Instruct</code>) or search the live HF catalog. Provider settings live in the sidebar under "AI Provider Settings".';
+                    hint.innerHTML = 'HuggingFace mode: type to search the live HF Hub catalog, or load a provider catalog from the sidebar.';
                 }
 
-                // Re-trigger search to repopulate datalist for the selected mode
-                onResearchModelInput();
+                const status = document.getElementById('craProviderStatus');
+                if (status) {
+                    status.innerHTML = '<span style="color: #0aa;">HuggingFace active</span>';
+                }
+
+                loadHfDefaultModels();
             }
 
             function onHfApiKeyChange() {
@@ -24612,8 +24545,7 @@
             }
 
             function onHfInferenceProviderChange() {
-                const sel = document.getElementById('hfInferenceProvider');
-                if (sel) craSession.hfInferenceProvider = sel.value || '';
+                getSessionHfInferenceProvider();
             }
 
             // Search-as-you-type against HF Hub catalog. Debounced so we only
@@ -24901,6 +24833,11 @@
                     });
                 }
 
+                const activeProvider = getActiveCraProvider();
+                const hfApiKey = getSessionHfApiKey();
+                const hfInferenceProvider = getSessionHfInferenceProvider();
+                console.log(`[CRA] Sending chat via provider=${activeProvider}, model=${researchModel}, vision=${visionModel || 'none'}`);
+
                 const requestData = {
                     message: message,
                     model: researchModel,
@@ -24910,13 +24847,13 @@
                     graph_image: graphImage,  // CURRENT state (just captured)
                     evolutionary_snapshots: evolutionarySnapshots,  // Historical snapshots (from localStorage)
                     // CRA provider dispatch — session-only state, no persistence.
-                    provider: craSession.provider || 'ollama',
-                    hf_api_key: craSession.hfApiKey || undefined,
-                    inference_provider: craSession.hfInferenceProvider || undefined
+                    provider: activeProvider,
+                    hf_api_key: hfApiKey || undefined,
+                    inference_provider: hfInferenceProvider || undefined
                 };
 
                 // Send to backend
-                fetch('/api/ollama/chat', {
+                fetch('/api/cra/chat', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -26762,43 +26699,9 @@
             }
 
             // Illumination: Root Causes
-            // Load Ollama configuration on page load
+            // Legacy entrypoint retained for older handlers; CRA provider config is HuggingFace-only.
             function loadOllamaConfig() {
-                fetch('/api/ollama/config')
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP ${response.status}`);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        // Store current timeout value
-                        if (data.timeout) {
-                            currentTimeout = parseFloat(data.timeout);
-                        }
-
-                        // Set cloud mode checkbox
-                        const cloudModeCheckbox = document.getElementById('ollamaCloudMode');
-                        const cloudSettings = document.getElementById('cloudSettings');
-
-                        if (data.is_cloud) {
-                            cloudModeCheckbox.checked = true;
-                            cloudSettings.style.display = 'block';
-                            // Don't show API key for security (but show if it's set)
-                            if (data.has_api_key) {
-                                document.getElementById('ollamaApiKey').value = '••••••••'; // Masked
-                            }
-                        } else {
-                            cloudModeCheckbox.checked = false;
-                            cloudSettings.style.display = 'none';
-                        }
-
-                        updateOllamaConnectionStatus();
-                    })
-                    .catch(err => {
-                        console.error('Error loading Ollama config:', err);
-                        updateOllamaConnectionStatus('Error loading config');
-                    });
+                updateOllamaConnectionStatus();
             }
 
             // ==================== CHECKPOINT CONTROLS ====================
@@ -26965,127 +26868,31 @@
             // Store current timeout value
             let currentTimeout = 240.0; // Default 240 seconds
 
-            // Save Ollama configuration
+            // Legacy entrypoint retained for older handlers; CRA provider config is HuggingFace-only.
             function saveOllamaConfig(useCloud = null) {
-                const cloudModeCheckbox = document.getElementById('ollamaCloudMode');
-                const apiKeyInput = document.getElementById('ollamaApiKey');
                 const statusDiv = document.getElementById('configStatus');
-
-                // Determine if we should use cloud
-                if (useCloud === null) {
-                    useCloud = cloudModeCheckbox.checked;
+                if (statusDiv) {
+                    statusDiv.innerHTML = '<span style="color: #0aa;">CRA provider is HuggingFace-only.</span>';
                 }
-
-                const config = {
-                    base_url: useCloud ? 'https://ollama.com' : 'http://localhost:11434',
-                    timeout: currentTimeout // Preserve existing timeout (default 240)
-                };
-
-                // Only include API key if using cloud mode
-                if (useCloud) {
-                    const apiKey = apiKeyInput.value;
-                    if (!apiKey || apiKey === '••••••••') {
-                        // If masked, don't send (keep existing)
-                        statusDiv.innerHTML = '<span style="color: #f00;">Please enter your API key!</span>';
-                        return;
-                    }
-                    config.api_key = apiKey;
-                } else {
-                    // Explicitly clear API key when switching to local mode
-                    config.api_key = null;
-                }
-
-                statusDiv.innerHTML = '<span style="color: #0aa;">Saving...</span>';
-
-                fetch('/api/ollama/config', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(config)
-                })
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.text().then(text => {
-                                try {
-                                    const json = JSON.parse(text);
-                                    throw new Error(json.error || `HTTP ${response.status}`);
-                                } catch (e) {
-                                    if (e instanceof Error && e.message.includes('HTTP')) {
-                                        throw e;
-                                    }
-                                    throw new Error(`HTTP ${response.status}: ${text.substring(0, 100)}`);
-                                }
-                            });
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.success) {
-                            statusDiv.innerHTML = '<span style="color: #0f0;">✅ Saved! Reloading models...</span>';
-                            // Reload models after config change (cloud models will be different)
-                            loadOllamaModels();
-                            // Test connection
-                            testOllamaConnection();
-                            // Mask the API key in the input
-                            if (useCloud && apiKeyInput.value) {
-                                apiKeyInput.type = 'password';
-                                apiKeyInput.value = '••••••••';
-                            }
-                        } else {
-                            statusDiv.innerHTML = `<span style="color: #f00;">❌ Error: ${data.error || 'Unknown error'}</span>`;
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Error saving Ollama config:', err);
-                        statusDiv.innerHTML = `<span style="color: #f00;">❌ Error: ${err.message || 'Failed to save configuration'}</span>`;
-                    });
+                updateOllamaConnectionStatus();
             }
 
-            // Test Ollama connection
+            // Legacy entrypoint retained for older handlers; no CRA provider call is made here.
             function testOllamaConnection() {
-                const statusDiv = document.getElementById('ollamaConnectionStatus');
-                statusDiv.innerHTML = '<span style="color: #0aa;">Testing connection...</span>';
-
-                fetch('/api/ollama/test', {
-                    method: 'POST'
-                })
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.text().then(text => {
-                                try {
-                                    const json = JSON.parse(text);
-                                    throw new Error(json.error || `HTTP ${response.status}`);
-                                } catch (e) {
-                                    if (e instanceof Error && e.message.includes('HTTP')) {
-                                        throw e;
-                                    }
-                                    throw new Error(`HTTP ${response.status}`);
-                                }
-                            });
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.success && data.connected) {
-                            statusDiv.innerHTML = `<span style="color: #0f0;">✅ Connected (${data.mode} mode, ${data.model_count} models)</span>`;
-                        } else {
-                            statusDiv.innerHTML = `<span style="color: #f00;">❌ Connection failed: ${data.error || 'Unknown error'}</span>`;
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Error testing Ollama connection:', err);
-                        statusDiv.innerHTML = `<span style="color: #f00;">❌ Connection error: ${err.message || 'Failed to connect'}</span>`;
-                    });
+                const statusDiv = document.getElementById('craProviderStatus');
+                if (!statusDiv) return;
+                statusDiv.innerHTML = '<span style="color: #0aa;">HuggingFace active</span>';
             }
 
             // Update connection status
             function updateOllamaConnectionStatus(message = null) {
+                const statusDiv = document.getElementById('craProviderStatus');
+                if (!statusDiv) return;
                 if (message) {
-                    document.getElementById('ollamaConnectionStatus').innerHTML = `<span style="color: #f00;">${message}</span>`;
+                    statusDiv.innerHTML = `<span style="color: #f00;">${message}</span>`;
                     return;
                 }
-                testOllamaConnection();
+                statusDiv.innerHTML = '<span style="color: #0aa;">HuggingFace active</span>';
             }
 
             // Copy all chat messages to clipboard
@@ -27196,8 +27003,8 @@
             // Initialize chat performance optimizations (must be early)
             initChatPerformance();
 
-            // Load models on page load
-            loadOllamaModels();
+            // Load CRA provider defaults on page load
+            loadHfDefaultModels();
 
             // Call updateViewState periodically to track changes (throttled for performance)
             let lastViewStateUpdate = 0;
@@ -27229,8 +27036,8 @@
                 updateSnapshotCount(); // Update display after clearing
             }
 
-            // Load Ollama configuration on page load
-            loadOllamaConfig();
+            // CRA provider status on page load.
+            updateOllamaConnectionStatus();
 
             // Load checkpoint status on page load
             loadCheckpointStatus();
@@ -28363,16 +28170,15 @@
                     : `data:image/jpeg;base64,${snapshot.image}`;
 
                 const prompt = 'Analyze this snapshot of the causation graph. Describe the visible structure, component distribution, and any notable anomalies.';
-                const baseUrlInput = document.getElementById('ollamaBaseUrlInput');
-                const apiKeyInput = document.getElementById('ollamaApiKey');
-                const baseUrlValue = baseUrlInput && baseUrlInput.value ? baseUrlInput.value : undefined;
-                const apiKeyValue = apiKeyInput && apiKeyInput.value ? apiKeyInput.value : undefined;
+                const activeProvider = getActiveCraProvider();
+                const hfApiKey = getSessionHfApiKey();
+                const hfInferenceProvider = getSessionHfInferenceProvider();
 
                 analyzeBtn.disabled = true;
                 const originalText = analyzeBtn.textContent;
                 analyzeBtn.textContent = '🔍 Analyzing...';
 
-                fetch('/api/ollama/vision', {
+                fetch('/api/cra/vision', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -28380,8 +28186,9 @@
                         image: imageData,
                         images: [imageData],
                         prompt,
-                        ollama_base_url: baseUrlValue,
-                        ollama_api_key: apiKeyValue
+                        provider: activeProvider,
+                        hf_api_key: hfApiKey || undefined,
+                        inference_provider: hfInferenceProvider || undefined
                     })
                 })
                     .then(response => response.json())

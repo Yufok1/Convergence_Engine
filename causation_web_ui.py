@@ -5158,7 +5158,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "### LIVE CAPABILITY CONTRACT (Truth Before Rapport):\n"
         prompt += "- Classify capability claims as confirmed, partly confirmed, gated, stale/noisy, or not supported.\n"
         prompt += "- Do not claim you can reach organisms from documentation alone. Report the live surface you are using.\n"
-        prompt += "- Ollama is a model provider for this CRA chat surface, not the authority over the CRA role. Direct Butterfly Chat and direct organism chat remain valid interaction surfaces when Ollama is absent or failing.\n"
+        prompt += "- HuggingFace Inference is the active CRA model provider. Direct Butterfly Chat and direct organism chat remain valid interaction surfaces when the CRA model provider is absent or failing.\n"
         prompt += "- Confirmed transport surfaces in this Web UI:\n"
         prompt += "  * Group organism chat: POST `/api/butterfly/chat` or `/api/butterfly/chat/stream` with `message`, `routing_strategy`, and `max_organisms`.\n"
         prompt += "  * Direct 1:1 organism chat: POST `/api/organism/<organism_id>/chat` with `message`.\n"
@@ -5454,20 +5454,41 @@ class HuggingFaceBridge:
         self.headers = {"Content-Type": "application/json"}
         if self.api_key:
             self.headers["Authorization"] = f"Bearer {self.api_key}"
+        self.last_error: Optional[str] = None
+        self.last_status_code: Optional[int] = None
+        self.last_response_text: Optional[str] = None
 
     def is_configured(self) -> bool:
         return bool(self.api_key)
 
+    def _clear_failure(self) -> None:
+        self.last_error = None
+        self.last_status_code = None
+        self.last_response_text = None
+
+    def _remember_failure(self, exc: Exception) -> None:
+        self.last_error = str(exc)
+        self.last_status_code = None
+        self.last_response_text = None
+        response = getattr(exc, "response", None)
+        if response is not None:
+            self.last_status_code = getattr(response, "status_code", None)
+            try:
+                self.last_response_text = (response.text or "")[:1000]
+            except Exception:
+                self.last_response_text = None
+
     def chat(self, model: str, messages: List[Dict[str, str]],
              context: Dict[str, Any] = None,
              max_tokens: int = None) -> Optional[str]:
-        """OpenAI-compatible chat completion. Signature matches OllamaBridge.chat
-        so /api/ollama/chat dispatch is drop-in.
+        """OpenAI-compatible chat completion for the CRA HuggingFace route.
 
         If `context` includes a 'system' string, it is prepended as a system
         message (matches how OllamaBridge consumes context dicts).
         """
+        self._clear_failure()
         if not self.api_key:
+            self.last_error = "HuggingFace token required"
             logger.warning("[HuggingFaceBridge] No API key — public-demo flow "
                            "requires user-provided HF token per session.")
             return None
@@ -5491,8 +5512,134 @@ class HuggingFaceBridge:
             data = response.json()
             return data["choices"][0]["message"]["content"]
         except Exception as exc:
-            logger.error(f"[HuggingFaceBridge] chat failed: {exc}")
+            self._remember_failure(exc)
+            detail = f" status={self.last_status_code} body={self.last_response_text[:500]}" if self.last_status_code else ""
+            logger.error(f"[HuggingFaceBridge] chat failed: {exc}{detail}")
             return None
+
+    def _image_url_payload(self, image: str) -> dict:
+        image_text = str(image or "").strip()
+        if not image_text.startswith("data:image/"):
+            image_text = f"data:image/png;base64,{image_text}"
+        return {"type": "image_url", "image_url": {"url": image_text}}
+
+    def _extract_annotations(self, text: str) -> Optional[dict]:
+        if not text:
+            return None
+        patterns = [
+            r'\{\s*"annotations"\s*:\s*\[[\s\S]*?\]\s*\}',
+            r'\{[^{}]*"annotations"\s*:\s*\[[\s\S]*?\][^{}]*\}',
+            r'\{(?:[^{}]|(?:\{[^{}]*\}))*\s*"annotations"\s*:\s*\[[\s\S]*?\][\s\S]*?\}',
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, text, re.DOTALL)
+            if not match:
+                continue
+            try:
+                parsed = json.loads(match.group(0))
+                if isinstance(parsed, dict) and isinstance(parsed.get("annotations"), list):
+                    return parsed
+            except json.JSONDecodeError:
+                continue
+        return None
+
+    def vision(self, model: str, images: List[str], prompt: str) -> Optional[str]:
+        """OpenAI-compatible multimodal chat completion via HF Router."""
+        self._clear_failure()
+        if not self.api_key:
+            self.last_error = "HuggingFace token required"
+            logger.warning("[HuggingFaceBridge] No API key for vision request.")
+            return None
+        if isinstance(images, str):
+            images = [images]
+        images = [img for img in (images or []) if isinstance(img, str) and img.strip()]
+        if not images:
+            self.last_error = "No images provided"
+            logger.warning("[HuggingFaceBridge] vision called without images.")
+            return None
+
+        content = [{"type": "text", "text": prompt or "Describe this image."}]
+        content.extend(self._image_url_payload(img) for img in images)
+        payload = {
+            "model": model or self.DEFAULT_VISION_MODEL,
+            "messages": [{"role": "user", "content": content}],
+            "max_tokens": 2048,
+        }
+        url = f"{self.base_url}/chat/completions"
+        try:
+            response = requests.post(url, json=payload, headers=self.headers, timeout=self.timeout)
+            if response.status_code >= 400:
+                logger.error(
+                    "[HuggingFaceBridge] vision failed HTTP %s: %s",
+                    response.status_code,
+                    response.text[:500],
+                )
+            response.raise_for_status()
+            data = response.json()
+            return data["choices"][0]["message"]["content"]
+        except Exception as exc:
+            self._remember_failure(exc)
+            logger.error(f"[HuggingFaceBridge] vision failed: {exc}", exc_info=True)
+            return None
+
+    def analyze_sequence(self, model: str, images: List[str], prompt: str,
+                         snapshot_contexts: Optional[List[str]] = None,
+                         temporal_deltas: Optional[List[str]] = None) -> tuple[Optional[str], Optional[List[Optional[dict]]]]:
+        """Analyze image sequence through HF Router one frame at a time."""
+        if not images:
+            return None, None
+        snapshot_contexts = list(snapshot_contexts or [])
+        temporal_deltas = list(temporal_deltas or [])
+        descriptions: list[str] = []
+        per_image_annotations: list[Optional[dict]] = []
+        total = len(images)
+        for idx, image in enumerate(images):
+            context_bits = []
+            if idx < len(snapshot_contexts) and snapshot_contexts[idx]:
+                context_bits.append(f"System context:\n{snapshot_contexts[idx]}")
+            if idx < len(temporal_deltas) and temporal_deltas[idx]:
+                context_bits.append(f"Temporal delta:\n{temporal_deltas[idx]}")
+            context_section = "\n\n".join(context_bits)
+            frame_prompt = (
+                f"You are analyzing image {idx + 1} of {total} from a causation graph sequence.\n\n"
+                f"{context_section}\n\n"
+                f"{prompt}\n\n"
+                "Return a concise visual description. If useful, include a JSON object with an annotations array."
+            )
+            desc = self.vision(model, [image], frame_prompt)
+            if desc:
+                descriptions.append(f"Image {idx + 1}/{total}: {desc}")
+                per_image_annotations.append(self._extract_annotations(desc))
+            else:
+                descriptions.append(f"Image {idx + 1}/{total}: [Analysis failed]")
+                per_image_annotations.append(None)
+        if not descriptions:
+            return None, None
+        return "\n\n".join(descriptions), per_image_annotations if any(per_image_annotations) else None
+
+
+def _hf_bridge_error_response(bridge: HuggingFaceBridge, fallback: str,
+                              model: str = None, inference_provider: str = None):
+    """Return a provider-specific failure receipt without mislabeling it as Ollama."""
+    status_code = getattr(bridge, "last_status_code", None)
+    detail = getattr(bridge, "last_response_text", None) or getattr(bridge, "last_error", None)
+    http_status = status_code if isinstance(status_code, int) and 400 <= status_code < 600 else 502
+    if status_code == 429:
+        error = "HuggingFace rate limit reached for this provider/model."
+    elif status_code in (400, 401, 403, 404):
+        error = f"HuggingFace request failed with HTTP {status_code}."
+    else:
+        error = fallback
+    payload = {
+        "error": error,
+        "provider": "huggingface",
+        "model": model,
+        "inference_provider": inference_provider or "auto",
+        "upstream_status": status_code,
+    }
+    if detail:
+        payload["details"] = str(detail)[:1000]
+    return jsonify(payload), http_status
 
 
 class LogParser:
@@ -11175,8 +11322,8 @@ def list_ollama_models():
         return jsonify({'error': str(e), 'models': [], 'text_models': [], 'vision_models': []}), 500
 
 
-@app.route('/api/ollama/chat', methods=['POST'])
-def ollama_chat():
+@app.route('/api/cra/chat', methods=['POST'])
+def cra_chat():
     """Send message to research assistant with complete context"""
     request_start_time = time.time()
     logger.info(f"[CRA] ===== Starting CRA chat request at {time.strftime('%H:%M:%S', time.localtime(request_start_time))} =====")
@@ -11184,9 +11331,9 @@ def ollama_chat():
     try:
         data = request.get_json()
         message = data.get('message', '')
-        model = data.get('model', 'llama2')
+        model = data.get('model') or HuggingFaceBridge.DEFAULT_MODEL
         logger.info(f"[CRA] User message: {message[:100]}..." if len(message) > 100 else f"[CRA] User message: {message}")
-        logger.info(f"[CRA] Using model: {model}")
+        logger.info(f"[CRA] Requested model: {model}")
         view_state = data.get('view_state', {})
         selected_event = data.get('selected_event')
         graph_image = data.get('graph_image')  # base64 image if provided
@@ -11245,12 +11392,31 @@ def ollama_chat():
         if not message:
             return jsonify({'error': 'Message is required'}), 400
 
-        # Provider dispatch — Ollama is the default, HuggingFace is the second
-        # implementation. Public-demo posture: API keys are session-only, passed
-        # in the request body, never persisted server-side.
-        provider = (data.get('provider') or 'ollama').strip().lower()
+        # Provider dispatch. Public-demo posture: API keys are session-only,
+        # passed in the request body, never persisted server-side.
         inference_provider = data.get('inference_provider')  # optional HF sub-provider
         hf_api_key = data.get('hf_api_key')  # separate slot from Ollama key
+        provider_raw = data.get('provider')
+        if provider_raw:
+            provider = str(provider_raw).strip().lower()
+        else:
+            provider = 'huggingface'
+        if provider in ('huggingface', 'hf') and isinstance(model, str):
+            model_text = model.strip()
+            if not model_text or ':' in model_text or model_text.lower() in {'llama2', 'llama3', 'mistral', 'gemma'}:
+                model = HuggingFaceBridge.DEFAULT_MODEL
+        elif provider in ('ollama', 'local'):
+            return jsonify({
+                'error': 'Ollama is disabled for CRA chat. Use HuggingFace Inference through /api/cra/chat.',
+                'provider': provider
+            }), 410
+        else:
+            return jsonify({
+                'error': f"Unsupported CRA provider '{provider}'. Use HuggingFace Inference.",
+                'provider': provider
+            }), 400
+        logger.info(f"[CRA] Provider resolved: {provider}")
+        logger.info(f"[CRA] Resolved model: {model}")
 
         if provider in ('huggingface', 'hf'):
             bridge_to_use = HuggingFaceBridge(
@@ -11262,14 +11428,7 @@ def ollama_chat():
                     'error': 'HuggingFace token required for this session. Paste your HF token (starts with "hf_") in the API key field. The token is held in this browser session only and is never saved.',
                     'provider': 'huggingface'
                 }), 400
-        elif user_api_key:
-            bridge_to_use = OllamaBridge(
-                base_url=ollama_bridge.base_url,
-                timeout=ollama_bridge.timeout,
-                api_key=user_api_key
-            )
-        else:
-            bridge_to_use = ollama_bridge
+        provider_label = 'HuggingFace'
 
         # Update time-series tracker with current state
         try:
@@ -11662,7 +11821,7 @@ Use this context to understand what the graph structure means. Match the visual 
         logger.info(f"[CRA] [Step 6/6] ===== Sending to CRA model for synthesis ===== ({time.time() - request_start_time:.2f}s elapsed)")
         logger.info(f"[CRA] [CRA] Model: {model}, Message length: {len(message)} chars, Context size: {len(str(context))} chars")
         cra_synthesis_start = time.time()
-        logger.info(f"[CRA] [CRA] Calling Ollama chat API...")
+        logger.info(f"[CRA] [CRA] Calling {provider_label} chat API...")
         # Use high token limit (8192) to allow full comprehensive analysis without truncation
         response = bridge_to_use.chat(model, messages, context, max_tokens=8192)
         cra_synthesis_time = time.time() - cra_synthesis_start
@@ -11671,8 +11830,13 @@ Use this context to understand what the graph structure means. Match the visual 
         logger.info(f"[CRA] [Step 6/6] ✓ Response received ({len(response) if response else 0} chars)")
 
         if response is None:
-            logger.error(f"[CRA] [CRA] ✗ Failed to get response from Ollama after {cra_synthesis_time:.2f}s")
-            return jsonify({'error': 'Failed to get response from Ollama'}), 500
+            logger.error(f"[CRA] [CRA] ✗ Failed to get response from {provider_label} after {cra_synthesis_time:.2f}s")
+            return _hf_bridge_error_response(
+                bridge_to_use,
+                f'Failed to get response from {provider_label}',
+                model=model,
+                inference_provider=inference_provider,
+            )
 
         total_time = time.time() - request_start_time
         logger.info(f"[CRA] ===== CRA request completed in {total_time:.2f}s total =====")
@@ -11790,7 +11954,7 @@ Use this context to understand what the graph structure means. Match the visual 
             'predictions': len(context.get('predictive_insights', {}))
         })
     except Exception as e:
-        logger.error(f"Error in Ollama chat: {e}", exc_info=True)
+        logger.error(f"Error in CRA chat: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 
@@ -12763,17 +12927,36 @@ def chat_with_organism(organism_id):
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/ollama/vision', methods=['POST'])
-def ollama_vision():
+@app.route('/api/cra/vision', methods=['POST'])
+def cra_vision():
     """Analyze graph view with vision model"""
     try:
         data = request.get_json()
         image_base64 = data.get('image')
         image_list = data.get('images')
-        model = data.get('model', 'qwen3-vl:235b-instruct')
+        model = data.get('model') or HuggingFaceBridge.DEFAULT_VISION_MODEL
         prompt = data.get('prompt', 'Describe what you see in this causation graph visualization.')
-        user_api_key = data.get('api_key') or data.get('ollama_api_key')
-        custom_base_url = data.get('ollama_base_url')
+        hf_api_key = data.get('hf_api_key')
+        inference_provider = data.get('inference_provider')
+        provider_raw = data.get('provider')
+        if provider_raw:
+            provider = str(provider_raw).strip().lower()
+        else:
+            provider = 'huggingface'
+        if provider in ('huggingface', 'hf') and isinstance(model, str):
+            model_text = model.strip()
+            if not model_text or ':' in model_text:
+                model = HuggingFaceBridge.DEFAULT_VISION_MODEL
+        elif provider in ('ollama', 'local'):
+            return jsonify({
+                'error': 'Ollama is disabled for CRA vision. Use HuggingFace Inference through /api/cra/vision.',
+                'provider': provider
+            }), 410
+        else:
+            return jsonify({
+                'error': f"Unsupported CRA vision provider '{provider}'. Use HuggingFace Inference.",
+                'provider': provider
+            }), 400
 
         normalized_images = []
         if image_base64:
@@ -12785,29 +12968,41 @@ def ollama_vision():
                     normalized_images.append(img)
                     list_count += 1
 
-        logger.info(f"/api/ollama/vision payload received: primary_image={'yes' if image_base64 else 'no'}, list_images={list_count}, total_after_normalize={len(normalized_images)}")
+        logger.info(f"/api/cra/vision payload received: primary_image={'yes' if image_base64 else 'no'}, list_images={list_count}, total_after_normalize={len(normalized_images)}")
 
         if not normalized_images:
-            logger.warning(f"/api/ollama/vision received request without images (keys: {list(data.keys())})")
+            logger.warning(f"/api/cra/vision received request without images (keys: {list(data.keys())})")
             return jsonify({'error': 'Image is required'}), 400
 
-        # Use user's API key if provided, otherwise use server default
-        bridge_to_use = ollama_bridge
-        if user_api_key or custom_base_url:
-            bridge_to_use = OllamaBridge(
-                base_url=custom_base_url or ollama_bridge.base_url,
-                timeout=ollama_bridge.timeout,
-                api_key=user_api_key
-            )
+        bridge_to_use = HuggingFaceBridge(
+            api_key=hf_api_key or data.get('api_key'),
+            inference_provider=inference_provider,
+        )
+        if not bridge_to_use.is_configured():
+            return jsonify({
+                'error': 'HuggingFace token required for vision analysis.',
+                'provider': 'huggingface'
+            }), 400
 
         try:
-            logger.info(f"/api/ollama/vision analyzing {len(normalized_images)} image(s) with model {model}")
+            logger.info(f"/api/cra/vision analyzing {len(normalized_images)} image(s) with provider={provider}, model={model}")
             if len(normalized_images) == 1:
                 response = bridge_to_use.vision(model, normalized_images[0], prompt)
+                per_image_annotations = None
             else:
-                response = bridge_to_use.analyze_sequence(model, normalized_images, prompt)
+                vision_result = bridge_to_use.analyze_sequence(model, normalized_images, prompt)
+                if isinstance(vision_result, tuple):
+                    response, per_image_annotations = vision_result
+                else:
+                    response = vision_result
+                    per_image_annotations = None
             if response is None:
-                return jsonify({'error': 'Failed to get response from vision model'}), 500
+                return _hf_bridge_error_response(
+                    bridge_to_use,
+                    'Failed to get response from vision model',
+                    model=model,
+                    inference_provider=inference_provider,
+                )
 
             annotations = None
             try:
@@ -12818,13 +13013,18 @@ def ollama_vision():
             except Exception as e:
                 logger.debug(f"Could not parse annotations from vision response: {e}")
 
-            return jsonify({'description': response, 'annotations': annotations})
+            return jsonify({
+                'description': response,
+                'annotations': annotations,
+                'per_image_annotations': per_image_annotations,
+                'provider': provider,
+            })
         except Exception as e:
             error_msg = str(e)
-            logger.error(f"Error in Ollama vision: {error_msg}", exc_info=True)
+            logger.error(f"Error in CRA vision: {error_msg}", exc_info=True)
             return jsonify({'error': error_msg}), 500
     except Exception as e:
-        logger.error(f"Error in Ollama vision endpoint: {e}", exc_info=True)
+        logger.error(f"Error in CRA vision endpoint: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 
@@ -13128,9 +13328,9 @@ def cra_hub_provider_models(provider):
 def post_chat_history_endpoint():
     """Append a chat message externally (shadow-CRA / Champion Council / agent bridge).
 
-    Lets external agents seed the CRA chat panel when /api/ollama/chat is
-    unreachable (Ollama down on HF Space) or when an MCP-side agent wants its
-    voice mirrored into the operator-facing chat surface.
+    Lets external agents seed the CRA chat panel when the live CRA provider
+    route is unavailable or when an MCP-side agent wants its voice mirrored
+    into the operator-facing chat surface.
 
     Body: {"role": "assistant"|"user"|"system"|"shadow_cra", "message": str,
            "source": optional str}
