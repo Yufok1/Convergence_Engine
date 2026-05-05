@@ -2,16 +2,16 @@ https://netron.app/
 
 ssh -R 80:localhost:5000 nokey@localhost.run
 
+python live_dashboard.py
+
+cd Convergence_Engine 
+
+git clone https://github.com/Yufok1/Convergence_Engine
+
 python -m venv venv 
  
 source venv/bin/activate 
 
-python live_dashboard.py
-
-git clone https://github.com/Yufok1/Convergence_Engine
-
-cd Convergence_Engine 
- 
 pip install -r requirements.txt 
  
 python build_curated_dataset.py 
