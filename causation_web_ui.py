@@ -13120,9 +13120,18 @@ def get_simulation_status():
         control_file.parent.mkdir(parents=True, exist_ok=True)
 
         # Status checks must be read-only. A missing control file means no
-        # explicit run signal has been written yet; do not create STOPPED state here.
+        # explicit run signal has been written yet via the web UI.
+        # The simulation itself runs independently (unified_entry.py) and writes
+        # logs/shared_state continuously. This control file only governs the
+        # web UI's graph viewer — not the organisms.
         if not control_file.exists():
-            return jsonify({'running': False, 'paused': True, 'status': 'stopped', 'missing_control_file': True})
+            return jsonify({
+                'running': False,
+                'paused': True,
+                'status': 'viewer_not_started',
+                'missing_control_file': True,
+                'note': 'Simulation runs independently. This status reflects the graph viewer, not the organisms.'
+            })
 
         with open(control_file, 'r') as f:
             control = json.load(f)
