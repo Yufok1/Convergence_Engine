@@ -11,6 +11,32 @@ pinned: false
 Convergence Engine Quick Reference
 ==================================
 
+One-command launcher
+--------------------
+
+![Green](assets/spectrum/green.svg) **Green / instant:** skip the whole guide. This launches everything.
+
+```bash
+bash /data/work/Convergence_Engine/start_web_tunnel.sh
+```
+
+That single command does all of this:
+1. Creates the venv and installs deps (if needed)
+2. Starts `unified_entry.py` (the world)
+3. Starts `live_dashboard.py` (the TUI dashboard)
+4. Starts `causation_web_ui.py` (the web UI)
+5. Opens the SSH tunnel
+
+Copy the `https://xxxxx.lhr.life` link it prints and paste it in your browser.
+
+If you haven't cloned the repo yet, do this first:
+
+```bash
+cd /data/work && git clone https://github.com/Yufok1/Convergence_Engine.git
+```
+
+---
+
 Range of ranges
 ---------------
 
@@ -570,20 +596,60 @@ python cra_cli.py alliances
 Useful dashboard commands
 -------------------------
 
-![Cyan](assets/spectrum/cyan.svg) **Cyan / sightlines:** open a second view without disturbing the running world.
+![Cyan](assets/spectrum/cyan.svg) **Cyan / sightlines:** these three run together. All mandatory. One terminal each.
 
-Open another terminal. Activate the engine virtualenv again. Then run one box at a time:
+**Terminal 1** — the world (already running if you used the launcher):
 
 ```bash
 . /home/user/.venvs/convergence-engine/bin/activate
 ```
 
 ```bash
+cd /data/work/Convergence_Engine
+```
+
+```bash
+python unified_entry.py --config config.json --no-viz --debug
+```
+
+**Terminal 2** — the live dashboard:
+
+```bash
+. /home/user/.venvs/convergence-engine/bin/activate
+```
+
+```bash
+cd /data/work/Convergence_Engine
+```
+
+```bash
 python live_dashboard.py
+```
+
+**Terminal 3** — the web UI + tunnel:
+
+```bash
+. /home/user/.venvs/convergence-engine/bin/activate
+```
+
+```bash
+cd /data/work/Convergence_Engine
 ```
 
 ```bash
 python causation_web_ui.py
+```
+
+Wait for `Running on http://0.0.0.0:5000`, then in a **Terminal 4**:
+
+```bash
+ssh -R 80:localhost:5000 nokey@localhost.run
+```
+
+Or skip all of that and use the one-command launcher:
+
+```bash
+bash /data/work/Convergence_Engine/start_web_tunnel.sh
 ```
 
 Talk and poke
@@ -674,7 +740,7 @@ If it asks to continue connecting, type:
 yes
 ```
 
-The tunnel prints a URL like `https://xxxx.lhr.life`. Open that in your browser. If the page is blank, the web UI is not running � go back and check the terminal where you started `causation_web_ui.py`.
+The tunnel prints a URL like `https://xxxx.lhr.life`. Open that in your browser. If the page is blank, the web UI is not running � go back and check the terminal where you started `causation_web_ui.py`.
 
 Optional smaller vocabulary
 ---------------------------
@@ -840,6 +906,19 @@ techlady
 ```
 
 Build the language food. Start the world. Play Pokemon AI, baby.
+
+---
+
+One-command launcher (again, because scrolling sucks)
+-----------------------------------------------------
+
+![Green](assets/spectrum/green.svg) **Green / instant:** this is the same command from the top. It launches everything.
+
+```bash
+bash /data/work/Convergence_Engine/start_web_tunnel.sh
+```
+
+Starts unified_entry (world) → live_dashboard (TUI) → causation_web_ui (web) → opens tunnel. Copy the link, paste in browser, done.
 
 
 
