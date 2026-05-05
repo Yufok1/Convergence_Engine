@@ -8,9 +8,11 @@ cd Convergence_Engine
 
 git clone https://github.com/Yufok1/Convergence_Engine
 
-python -m venv venv 
+python -m venv venv
  
-source venv/bin/activate 
+.\venv\Scripts\Activate.ps1   (windows)
+
+. /source venv/bin/activate 
 
 pip install -r requirements.txt 
  
@@ -24,4 +26,4 @@ python distill_vocabulary.py --input data/seeded_knowledge_web_250k.json --outpu
 
 python reality_simulator/language/expand_knowledge_web.py --input data/seeded_knowledge_web_250k.json --output data/seeded_knowledge_web_expanded.json --concepts 50000 --min-weight 1.5
 
-python unified_entry.py --config config_vast_xeon_1.5tb_genesis.json --no-viz --debug
+python unified_entry.py --config config.json --no-viz --debug
