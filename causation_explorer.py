@@ -6420,7 +6420,7 @@
                             <option value="huggingface" selected>HuggingFace Inference</option>
                         </select>
                         <div id="hfSettings"
-                            style="display: none; margin-bottom: 8px; padding: 8px; background: #001016; border: 1px dashed #0ff;">
+                            style="display: block; margin-bottom: 8px; padding: 8px; background: #001016; border: 1px dashed #0ff;">
                             <label
                                 style="color: #0ff; display: block; margin-bottom: 4px; font-size: 0.8em;">HF
                                 Token <span style="color: #fa0;">(session only)</span>:</label>
