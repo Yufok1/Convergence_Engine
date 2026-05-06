@@ -5178,8 +5178,17 @@
         #craChatPanel {
             border-color: #FF00FF;
             box-shadow: 0 0 25px rgba(255, 0, 255, 0.5), inset 0 0 15px rgba(0, 0, 0, 0.6);
-            transition: max-height 0.3s ease, padding 0.3s ease;
+            transition: max-height 0.3s ease, padding 0.3s ease, border-color 0.25s ease, box-shadow 0.25s ease;
             overflow: hidden;
+        }
+
+        #craChatPanel.cra-oracle-active {
+            border-color: #38ff7a;
+            box-shadow:
+                0 0 18px rgba(56, 255, 122, 0.55),
+                0 0 38px rgba(0, 216, 255, 0.32),
+                0 0 58px rgba(255, 0, 255, 0.22),
+                inset 0 0 18px rgba(0, 0, 0, 0.72);
         }
 
         #craChatPanel h3 {
@@ -5483,6 +5492,12 @@
         #chatMessages {
             scrollbar-width: thin;
             scrollbar-color: #0ff #000;
+            background:
+                linear-gradient(180deg, rgba(0, 255, 180, 0.055), rgba(0, 0, 0, 0) 120px),
+                #000 !important;
+            border: 2px solid rgba(0, 255, 255, 0.65) !important;
+            padding: 14px !important;
+            box-shadow: inset 0 0 22px rgba(0, 255, 255, 0.12);
         }
 
         #chatMessages::-webkit-scrollbar {
@@ -5499,10 +5514,20 @@
         }
 
         .chat-message {
-            margin-bottom: 15px;
-            padding: 8px;
-            border-left: 3px solid #0ff;
-            background: #111;
+            --chat-role-color: #0ff;
+            position: relative;
+            margin: 0 0 18px 0;
+            padding: 14px 16px 16px 16px;
+            border: 1px solid rgba(0, 255, 255, 0.42);
+            border-left: 6px solid var(--chat-role-color);
+            border-radius: 6px;
+            background:
+                linear-gradient(135deg, rgba(7, 17, 20, 0.98), rgba(2, 5, 7, 0.98));
+            box-shadow:
+                0 0 0 1px rgba(255, 255, 255, 0.035),
+                0 10px 22px rgba(0, 0, 0, 0.34),
+                inset 0 0 18px rgba(0, 0, 0, 0.34);
+            overflow: hidden;
             /* Performance optimizations */
             content-visibility: auto;
             contain-intrinsic-size: auto 100px;
@@ -5510,21 +5535,219 @@
             /* Force GPU acceleration */
         }
 
+        .chat-message + .chat-message {
+            margin-top: 20px;
+        }
+
+        .chat-message::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--chat-role-color), rgba(255, 255, 255, 0.18), transparent);
+            opacity: 0.82;
+        }
+
+        .chat-message::after {
+            content: "#" attr(data-message-index);
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            color: rgba(255, 255, 255, 0.36);
+            font-size: 0.72em;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0;
+        }
+
         .chat-message.user {
-            border-left-color: #0f0;
+            --chat-role-color: #38ff7a;
+            border-color: rgba(56, 255, 122, 0.38);
+            background:
+                linear-gradient(135deg, rgba(4, 28, 16, 0.96), rgba(2, 7, 5, 0.98));
         }
 
         .chat-message.assistant {
-            border-left-color: #0ff;
+            --chat-role-color: #00e5ff;
+            border-color: rgba(0, 229, 255, 0.42);
+        }
+
+        .chat-message.system {
+            --chat-role-color: #ff62d9;
+            border-color: rgba(255, 98, 217, 0.42);
         }
 
         .chat-message.vision {
-            border-left-color: #ff0;
+            --chat-role-color: #ffd54a;
+            border-color: rgba(255, 213, 74, 0.42);
             font-style: italic;
         }
 
+        .chat-message.error {
+            --chat-role-color: #ff445c;
+            border-color: rgba(255, 68, 92, 0.6);
+        }
+
+        .chat-message.assistant.cra-response-fresh::before {
+            animation: craMessageShimmer 2.4s ease-out 1;
+            background: linear-gradient(90deg, transparent, #38ff7a, #00e5ff, #ffd54a, #ff62d9, transparent);
+            background-size: 240% 100%;
+        }
+
+        .chat-message-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 22px;
+            margin-bottom: 10px;
+            padding-right: 52px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+        }
+
         .chat-message strong {
-            color: #0ff;
+            color: var(--chat-role-color);
+        }
+
+        .chat-message-body {
+            line-height: 1.64;
+            overflow-wrap: anywhere;
+            word-break: normal;
+        }
+
+        .cra-dragon-status {
+            display: none;
+            grid-template-columns: minmax(220px, 1fr) auto;
+            align-items: center;
+            gap: 12px;
+            margin: 0 0 10px 0;
+            padding: 8px 10px;
+            border: 1px solid rgba(56, 255, 122, 0.55);
+            border-radius: 6px;
+            background:
+                linear-gradient(90deg, rgba(7, 30, 18, 0.92), rgba(5, 15, 24, 0.94), rgba(35, 7, 34, 0.86));
+            box-shadow:
+                0 0 14px rgba(56, 255, 122, 0.28),
+                inset 0 0 16px rgba(0, 0, 0, 0.48);
+        }
+
+        .cra-dragon-status.active {
+            display: grid;
+            animation: craStatusPulse 1.8s ease-in-out infinite alternate;
+        }
+
+        .cra-dragon-field {
+            position: relative;
+            height: 42px;
+            min-width: 220px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 229, 255, 0.38);
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .cra-dragon-letters {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            align-items: center;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.32);
+            font-size: 1.42em;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+        }
+
+        .cra-dragon-ascii {
+            position: absolute;
+            top: 11px;
+            left: 0;
+            color: #38ff7a;
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            white-space: nowrap;
+            text-shadow:
+                0 0 5px rgba(56, 255, 122, 0.9),
+                0 0 12px rgba(0, 229, 255, 0.8),
+                0 0 18px rgba(255, 98, 217, 0.45);
+            animation: craDragonWeave 2.45s linear infinite;
+        }
+
+        .cra-spark {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #ffd54a;
+            box-shadow: 0 0 8px rgba(255, 213, 74, 0.9);
+            animation: craSparkDrift 1.45s ease-in-out infinite;
+        }
+
+        .cra-spark.s1 { left: 10%; top: 12px; animation-delay: 0s; }
+        .cra-spark.s2 { left: 28%; top: 27px; background: #00e5ff; animation-delay: 0.22s; }
+        .cra-spark.s3 { left: 47%; top: 8px; background: #ff62d9; animation-delay: 0.44s; }
+        .cra-spark.s4 { left: 66%; top: 30px; background: #38ff7a; animation-delay: 0.66s; }
+        .cra-spark.s5 { left: 84%; top: 13px; background: #ffd54a; animation-delay: 0.88s; }
+
+        .cra-dragon-caption {
+            color: #c8ffe1;
+            font-size: 0.78em;
+            font-family: 'Courier New', monospace;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        #chatStatus.cra-status-text {
+            min-height: 18px;
+            color: #0aa;
+            font-size: 0.8em;
+            margin-top: 5px;
+        }
+
+        @keyframes craDragonWeave {
+            0% { left: -22%; transform: translateY(9px) scaleX(1); }
+            16% { left: 10%; transform: translateY(-5px) scaleX(1); }
+            32% { left: 32%; transform: translateY(9px) scaleX(1); }
+            50% { left: 55%; transform: translateY(-5px) scaleX(1); }
+            66% { left: 78%; transform: translateY(9px) scaleX(1); }
+            82% { left: 102%; transform: translateY(-5px) scaleX(1); }
+            83% { left: 102%; transform: translateY(-5px) scaleX(-1); }
+            100% { left: -22%; transform: translateY(9px) scaleX(-1); }
+        }
+
+        @keyframes craSparkDrift {
+            0%, 100% { opacity: 0.18; transform: translate(0, 0) scale(0.8); }
+            45% { opacity: 1; transform: translate(8px, -8px) scale(1.15); }
+            70% { opacity: 0.72; transform: translate(-5px, 5px) scale(1); }
+        }
+
+        @keyframes craStatusPulse {
+            from { border-color: rgba(56, 255, 122, 0.44); }
+            to { border-color: rgba(255, 213, 74, 0.74); }
+        }
+
+        @keyframes craMessageShimmer {
+            from { background-position: 180% 0; opacity: 1; }
+            to { background-position: -80% 0; opacity: 0.55; }
+        }
+
+        @media (max-width: 760px) {
+            .cra-dragon-status {
+                grid-template-columns: 1fr;
+            }
+
+            .cra-dragon-caption {
+                text-align: left;
+                white-space: normal;
+            }
+
+            .chat-message {
+                padding-right: 12px;
+            }
+
+            .chat-message-header {
+                padding-right: 48px;
+            }
         }
 
         /* HIGH CONTRAST INFORMATION DISPLAY - Different elements use different colors */
@@ -6738,16 +6961,31 @@
                         </div>
                         <div id="chatMessages"
                             style="height: 550px; overflow-y: auto; background: #000; border: 1px solid #0ff; padding: 10px; margin-bottom: 10px; font-size: 0.9em; will-change: scroll-position; contain: layout style paint;">
-                            <div style="color: #0aa; margin-bottom: 10px;">CRA: Hello! I'm your Convergence Research
-                                Assistant. I have access to all system logs, shared state, and the causation graph. Ask me
-                                anything about the Butterfly System!</div>
+                            <div class="chat-message assistant" data-message-index="000">
+                                <div class="chat-message-header">
+                                    <strong>CRA:</strong>
+                                </div>
+                                <div class="chat-message-body">Hello! I'm your Convergence Research Assistant. I have access to all system logs, shared state, and the causation graph. Ask me anything about the Butterfly System!</div>
+                            </div>
+                        </div>
+                        <div id="craDragonStatus" class="cra-dragon-status" aria-live="polite" aria-hidden="true">
+                            <div class="cra-dragon-field" aria-hidden="true">
+                                <div class="cra-dragon-letters"><span>C</span><span>R</span><span>A</span></div>
+                                <div class="cra-dragon-ascii">&lt;==o~~~~</div>
+                                <span class="cra-spark s1"></span>
+                                <span class="cra-spark s2"></span>
+                                <span class="cra-spark s3"></span>
+                                <span class="cra-spark s4"></span>
+                                <span class="cra-spark s5"></span>
+                            </div>
+                            <div class="cra-dragon-caption" id="craDragonCaption">CRA threading the field...</div>
                         </div>
                         <div style="display: flex; gap: 10px;">
                             <input type="text" id="chatInput" placeholder="Ask about the system..."
                                 style="flex: 1; padding: 8px; background: #111; color: #0f0; border: 1px solid #0ff; font-family: 'Courier New', monospace;">
                             <button id="chatSendButton" style="padding: 8px 15px;">Send</button>
                         </div>
-                        <div id="chatStatus" style="color: #0aa; font-size: 0.8em; margin-top: 5px;"></div>
+                        <div id="chatStatus" class="cra-status-text"></div>
                     </div>
 
                     <!-- Butterfly Chat Tab Content -->
@@ -25560,6 +25798,7 @@
                         chatRequestInFlight = false;
                         const chatSendButton = document.getElementById('chatSendButton');
                         if (chatSendButton) chatSendButton.disabled = false;
+                        setCraDragonActive(false);
                     });
             }
 
@@ -26112,6 +26351,7 @@
             let scrollTimeout = null;
             let chatMessagesDiv = null;
             let chatRequestInFlight = false;
+            let chatMessageSequence = 0;
 
             // Track if user has manually scrolled up (disable auto-scroll until they return to bottom)
             let userHasScrolledUp = false;
@@ -26222,15 +26462,18 @@
 
                 updates.forEach(({ role, message, isError }) => {
                     const messageDiv = document.createElement('div');
-                    messageDiv.className = `chat-message ${role}`;
+                    const safeRole = role || 'system';
+                    const messageIndex = String(++chatMessageSequence).padStart(3, '0');
+                    messageDiv.className = `chat-message ${safeRole}${isError ? ' error' : ''}${safeRole === 'assistant' && !isError ? ' cra-response-fresh' : ''}`;
+                    messageDiv.dataset.messageIndex = messageIndex;
 
-                    const roleLabel = role === 'user' ? 'You' : role === 'assistant' ? 'CRA' : 'Vision';
-                    const color = isError ? '#f00' : role === 'user' ? '#0f0' : role === 'assistant' ? '#0ff' : '#ff0';
+                    const roleLabel = safeRole === 'user' ? 'You' : safeRole === 'assistant' ? 'CRA' : safeRole === 'system' ? 'System' : 'Vision';
+                    const color = isError ? '#ff445c' : safeRole === 'user' ? '#38ff7a' : safeRole === 'assistant' ? '#00e5ff' : safeRole === 'system' ? '#ff62d9' : '#ffd54a';
 
                     // Render markdown for assistant and vision messages, plain text for user
-                    const messageContent = (role === 'assistant' || role === 'vision') ? renderMarkdown(message) : escapeHtml(message);
+                    const messageContent = (safeRole === 'assistant' || safeRole === 'vision') ? renderMarkdown(message) : escapeHtml(message);
 
-                    messageDiv.innerHTML = `<strong style="color: ${color}; display: block; margin-bottom: 8px; font-size: 1.05em;">${roleLabel}:</strong><div style="line-height: 1.6; word-wrap: break-word;">${messageContent}</div>`;
+                    messageDiv.innerHTML = `<div class="chat-message-header"><strong style="color: ${color}; font-size: 1.05em;">${roleLabel}:</strong></div><div class="chat-message-body">${messageContent}</div>`;
                     fragment.appendChild(messageDiv);
                 });
 
@@ -26286,7 +26529,27 @@
 
             // Update chat status
             function updateChatStatus(status) {
-                document.getElementById('chatStatus').textContent = status;
+                const text = status || '';
+                const chatStatus = document.getElementById('chatStatus');
+                if (chatStatus) chatStatus.textContent = text;
+                const isActive = /thinking|request already in progress|captur|analyz|fetching|loading|connecting|sending/i.test(text);
+                setCraDragonActive(isActive, text);
+            }
+
+            function setCraDragonActive(active, status = '') {
+                const panel = document.getElementById('craChatPanel');
+                const dragonStatus = document.getElementById('craDragonStatus');
+                const caption = document.getElementById('craDragonCaption');
+                if (panel) panel.classList.toggle('cra-oracle-active', Boolean(active));
+                if (dragonStatus) {
+                    dragonStatus.classList.toggle('active', Boolean(active));
+                    dragonStatus.setAttribute('aria-hidden', active ? 'false' : 'true');
+                }
+                if (caption && status) {
+                    caption.textContent = status;
+                } else if (caption && active) {
+                    caption.textContent = 'CRA threading the field...';
+                }
             }
 
             // Add message to butterfly chat
