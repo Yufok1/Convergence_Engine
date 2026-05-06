@@ -5177,7 +5177,12 @@
         /* Convergence Research Assistant Chat Interface Styles */
         #craChatPanel {
             border-color: #FF00FF;
-            box-shadow: 0 0 25px rgba(255, 0, 255, 0.5), inset 0 0 15px rgba(0, 0, 0, 0.6);
+            background:
+                linear-gradient(135deg, rgba(8, 21, 16, 0.96), rgba(6, 9, 26, 0.96) 42%, rgba(31, 7, 35, 0.94)) !important;
+            box-shadow:
+                0 0 24px rgba(255, 0, 255, 0.58),
+                0 0 34px rgba(0, 229, 255, 0.22),
+                inset 0 0 18px rgba(0, 0, 0, 0.66);
             transition: max-height 0.3s ease, padding 0.3s ease, border-color 0.25s ease, box-shadow 0.25s ease;
             overflow: hidden;
         }
@@ -5193,6 +5198,9 @@
 
         #craChatPanel h3 {
             color: #FF00FF;
+            text-shadow:
+                0 0 8px rgba(255, 0, 255, 0.9),
+                0 0 18px rgba(0, 229, 255, 0.62);
         }
 
         /* Collapsed state for CRA chat panel */
@@ -5516,17 +5524,18 @@
         .chat-message {
             --chat-role-color: #0ff;
             position: relative;
-            margin: 0 0 18px 0;
-            padding: 14px 16px 16px 16px;
-            border: 1px solid rgba(0, 255, 255, 0.42);
-            border-left: 6px solid var(--chat-role-color);
+            margin: 0 0 24px 0;
+            padding: 16px 18px 18px 18px;
+            border: 2px solid rgba(0, 255, 255, 0.56);
+            border-left: 9px solid var(--chat-role-color);
             border-radius: 6px;
             background:
-                linear-gradient(135deg, rgba(7, 17, 20, 0.98), rgba(2, 5, 7, 0.98));
+                linear-gradient(135deg, rgba(10, 27, 28, 0.98), rgba(3, 7, 12, 0.98));
             box-shadow:
-                0 0 0 1px rgba(255, 255, 255, 0.035),
-                0 10px 22px rgba(0, 0, 0, 0.34),
-                inset 0 0 18px rgba(0, 0, 0, 0.34);
+                0 0 0 1px rgba(255, 255, 255, 0.06),
+                0 12px 28px rgba(0, 0, 0, 0.46),
+                0 0 18px rgba(0, 229, 255, 0.16),
+                inset 0 0 20px rgba(0, 0, 0, 0.38);
             overflow: hidden;
             /* Performance optimizations */
             content-visibility: auto;
@@ -5536,7 +5545,7 @@
         }
 
         .chat-message + .chat-message {
-            margin-top: 20px;
+            margin-top: 26px;
         }
 
         .chat-message::before {
@@ -5545,9 +5554,9 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, var(--chat-role-color), rgba(255, 255, 255, 0.18), transparent);
-            opacity: 0.82;
+            height: 4px;
+            background: linear-gradient(90deg, var(--chat-role-color), #ffd54a, #ff62d9, rgba(255, 255, 255, 0.2), transparent);
+            opacity: 0.94;
         }
 
         .chat-message::after {
@@ -5563,14 +5572,24 @@
 
         .chat-message.user {
             --chat-role-color: #38ff7a;
-            border-color: rgba(56, 255, 122, 0.38);
+            border-color: rgba(56, 255, 122, 0.62);
             background:
-                linear-gradient(135deg, rgba(4, 28, 16, 0.96), rgba(2, 7, 5, 0.98));
+                linear-gradient(135deg, rgba(8, 43, 21, 0.98), rgba(3, 11, 7, 0.98));
+            box-shadow:
+                0 0 0 1px rgba(56, 255, 122, 0.1),
+                0 12px 28px rgba(0, 0, 0, 0.46),
+                0 0 20px rgba(56, 255, 122, 0.2),
+                inset 0 0 20px rgba(0, 0, 0, 0.38);
         }
 
         .chat-message.assistant {
             --chat-role-color: #00e5ff;
-            border-color: rgba(0, 229, 255, 0.42);
+            border-color: rgba(0, 229, 255, 0.72);
+            box-shadow:
+                0 0 0 1px rgba(0, 229, 255, 0.14),
+                0 12px 28px rgba(0, 0, 0, 0.46),
+                0 0 24px rgba(0, 229, 255, 0.22),
+                inset 0 0 20px rgba(0, 0, 0, 0.38);
         }
 
         .chat-message.system {
@@ -5602,7 +5621,7 @@
             min-height: 22px;
             margin-bottom: 10px;
             padding-right: 52px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.18);
         }
 
         .chat-message strong {
@@ -5611,29 +5630,36 @@
 
         .chat-message-body {
             line-height: 1.64;
+            color: #e8fff7;
             overflow-wrap: anywhere;
             word-break: normal;
         }
 
         .cra-dragon-status {
-            display: none;
+            display: grid;
             grid-template-columns: minmax(220px, 1fr) auto;
             align-items: center;
             gap: 12px;
-            margin: 0 0 10px 0;
-            padding: 8px 10px;
-            border: 1px solid rgba(56, 255, 122, 0.55);
+            margin: 8px 0 12px 0;
+            padding: 10px 12px;
+            border: 2px solid rgba(56, 255, 122, 0.82);
             border-radius: 6px;
             background:
-                linear-gradient(90deg, rgba(7, 30, 18, 0.92), rgba(5, 15, 24, 0.94), rgba(35, 7, 34, 0.86));
+                linear-gradient(90deg, rgba(10, 51, 24, 0.98), rgba(3, 23, 38, 0.98), rgba(57, 11, 55, 0.94));
             box-shadow:
-                0 0 14px rgba(56, 255, 122, 0.28),
-                inset 0 0 16px rgba(0, 0, 0, 0.48);
+                0 0 18px rgba(56, 255, 122, 0.44),
+                0 0 28px rgba(0, 229, 255, 0.28),
+                inset 0 0 18px rgba(0, 0, 0, 0.52);
         }
 
         .cra-dragon-status.active {
-            display: grid;
-            animation: craStatusPulse 1.8s ease-in-out infinite alternate;
+            animation: craStatusPulse 1.1s ease-in-out infinite alternate;
+            border-color: rgba(255, 213, 74, 0.95);
+            box-shadow:
+                0 0 22px rgba(56, 255, 122, 0.7),
+                0 0 40px rgba(0, 229, 255, 0.5),
+                0 0 54px rgba(255, 98, 217, 0.38),
+                inset 0 0 20px rgba(0, 0, 0, 0.54);
         }
 
         .cra-dragon-field {
@@ -5641,9 +5667,10 @@
             height: 42px;
             min-width: 220px;
             overflow: hidden;
-            border: 1px solid rgba(0, 229, 255, 0.38);
+            border: 2px solid rgba(0, 229, 255, 0.72);
             border-radius: 4px;
-            background: rgba(0, 0, 0, 0.5);
+            background:
+                linear-gradient(90deg, rgba(0, 0, 0, 0.66), rgba(0, 42, 35, 0.54), rgba(33, 0, 42, 0.5));
         }
 
         .cra-dragon-letters {
@@ -5653,10 +5680,11 @@
             grid-template-columns: repeat(3, 1fr);
             align-items: center;
             text-align: center;
-            color: rgba(255, 255, 255, 0.32);
+            color: rgba(255, 255, 255, 0.52);
             font-size: 1.42em;
             font-weight: 700;
             font-family: 'Courier New', monospace;
+            text-shadow: 0 0 12px rgba(255, 255, 255, 0.26);
         }
 
         .cra-dragon-ascii {
@@ -5679,7 +5707,9 @@
             width: 4px;
             height: 4px;
             background: #ffd54a;
-            box-shadow: 0 0 8px rgba(255, 213, 74, 0.9);
+            box-shadow:
+                0 0 8px rgba(255, 213, 74, 0.95),
+                0 0 15px currentColor;
             animation: craSparkDrift 1.45s ease-in-out infinite;
         }
 
@@ -5690,11 +5720,14 @@
         .cra-spark.s5 { left: 84%; top: 13px; background: #ffd54a; animation-delay: 0.88s; }
 
         .cra-dragon-caption {
-            color: #c8ffe1;
-            font-size: 0.78em;
+            color: #e8fff7;
+            font-size: 0.84em;
             font-family: 'Courier New', monospace;
             text-align: right;
             white-space: nowrap;
+            text-shadow:
+                0 0 8px rgba(56, 255, 122, 0.58),
+                0 0 12px rgba(0, 229, 255, 0.42);
         }
 
         #chatStatus.cra-status-text {
@@ -6959,16 +6992,7 @@
                                 title="Click to view all snapshots">📸 Snapshots: <span
                                     id="snapshotCountValue">0</span></span>
                         </div>
-                        <div id="chatMessages"
-                            style="height: 550px; overflow-y: auto; background: #000; border: 1px solid #0ff; padding: 10px; margin-bottom: 10px; font-size: 0.9em; will-change: scroll-position; contain: layout style paint;">
-                            <div class="chat-message assistant" data-message-index="000">
-                                <div class="chat-message-header">
-                                    <strong>CRA:</strong>
-                                </div>
-                                <div class="chat-message-body">Hello! I'm your Convergence Research Assistant. I have access to all system logs, shared state, and the causation graph. Ask me anything about the Butterfly System!</div>
-                            </div>
-                        </div>
-                        <div id="craDragonStatus" class="cra-dragon-status" aria-live="polite" aria-hidden="true">
+                        <div id="craDragonStatus" class="cra-dragon-status" aria-live="polite" aria-hidden="false">
                             <div class="cra-dragon-field" aria-hidden="true">
                                 <div class="cra-dragon-letters"><span>C</span><span>R</span><span>A</span></div>
                                 <div class="cra-dragon-ascii">&lt;==o~~~~</div>
@@ -6978,7 +7002,16 @@
                                 <span class="cra-spark s4"></span>
                                 <span class="cra-spark s5"></span>
                             </div>
-                            <div class="cra-dragon-caption" id="craDragonCaption">CRA threading the field...</div>
+                            <div class="cra-dragon-caption" id="craDragonCaption">CRA coiled and listening...</div>
+                        </div>
+                        <div id="chatMessages"
+                            style="height: 550px; overflow-y: auto; background: #000; border: 1px solid #0ff; padding: 10px; margin-bottom: 10px; font-size: 0.9em; will-change: scroll-position; contain: layout style paint;">
+                            <div class="chat-message assistant" data-message-index="000">
+                                <div class="chat-message-header">
+                                    <strong>CRA:</strong>
+                                </div>
+                                <div class="chat-message-body">Hello! I'm your Convergence Research Assistant. I have access to all system logs, shared state, and the causation graph. Ask me anything about the Butterfly System!</div>
+                            </div>
                         </div>
                         <div style="display: flex; gap: 10px;">
                             <input type="text" id="chatInput" placeholder="Ask about the system..."
@@ -26543,12 +26576,14 @@
                 if (panel) panel.classList.toggle('cra-oracle-active', Boolean(active));
                 if (dragonStatus) {
                     dragonStatus.classList.toggle('active', Boolean(active));
-                    dragonStatus.setAttribute('aria-hidden', active ? 'false' : 'true');
+                    dragonStatus.setAttribute('aria-hidden', 'false');
                 }
                 if (caption && status) {
                     caption.textContent = status;
                 } else if (caption && active) {
                     caption.textContent = 'CRA threading the field...';
+                } else if (caption) {
+                    caption.textContent = 'CRA coiled and listening...';
                 }
             }
 
