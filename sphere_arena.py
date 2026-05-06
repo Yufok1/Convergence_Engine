@@ -112,37 +112,38 @@ try:
 except ImportError:
     OBSERVATION_SIZE = 30  # Fallback if import fails
 
-# Colors (RGB floats for OpenGL). Muted so the arena reads as a tactical field,
-# not a toy palette.
+# Colors (RGB floats for OpenGL). Low-saturation field identifiers keep the
+# arena readable without making organisms look like toy targets.
 COLORS = [
-    (0.66, 0.30, 0.28),  # ember
-    (0.28, 0.58, 0.44),  # field green
-    (0.30, 0.44, 0.68),  # steel blue
-    (0.70, 0.58, 0.30),  # muted amber
-    (0.56, 0.38, 0.66),  # violet
-    (0.30, 0.62, 0.66),  # cyan slate
-    (0.68, 0.44, 0.26),  # copper
-    (0.42, 0.34, 0.62),  # deep purple
-    (0.32, 0.64, 0.50),  # teal
-    (0.62, 0.34, 0.46),  # rosewood
-    (0.54, 0.66, 0.32),  # olive
-    (0.36, 0.50, 0.72),  # dusk blue
+    (0.42, 0.50, 0.52),  # slate
+    (0.46, 0.42, 0.34),  # bronze
+    (0.34, 0.48, 0.44),  # field green
+    (0.44, 0.38, 0.48),  # dusk violet
+    (0.48, 0.42, 0.36),  # earth
+    (0.34, 0.44, 0.54),  # signal blue
+    (0.50, 0.34, 0.32),  # ember
+    (0.36, 0.50, 0.40),  # moss
+    (0.50, 0.48, 0.36),  # olive
+    (0.40, 0.46, 0.56),  # naval
+    (0.48, 0.36, 0.42),  # oxblood
+    (0.38, 0.50, 0.50),  # oxidized copper
 ]
 
-SPHERE_WIREFRAME_COLOR = (0.18, 0.30, 0.38, 0.34)
+SPHERE_WIREFRAME_COLOR = (0.14, 0.24, 0.30, 0.42)
+TACTICAL_COMMAND_COLOR = (0.86, 0.70, 0.34)
 THREAT_BALL_COLORS = [
-    (0.86, 0.72, 0.34),  # amber core
-    (0.78, 0.38, 0.22),  # heat core
-    (0.34, 0.62, 0.78),  # ion core
-    (0.58, 0.42, 0.72),  # violet core
-    (0.34, 0.70, 0.50),  # field core
+    (0.86, 0.54, 0.18),  # amber threat
+    (0.72, 0.20, 0.10),  # red threat
+    (0.92, 0.76, 0.42),  # hot return
+    (0.50, 0.62, 0.66),  # cold return
+    (0.60, 0.46, 0.28),  # dust return
 ]
 THREAT_BALL_COLORS_2D = [
-    (220, 184, 86),
-    (198, 96, 56),
-    (86, 158, 198),
-    (148, 108, 184),
-    (86, 178, 128),
+    (220, 138, 46),
+    (184, 52, 28),
+    (234, 194, 106),
+    (128, 158, 168),
+    (154, 118, 72),
 ]
 
 # =============================================================================
@@ -2120,20 +2121,11 @@ class SphereArena:
             glPushMatrix()
             glTranslatef(*pos)
             
-            # Draw paddle as disk facing outward
-            glColor3f(*org.color)
-            
-            # Align disk to sphere normal
-            normal = org.get_normal()
-            # Calculate rotation to align Z axis with normal
-            up = (0, 1, 0)
-            right = cross_product(up, normal)
-            right = normalize_vector(right) if right != (0,0,0) else (1,0,0)
-            up = cross_product(normal, right)
-            
-            # Draw small sphere for organism
+            # Draw a compact field marker, not a toy ball.
+            marker = tuple(min(1.0, c * 1.18 + 0.08) for c in org.color)
+            glColor3f(*marker)
             quad = gluNewQuadric()
-            gluSphere(quad, 0.12, 12, 8)
+            gluSphere(quad, 0.045, 8, 6)
             
             glPopMatrix()
             
@@ -2146,30 +2138,27 @@ class SphereArena:
             ball_pos = ball.get_position()
             color = ball_colors[ball_idx % len(ball_colors)]
             
-            # 🎯 VISUAL EFFECT 1: Ball motion trail
+            # Motion trail as a tactical vector line instead of little spheres.
             if ball_idx in self.ball_trails and len(self.ball_trails[ball_idx]) > 1:
                 trail = self.ball_trails[ball_idx]
-                for i, trail_pos in enumerate(trail[:-1]):
-                    alpha = (i + 1) / len(trail) * 0.18
-                    trail_radius = BALL_RADIUS * (0.16 + 0.42 * (i + 1) / len(trail))
-                    
-                    glPushMatrix()
-                    glTranslatef(*trail_pos)
-                    glColor4f(color[0], color[1], color[2], alpha)
-                    quad = gluNewQuadric()
-                    gluSphere(quad, trail_radius, 6, 4)
-                    glPopMatrix()
+                glColor4f(color[0], color[1], color[2], 0.34)
+                glLineWidth(1.35)
+                glBegin(GL_LINE_STRIP)
+                for trail_pos in trail:
+                    glVertex3f(*trail_pos)
+                glEnd()
+                glLineWidth(1.0)
             
             # 🎯 VISUAL EFFECT 2: Depth-based shading
             ball_dist = math.sqrt(ball_pos[0]**2 + ball_pos[1]**2 + ball_pos[2]**2)
             depth_factor = 0.5 + 0.5 * (1 - ball_dist / (SPHERE_RADIUS * 1.2))
             depth_factor = max(0.4, min(1.0, depth_factor))
             
-            # 🎯 VISUAL EFFECT 3: Size scaling with depth
-            size_scale = 0.9 + 0.12 * depth_factor
+            # Subtle size scaling with depth.
+            size_scale = 0.72 + 0.10 * depth_factor
             
-            # 🎯 VISUAL EFFECT 4: Low-amplitude threat pulse
-            pulse = 0.94 + 0.06 * math.sin(self.frame_count * 0.12 + ball_idx)
+            # Low-amplitude threat pulse.
+            pulse = 0.97 + 0.03 * math.sin(self.frame_count * 0.10 + ball_idx)
             
             # Draw main ball
             glPushMatrix()
@@ -2179,15 +2168,15 @@ class SphereArena:
             gluSphere(quad, BALL_RADIUS * size_scale, 12, 8)
             glPopMatrix()
             
-            # 🎯 VISUAL EFFECT 5: Ball shadow on sphere surface
+            # Low-contrast contact shadow on sphere surface.
             if ball_dist > 0:
                 shadow_pos = (
                     ball_pos[0] * SPHERE_RADIUS / ball_dist,
                     ball_pos[1] * SPHERE_RADIUS / ball_dist,
                     ball_pos[2] * SPHERE_RADIUS / ball_dist
                 )
-                shadow_alpha = 0.16 * (1 - abs(ball_dist - SPHERE_RADIUS) / SPHERE_RADIUS)
-                shadow_alpha = max(0.03, min(0.16, shadow_alpha))
+                shadow_alpha = 0.08 * (1 - abs(ball_dist - SPHERE_RADIUS) / SPHERE_RADIUS)
+                shadow_alpha = max(0.02, min(0.08, shadow_alpha))
                 
                 glPushMatrix()
                 glTranslatef(*shadow_pos)
@@ -2195,8 +2184,10 @@ class SphereArena:
                 quad = gluNewQuadric()
                 gluSphere(quad, BALL_RADIUS * 0.8, 8, 4)
                 glPopMatrix()
+
+        self._draw_coordination_overlays_opengl()
         
-        # 💥 VISUAL EFFECT 6: Red shockwave on miss
+        # Red alert ring on miss.
         effects_to_remove = []
         for i, effect in enumerate(self.impact_effects):
             age = self.frame_count - effect['frame']
@@ -2220,8 +2211,8 @@ class SphereArena:
             tangent1 = normalize_vector(cross_product(normal, up))
             tangent2 = cross_product(normal, tangent1)
             
-            glColor4f(0.85, 0.18, 0.08, effect['intensity'] * 0.55)
-            glLineWidth(1.2 + 2.0 * effect['intensity'])
+            glColor4f(0.76, 0.08, 0.04, effect['intensity'] * 0.48)
+            glLineWidth(1.0 + 1.7 * effect['intensity'])
             
             glBegin(GL_LINE_LOOP)
             for j in range(48):
@@ -2242,7 +2233,7 @@ class SphereArena:
         for i in reversed(effects_to_remove):
             self.impact_effects.pop(i)
         
-        # ✨ VISUAL EFFECT 7: Green ripple on catch
+        # Capture ring on catch.
         effects_to_remove = []
         for i, effect in enumerate(self.catch_effects):
             age = self.frame_count - effect['frame']
@@ -2268,8 +2259,8 @@ class SphereArena:
             tangent2 = cross_product(normal, tangent1)
             
             c = effect['color']
-            glColor4f(c[0] * 0.4 + 0.25, c[1] * 0.4 + 0.45, c[2] * 0.35 + 0.25, effect['intensity'] * 0.45)
-            glLineWidth(1.0 + 2.0 * effect['intensity'])
+            glColor4f(c[0] * 0.35 + 0.24, c[1] * 0.35 + 0.40, c[2] * 0.35 + 0.42, effect['intensity'] * 0.32)
+            glLineWidth(0.9 + 1.4 * effect['intensity'])
             
             glBegin(GL_LINE_LOOP)
             for j in range(32):
@@ -2292,12 +2283,105 @@ class SphereArena:
         
         pygame.display.flip()
     
+    def _draw_surface_link(self, start: Tuple[float, float, float],
+                           end: Tuple[float, float, float],
+                           color: Tuple[float, float, float],
+                           alpha: float = 0.18,
+                           segments: int = 18):
+        """Draw a subtle great-circle-ish coordination link on the sphere."""
+        glColor4f(color[0], color[1], color[2], alpha)
+        glLineWidth(0.75)
+        glBegin(GL_LINE_STRIP)
+        for i in range(segments + 1):
+            t = i / max(1, segments)
+            mixed = (
+                start[0] * (1 - t) + end[0] * t,
+                start[1] * (1 - t) + end[1] * t,
+                start[2] * (1 - t) + end[2] * t,
+            )
+            point = normalize_vector(mixed)
+            if point == (0, 0, 0):
+                point = normalize_vector(end)
+            glVertex3f(point[0] * SPHERE_RADIUS, point[1] * SPHERE_RADIUS, point[2] * SPHERE_RADIUS)
+        glEnd()
+        glLineWidth(1.0)
+
+    def _draw_surface_ring(self, center: Tuple[float, float, float],
+                           color: Tuple[float, float, float],
+                           radius: float = 0.12,
+                           alpha: float = 0.35,
+                           segments: int = 32):
+        """Draw a small tactical ring projected onto the sphere surface."""
+        normal = normalize_vector(center)
+        if normal == (0, 0, 0):
+            return
+        up = (0, 1, 0)
+        if abs(dot_product(normal, up)) > 0.9:
+            up = (1, 0, 0)
+        tangent1 = normalize_vector(cross_product(normal, up))
+        tangent2 = cross_product(normal, tangent1)
+
+        glColor4f(color[0], color[1], color[2], alpha)
+        glLineWidth(1.1)
+        glBegin(GL_LINE_LOOP)
+        for i in range(segments):
+            angle = 2 * math.pi * i / segments
+            point = (
+                center[0] + tangent1[0] * radius * math.cos(angle) + tangent2[0] * radius * math.sin(angle),
+                center[1] + tangent1[1] * radius * math.cos(angle) + tangent2[1] * radius * math.sin(angle),
+                center[2] + tangent1[2] * radius * math.cos(angle) + tangent2[2] * radius * math.sin(angle),
+            )
+            point = normalize_vector(point)
+            glVertex3f(point[0] * SPHERE_RADIUS, point[1] * SPHERE_RADIUS, point[2] * SPHERE_RADIUS)
+        glEnd()
+        glLineWidth(1.0)
+
+    def _draw_coordination_overlays_opengl(self):
+        """Expose command, impact prediction, and squad routing without changing gameplay."""
+        if not OPENGL_AVAILABLE or not self.enable_command_chain:
+            return
+
+        if self.num_balls > 1:
+            for ball_idx, command in self.ball_commands.items():
+                if not command:
+                    continue
+                color = THREAT_BALL_COLORS[ball_idx % len(THREAT_BALL_COLORS)]
+                target = spherical_to_cartesian(command[0], command[1], SPHERE_RADIUS)
+                commander_idx = self.ball_commanders.get(ball_idx)
+                if commander_idx in self.organisms:
+                    self._draw_surface_link(self.organisms[commander_idx].get_position(), target, color, alpha=0.36)
+                for org_idx in self.ball_squads.get(ball_idx, []):
+                    if org_idx == commander_idx or org_idx not in self.organisms:
+                        continue
+                    self._draw_surface_link(self.organisms[org_idx].get_position(), target, color, alpha=0.075)
+                self._draw_surface_ring(target, color, radius=0.14, alpha=0.42)
+            return
+
+        if self.current_command:
+            command_pos = spherical_to_cartesian(self.current_command[0], self.current_command[1], SPHERE_RADIUS)
+            command_color = TACTICAL_COMMAND_COLOR
+            commander = self.organisms.get(self.current_commander)
+            if commander:
+                self._draw_surface_link(commander.get_position(), command_pos, command_color, alpha=0.40)
+            for org_idx in self.alive_organisms:
+                if org_idx == self.current_commander or org_idx not in self.organisms:
+                    continue
+                org = self.organisms[org_idx]
+                if org.last_command_received:
+                    self._draw_surface_link(org.get_position(), command_pos, command_color, alpha=0.08)
+            self._draw_surface_ring(command_pos, command_color, radius=0.14, alpha=0.42)
+
+        if self.predicted_impact:
+            impact_pos = spherical_to_cartesian(self.predicted_impact[0], self.predicted_impact[1], SPHERE_RADIUS)
+            self._draw_surface_ring(impact_pos, THREAT_BALL_COLORS[0], radius=0.19, alpha=0.34)
+
     def _draw_paddle_zone(self, org: SphereOrganism):
         """Draw the paddle zone as a circle on the sphere."""
         if not OPENGL_AVAILABLE:
             return
         
-        glColor4f(*org.color, 0.3)
+        glColor4f(org.color[0], org.color[1], org.color[2], 0.16)
+        glLineWidth(0.9)
         glBegin(GL_LINE_LOOP)
         
         # Draw circle around organism position on sphere
@@ -2329,6 +2413,7 @@ class SphereArena:
             glVertex3f(*point)
         
         glEnd()
+        glLineWidth(1.0)
     
     def _render_2d_fallback(self):
         """Simple 2D projection fallback when OpenGL unavailable."""
@@ -2348,24 +2433,69 @@ class SphereArena:
             screen_x = int(cx + pos[0] * scale)
             screen_y = int(cy - pos[1] * scale)
             color = tuple(int(c * 255) for c in org.color)
-            pygame.draw.circle(self.screen, color, (screen_x, screen_y), 13, 2)
-            pygame.draw.circle(self.screen, color, (screen_x, screen_y), 4)
-            
-            # Label
-            font = pygame.font.Font(None, 20)
-            label = font.render(f"#{org_idx}", True, color)
-            self.screen.blit(label, (screen_x - 10, screen_y - 25))
+            pygame.draw.circle(self.screen, color, (screen_x, screen_y), 9, 1)
+            pygame.draw.circle(self.screen, color, (screen_x, screen_y), 2)
+
+        # Draw command routing overlays after organisms so coordination remains visible.
+        if self.enable_command_chain:
+            def position_to_screen(pos):
+                return (int(cx + pos[0] * scale), int(cy - pos[1] * scale))
+
+            def command_to_screen(command):
+                pos = spherical_to_cartesian(command[0], command[1], SPHERE_RADIUS)
+                return position_to_screen(pos)
+
+            def dim(color, factor=0.36):
+                return tuple(max(24, int(c * factor)) for c in color)
+
+            if self.num_balls > 1:
+                for ball_idx, command in self.ball_commands.items():
+                    if not command:
+                        continue
+                    target = command_to_screen(command)
+                    color = THREAT_BALL_COLORS_2D[ball_idx % len(THREAT_BALL_COLORS_2D)]
+                    follower_color = dim(color, 0.34)
+                    commander_idx = self.ball_commanders.get(ball_idx)
+                    for org_idx in self.ball_squads.get(ball_idx, []):
+                        if org_idx == commander_idx or org_idx not in self.organisms:
+                            continue
+                        start_screen = position_to_screen(self.organisms[org_idx].get_position())
+                        pygame.draw.line(self.screen, follower_color, start_screen, target, 1)
+                    if commander_idx in self.organisms:
+                        start_screen = position_to_screen(self.organisms[commander_idx].get_position())
+                        pygame.draw.line(self.screen, color, start_screen, target, 1)
+                    pygame.draw.circle(self.screen, color, target, 12, 1)
+            elif self.current_command:
+                target = command_to_screen(self.current_command)
+                color = tuple(int(c * 255) for c in TACTICAL_COMMAND_COLOR)
+                follower_color = dim(color, 0.36)
+                for org_idx in self.alive_organisms:
+                    if org_idx == self.current_commander or org_idx not in self.organisms:
+                        continue
+                    org = self.organisms[org_idx]
+                    if org.last_command_received:
+                        pygame.draw.line(self.screen, follower_color, position_to_screen(org.get_position()), target, 1)
+                commander = self.organisms.get(self.current_commander)
+                if commander:
+                    start_screen = position_to_screen(commander.get_position())
+                    pygame.draw.line(self.screen, color, start_screen, target, 1)
+                pygame.draw.circle(self.screen, color, target, 12, 1)
+                if self.predicted_impact:
+                    impact = command_to_screen(self.predicted_impact)
+                    pygame.draw.circle(self.screen, THREAT_BALL_COLORS_2D[0], impact, 17, 1)
         
         # Draw ball
         ball_pos = self.ball.get_position()
         screen_x = int(cx + ball_pos[0] * scale)
         screen_y = int(cy - ball_pos[1] * scale)
-        pygame.draw.circle(self.screen, THREAT_BALL_COLORS_2D[0], (screen_x, screen_y), 6)
-        pygame.draw.circle(self.screen, (245, 226, 150), (screen_x, screen_y), 6, 1)
+        threat_color = THREAT_BALL_COLORS_2D[0]
+        pygame.draw.line(self.screen, threat_color, (screen_x - 10, screen_y), (screen_x + 10, screen_y), 1)
+        pygame.draw.line(self.screen, threat_color, (screen_x, screen_y - 10), (screen_x, screen_y + 10), 1)
+        pygame.draw.circle(self.screen, threat_color, (screen_x, screen_y), 5, 1)
         
         # Info
         font = pygame.font.Font(None, 30)
-        info = font.render(f"Alive: {len(self.alive_organisms)} | Frame: {self.frame_count}", True, (255, 255, 255))
+        info = font.render(f"Alive: {len(self.alive_organisms)} | Frame: {self.frame_count}", True, (150, 168, 174))
         self.screen.blit(info, (10, 10))
         
         pygame.display.flip()
