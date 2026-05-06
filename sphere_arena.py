@@ -55,10 +55,17 @@ For use with exported Cocoon agents.
 import math
 import time
 import random
+import sys
 import numpy as np
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Tuple, Any
 from enum import Enum
+
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+except Exception:
+    pass
 
 # Try to import Language-Game Bridge
 try:
@@ -105,20 +112,37 @@ try:
 except ImportError:
     OBSERVATION_SIZE = 30  # Fallback if import fails
 
-# Colors (RGB floats for OpenGL)
+# Colors (RGB floats for OpenGL). Muted so the arena reads as a tactical field,
+# not a toy palette.
 COLORS = [
-    (1.0, 0.4, 0.4),   # Red
-    (0.4, 1.0, 0.4),   # Green
-    (0.4, 0.4, 1.0),   # Blue
-    (1.0, 1.0, 0.4),   # Yellow
-    (1.0, 0.4, 1.0),   # Magenta
-    (0.4, 1.0, 1.0),   # Cyan
-    (1.0, 0.7, 0.4),   # Orange
-    (0.7, 0.4, 1.0),   # Purple
-    (0.4, 1.0, 0.7),   # Teal
-    (1.0, 0.4, 0.7),   # Pink
-    (0.7, 1.0, 0.4),   # Lime
-    (0.4, 0.7, 1.0),   # Sky Blue
+    (0.66, 0.30, 0.28),  # ember
+    (0.28, 0.58, 0.44),  # field green
+    (0.30, 0.44, 0.68),  # steel blue
+    (0.70, 0.58, 0.30),  # muted amber
+    (0.56, 0.38, 0.66),  # violet
+    (0.30, 0.62, 0.66),  # cyan slate
+    (0.68, 0.44, 0.26),  # copper
+    (0.42, 0.34, 0.62),  # deep purple
+    (0.32, 0.64, 0.50),  # teal
+    (0.62, 0.34, 0.46),  # rosewood
+    (0.54, 0.66, 0.32),  # olive
+    (0.36, 0.50, 0.72),  # dusk blue
+]
+
+SPHERE_WIREFRAME_COLOR = (0.18, 0.30, 0.38, 0.34)
+THREAT_BALL_COLORS = [
+    (0.86, 0.72, 0.34),  # amber core
+    (0.78, 0.38, 0.22),  # heat core
+    (0.34, 0.62, 0.78),  # ion core
+    (0.58, 0.42, 0.72),  # violet core
+    (0.34, 0.70, 0.50),  # field core
+]
+THREAT_BALL_COLORS_2D = [
+    (220, 184, 86),
+    (198, 96, 56),
+    (86, 158, 198),
+    (148, 108, 184),
+    (86, 178, 128),
 ]
 
 # =============================================================================
@@ -479,6 +503,16 @@ class SphereArena:
                 print(f"   ⚠️ Language Bridge init failed: {e}")
                 self.language_bridge = None
         
+        # Graphics setup
+        self.screen = None
+        self.clock = None
+        if not self.headless:
+            if not PYGAME_AVAILABLE:
+                raise RuntimeError("pygame required for rendering")
+            if not OPENGL_AVAILABLE:
+                print("⚠️ OpenGL not available, falling back to wireframe mode")
+            self._init_graphics()
+
         # Initialize
         self.reset()
         
@@ -506,16 +540,6 @@ class SphereArena:
             )
         return {}
         
-        # Graphics setup
-        self.screen = None
-        self.clock = None
-        if not headless:
-            if not PYGAME_AVAILABLE:
-                raise RuntimeError("pygame required for rendering")
-            if not OPENGL_AVAILABLE:
-                print("⚠️ OpenGL not available, falling back to wireframe mode")
-            self._init_graphics()
-    
     def _init_graphics(self):
         """Initialize Pygame and OpenGL."""
         pygame.init()
@@ -538,7 +562,10 @@ class SphereArena:
         glEnable(GL_LIGHTING)
         glEnable(GL_LIGHT0)
         glEnable(GL_COLOR_MATERIAL)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
+        glClearColor(0.005, 0.008, 0.014, 1.0)
         
         # Light position
         glLightfv(GL_LIGHT0, GL_POSITION, (5, 5, 5, 1))
@@ -2077,11 +2104,13 @@ class SphereArena:
         gluLookAt(cam_x, 3, cam_z, 0, 0, 0, 0, 1, 0)
         
         # Draw wireframe sphere
-        glColor3f(0.2, 0.2, 0.3)
+        glColor4f(*SPHERE_WIREFRAME_COLOR)
+        glLineWidth(1.15)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
         quad = gluNewQuadric()
         gluSphere(quad, SPHERE_RADIUS, 24, 16)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+        glLineWidth(1.0)
         
         # Draw organisms as colored patches
         for org_idx in self.alive_organisms:
@@ -2112,7 +2141,7 @@ class SphereArena:
             self._draw_paddle_zone(org)
         
         # Draw balls (support multiple)
-        ball_colors = [(1.0, 1.0, 0.0), (1.0, 0.5, 0.0), (0.0, 1.0, 1.0), (1.0, 0.0, 1.0), (0.5, 1.0, 0.5)]
+        ball_colors = THREAT_BALL_COLORS
         for ball_idx, ball in enumerate(self.balls):
             ball_pos = ball.get_position()
             color = ball_colors[ball_idx % len(ball_colors)]
@@ -2121,8 +2150,8 @@ class SphereArena:
             if ball_idx in self.ball_trails and len(self.ball_trails[ball_idx]) > 1:
                 trail = self.ball_trails[ball_idx]
                 for i, trail_pos in enumerate(trail[:-1]):
-                    alpha = (i + 1) / len(trail) * 0.4
-                    trail_radius = BALL_RADIUS * (0.3 + 0.7 * (i + 1) / len(trail))
+                    alpha = (i + 1) / len(trail) * 0.18
+                    trail_radius = BALL_RADIUS * (0.16 + 0.42 * (i + 1) / len(trail))
                     
                     glPushMatrix()
                     glTranslatef(*trail_pos)
@@ -2137,10 +2166,10 @@ class SphereArena:
             depth_factor = max(0.4, min(1.0, depth_factor))
             
             # 🎯 VISUAL EFFECT 3: Size scaling with depth
-            size_scale = 0.8 + 0.4 * depth_factor
+            size_scale = 0.9 + 0.12 * depth_factor
             
-            # 🎯 VISUAL EFFECT 4: Pulsing glow
-            pulse = 0.8 + 0.2 * math.sin(self.frame_count * 0.15 + ball_idx)
+            # 🎯 VISUAL EFFECT 4: Low-amplitude threat pulse
+            pulse = 0.94 + 0.06 * math.sin(self.frame_count * 0.12 + ball_idx)
             
             # Draw main ball
             glPushMatrix()
@@ -2157,8 +2186,8 @@ class SphereArena:
                     ball_pos[1] * SPHERE_RADIUS / ball_dist,
                     ball_pos[2] * SPHERE_RADIUS / ball_dist
                 )
-                shadow_alpha = 0.3 * (1 - abs(ball_dist - SPHERE_RADIUS) / SPHERE_RADIUS)
-                shadow_alpha = max(0.05, min(0.3, shadow_alpha))
+                shadow_alpha = 0.16 * (1 - abs(ball_dist - SPHERE_RADIUS) / SPHERE_RADIUS)
+                shadow_alpha = max(0.03, min(0.16, shadow_alpha))
                 
                 glPushMatrix()
                 glTranslatef(*shadow_pos)
@@ -2191,8 +2220,8 @@ class SphereArena:
             tangent1 = normalize_vector(cross_product(normal, up))
             tangent2 = cross_product(normal, tangent1)
             
-            glColor4f(1.0, 0.2, 0.1, effect['intensity'] * 0.8)
-            glLineWidth(2.0 + 3.0 * effect['intensity'])
+            glColor4f(0.85, 0.18, 0.08, effect['intensity'] * 0.55)
+            glLineWidth(1.2 + 2.0 * effect['intensity'])
             
             glBegin(GL_LINE_LOOP)
             for j in range(48):
@@ -2239,8 +2268,8 @@ class SphereArena:
             tangent2 = cross_product(normal, tangent1)
             
             c = effect['color']
-            glColor4f(c[0] * 0.5 + 0.5, c[1] * 0.5 + 0.5, c[2] * 0.3, effect['intensity'] * 0.7)
-            glLineWidth(3.0 * effect['intensity'] + 1.0)
+            glColor4f(c[0] * 0.4 + 0.25, c[1] * 0.4 + 0.45, c[2] * 0.35 + 0.25, effect['intensity'] * 0.45)
+            glLineWidth(1.0 + 2.0 * effect['intensity'])
             
             glBegin(GL_LINE_LOOP)
             for j in range(32):
@@ -2303,13 +2332,13 @@ class SphereArena:
     
     def _render_2d_fallback(self):
         """Simple 2D projection fallback when OpenGL unavailable."""
-        self.screen.fill((0, 0, 0))
+        self.screen.fill((2, 4, 8))
         
         cx, cy = WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2
         scale = 150
         
         # Draw sphere outline
-        pygame.draw.circle(self.screen, (50, 50, 80), (cx, cy), int(SPHERE_RADIUS * scale), 2)
+        pygame.draw.circle(self.screen, (46, 66, 78), (cx, cy), int(SPHERE_RADIUS * scale), 2)
         
         # Draw organisms (projected to 2D)
         for org_idx in self.alive_organisms:
@@ -2319,7 +2348,8 @@ class SphereArena:
             screen_x = int(cx + pos[0] * scale)
             screen_y = int(cy - pos[1] * scale)
             color = tuple(int(c * 255) for c in org.color)
-            pygame.draw.circle(self.screen, color, (screen_x, screen_y), 15)
+            pygame.draw.circle(self.screen, color, (screen_x, screen_y), 13, 2)
+            pygame.draw.circle(self.screen, color, (screen_x, screen_y), 4)
             
             # Label
             font = pygame.font.Font(None, 20)
@@ -2330,7 +2360,8 @@ class SphereArena:
         ball_pos = self.ball.get_position()
         screen_x = int(cx + ball_pos[0] * scale)
         screen_y = int(cy - ball_pos[1] * scale)
-        pygame.draw.circle(self.screen, (255, 255, 0), (screen_x, screen_y), 8)
+        pygame.draw.circle(self.screen, THREAT_BALL_COLORS_2D[0], (screen_x, screen_y), 6)
+        pygame.draw.circle(self.screen, (245, 226, 150), (screen_x, screen_y), 6, 1)
         
         # Info
         font = pygame.font.Font(None, 30)
