@@ -169,6 +169,11 @@ cp config.json data/config.json
 mkdir -p /data/nltk_data
 export NLTK_DATA=/data/nltk_data
 python -m nltk.downloader -d /data/nltk_data wordnet omw-1.4
+
+------------->--->-[\/]
+                   {/\}
+NEXT:             [<<<]  
+
 python build_curated_dataset.py
 python merge_nuclear_vocab.py
 python generate_innate_vocab.py
