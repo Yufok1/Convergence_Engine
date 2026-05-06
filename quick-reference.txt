@@ -268,6 +268,18 @@ Useful extras
 Open another terminal in the same repo.
 Activate `.venv` again.
 
+› whats the command to run the CRA on the CLI?
+• From the repo folder:
+  cd /workspace/Convergence_Engine
+  source .venv/bin/activate
+  export HF_TOKEN='hf_your_new_token'
+  python cra_cli.py repl --model Qwen/Qwen2.5-7B-Instruct
+  On Windows PowerShell:
+  cd D:\End-Game\Convergence_Engine
+  .\.venv\Scripts\Activate.ps1
+  $env:HF_TOKEN = 'hf_your_new_token'
+  python cra_cli.py repl --model Qwen/Qwen2.5-7B-Instruct
+
 Status and dashboard:
 
 python live_dashboard.py
