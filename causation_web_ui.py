@@ -5443,8 +5443,9 @@ class HuggingFaceBridge:
 
     DEFAULT_BASE = "https://router.huggingface.co"
     DEFAULT_MODEL = "Qwen/Qwen2.5-7B-Instruct"
-    DEFAULT_SYSTEM_PROMPT_CHARS = 48000
-    DEFAULT_CHAT_MAX_TOKENS = 2048
+    DEFAULT_SYSTEM_PROMPT_CHARS = 24000
+    DEFAULT_CHAT_MAX_TOKENS = 1024
+    COMPACT_SYSTEM_PROMPT_CHARS = 12000
     CRA_SYSTEM_ANCHOR = (
         "You are the Convergence Research Assistant (CRA) running inside the "
         "Convergence Engine / Butterfly System runtime. Use the supplied runtime "
@@ -5529,14 +5530,17 @@ class HuggingFaceBridge:
         tail_budget = max(100, budget - len(marker) - head_budget)
         return text[:head_budget].rstrip() + marker + text[-tail_budget:].lstrip()
 
-    def _budget_system_prompt(self, text: str) -> str:
+    def _budget_system_prompt(self, text: str, budget_override: int = None) -> str:
         prompt = str(text or "")
-        budget = self._bounded_int_env(
-            "HF_SYSTEM_PROMPT_CHARS",
-            self.DEFAULT_SYSTEM_PROMPT_CHARS,
-            8000,
-            120000,
-        )
+        if budget_override is None:
+            budget = self._bounded_int_env(
+                "HF_SYSTEM_PROMPT_CHARS",
+                self.DEFAULT_SYSTEM_PROMPT_CHARS,
+                8000,
+                120000,
+            )
+        else:
+            budget = max(4000, min(int(budget_override), 120000))
         anchor = self.CRA_SYSTEM_ANCHOR
         if not prompt:
             return anchor
@@ -5563,7 +5567,8 @@ class HuggingFaceBridge:
 
     def chat(self, model: str, messages: List[Dict[str, str]],
              context: Dict[str, Any] = None,
-             max_tokens: int = None) -> Optional[str]:
+             max_tokens: int = None,
+             system_prompt_chars: int = None) -> Optional[str]:
         """OpenAI-compatible chat completion for the CRA HuggingFace route.
 
         If `context` includes a 'system' string, it is prepended as a system
@@ -5581,7 +5586,10 @@ class HuggingFaceBridge:
             if sys_text:
                 outbound.append({
                     "role": "system",
-                    "content": self._budget_system_prompt(str(sys_text)),
+                    "content": self._budget_system_prompt(
+                        str(sys_text),
+                        budget_override=system_prompt_chars,
+                    ),
                 })
         if isinstance(messages, list):
             outbound.extend(messages)
@@ -5713,7 +5721,7 @@ def _hf_bridge_error_response(bridge: HuggingFaceBridge, fallback: str,
     http_status = status_code if isinstance(status_code, int) and 400 <= status_code < 600 else 502
     if status_code == 429:
         error = "HuggingFace rate limit reached for this provider/model."
-    elif status_code in (400, 401, 403, 404):
+    elif status_code in (400, 401, 403, 404, 410, 422):
         error = f"HuggingFace request failed with HTTP {status_code}."
     else:
         error = fallback
@@ -11919,7 +11927,12 @@ Use this context to understand what the graph structure means. Match the visual 
         logger.info(f"[CRA] [CRA] Calling {provider_label} chat API...")
         # HuggingFaceBridge clamps this so prompt + output stay inside provider context windows.
         requested_model = model
-        response = bridge_to_use.chat(model, messages, context, max_tokens=2048)
+        response = bridge_to_use.chat(
+            model,
+            messages,
+            context,
+            max_tokens=HuggingFaceBridge.DEFAULT_CHAT_MAX_TOKENS,
+        )
         fallback_model_used = None
         fallback_from_model = None
         fallback_reason = None
@@ -11927,26 +11940,36 @@ Use this context to understand what the graph structure means. Match the visual 
             response is None
             and provider in ('huggingface', 'hf')
             and isinstance(requested_model, str)
-            and requested_model != HuggingFaceBridge.DEFAULT_MODEL
-            and getattr(bridge_to_use, "last_status_code", None) in (400, 404, 410)
+            and getattr(bridge_to_use, "last_status_code", None) in (400, 404, 410, 422)
         ):
             fallback_from_model = requested_model
-            fallback_reason = f"HTTP {getattr(bridge_to_use, 'last_status_code', None)} from HuggingFace router"
+            fallback_reason = (
+                f"HTTP {getattr(bridge_to_use, 'last_status_code', None)} from HuggingFace router; "
+                "retried Qwen with compact CRA context"
+            )
             logger.warning(
-                "[CRA] [CRA] Model %s failed with %s; retrying default CLI model %s",
+                "[CRA] [CRA] Model %s failed with %s; retrying default CLI model %s with compact context on auto provider",
                 fallback_from_model,
                 fallback_reason,
                 HuggingFaceBridge.DEFAULT_MODEL,
             )
-            response = bridge_to_use.chat(
+            fallback_bridge = HuggingFaceBridge(
+                api_key=hf_api_key or user_api_key,
+                inference_provider=None,
+            )
+            response = fallback_bridge.chat(
                 HuggingFaceBridge.DEFAULT_MODEL,
                 messages,
                 context,
-                max_tokens=2048,
+                max_tokens=1024,
+                system_prompt_chars=HuggingFaceBridge.COMPACT_SYSTEM_PROMPT_CHARS,
             )
             if response is not None:
                 fallback_model_used = HuggingFaceBridge.DEFAULT_MODEL
                 model = fallback_model_used
+                inference_provider = None
+            else:
+                bridge_to_use = fallback_bridge
         cra_synthesis_time = time.time() - cra_synthesis_start
         response = sanitize_model_response(response)
         logger.info(f"[CRA] [CRA] ✓ CRA synthesis completed in {cra_synthesis_time:.2f}s")
@@ -13428,8 +13451,20 @@ def cra_hub_provider_models(provider):
             return jsonify({
                 'success': False,
                 'error': f"HF Router rejected token for provider '{provider_slug}' (HTTP {r.status_code}). Token may need provider-specific permission.",
+                'provider': provider_slug,
+                'upstream_status': r.status_code,
                 'models': []
-            }), r.status_code
+            })
+        if r.status_code >= 400:
+            body = (r.text or '')[:700]
+            return jsonify({
+                'success': False,
+                'error': f"HF Router provider catalog failed for '{provider_slug}' (HTTP {r.status_code}).",
+                'provider': provider_slug,
+                'upstream_status': r.status_code,
+                'details': body,
+                'models': []
+            })
         r.raise_for_status()
         data = r.json() or {}
         items = data.get('data') if isinstance(data, dict) else data
@@ -13450,7 +13485,11 @@ def cra_hub_provider_models(provider):
         })
     except Exception as e:
         logger.error(f"provider model list failed for '{provider}': {e}")
-        return jsonify({'success': False, 'error': str(e), 'models': []}), 500
+        return jsonify({
+            'success': False,
+            'error': f"provider model list failed for '{provider}': {e}",
+            'models': []
+        })
 
 
 @app.route('/api/chat/history', methods=['POST'])

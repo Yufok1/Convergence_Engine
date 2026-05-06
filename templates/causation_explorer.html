@@ -6956,11 +6956,12 @@
                             <div style="margin-bottom: 8px;">
                                 <label style="color: #0ff; display: block; margin-bottom: 5px; font-size: 0.9em;">Research
                                     Model:</label>
-                                <input id="researchModelSelect" list="hubModelDatalist" autocomplete="off"
+                                <input id="researchModelSelect" autocomplete="off"
                                     placeholder="type to search HF Hub catalog or pick from suggestions..."
                                     oninput="onResearchModelInput()" onfocus="onResearchModelInput()"
                                     style="width: 100%; background: #111; color: #0f0; border: 1px solid #0ff; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
-                                <datalist id="hubModelDatalist"></datalist>
+                                <div id="hubModelResults"
+                                    style="display: none; margin-top: 6px; max-height: 190px; overflow-y: auto; border: 1px solid #055; background: #02080a;"></div>
                                 <div style="font-size: 0.75em; color: #888; margin-top: 3px;" id="researchModelHint">
                                     Type a model id (e.g. <code>Qwen/Qwen2.5-7B-Instruct</code>) or search the live HF
                                     catalog. Provider settings live in the sidebar under "AI Provider Settings".
@@ -24758,9 +24759,9 @@
                 if (researchInput && !researchInput.value.trim()) {
                     researchInput.value = HF_DEFAULT_TEXT_MODEL;
                 }
-                renderHubDatalist([
+                renderHubResults([
                     { id: HF_DEFAULT_TEXT_MODEL, downloads: null, likes: null },
-                    { id: 'Qwen/Qwen2.5-7B-Instruct', downloads: null, likes: null },
+                    { id: 'Qwen/Qwen2.5-Coder-7B-Instruct', downloads: null, likes: null },
                     { id: 'mistralai/Mixtral-8x7B-Instruct-v0.1', downloads: null, likes: null }
                 ]);
                 populateHfVisionModels();
@@ -24817,11 +24818,22 @@
 
             function onHfInferenceProviderChange() {
                 getSessionHfInferenceProvider();
+                const token = getSessionHfApiKey();
+                if (token) {
+                    fetchHfProviderModels();
+                } else {
+                    const status = document.getElementById('hfProviderCatalogStatus');
+                    if (status) {
+                        status.textContent = 'paste an HF token, then provider catalogs can load';
+                        status.style.color = '#fa0';
+                    }
+                }
             }
 
             // Search-as-you-type against HF Hub catalog. Debounced so we only
-            // fire one request per ~300ms of typing. Populates the datalist
-            // attached to the Research Model input.
+            // fire one request per ~300ms of typing. Renders clickable rows
+            // because browser datalists are hard to inspect and provider
+            // catalog failures otherwise look like a dead dropdown.
             function onResearchModelInput() {
                 const input = document.getElementById('researchModelSelect');
                 if (!input) return;
@@ -24843,35 +24855,60 @@
                     if (query) params.set('q', query);
                     const r = await fetch(`/api/cra/hub/search?${params.toString()}`);
                     const data = await r.json();
-                    if (!data || !data.success) return;
+                    if (!data || !data.success) {
+                        renderHubResults([
+                            { id: HF_DEFAULT_TEXT_MODEL, note: data?.error || 'Hub search failed' }
+                        ]);
+                        return;
+                    }
                     craSession.lastHubResults = data.models || [];
-                    renderHubDatalist(craSession.lastHubResults);
+                    renderHubResults(craSession.lastHubResults);
                 } catch (e) {
                     console.warn('[HubSearch] failed:', e);
+                    renderHubResults([
+                        { id: HF_DEFAULT_TEXT_MODEL, note: `Hub search failed: ${e}` }
+                    ]);
                 }
             }
 
-            function renderHubDatalist(models) {
-                const dl = document.getElementById('hubModelDatalist');
-                if (!dl) return;
-                dl.innerHTML = '';
-                models.forEach(m => {
+            function chooseHubModel(modelId) {
+                const input = document.getElementById('researchModelSelect');
+                if (input) input.value = modelId || '';
+                const results = document.getElementById('hubModelResults');
+                if (results) results.style.display = 'none';
+                updateChatStatus(`Selected model: ${modelId}`);
+            }
+
+            function renderHubResults(models) {
+                const container = document.getElementById('hubModelResults');
+                if (!container) return;
+                container.innerHTML = '';
+                const visible = (models || []).filter(m => m && m.id).slice(0, 30);
+                if (!visible.length) {
+                    container.style.display = 'none';
+                    return;
+                }
+                visible.forEach(m => {
                     if (!m || !m.id) return;
-                    const opt = document.createElement('option');
-                    opt.value = m.id;
+                    const row = document.createElement('button');
                     const dl_count = m.downloads != null ? m.downloads.toLocaleString() : '?';
                     const lk_count = m.likes != null ? m.likes : '?';
-                    opt.label = `${m.id} — ${dl_count} downloads, ${lk_count} likes`;
-                    dl.appendChild(opt);
+                    const note = m.note ? String(m.note).slice(0, 180) : `${dl_count} downloads - ${lk_count} likes`;
+                    row.type = 'button';
+                    row.style.cssText = 'display:block; width:100%; text-align:left; padding:7px 9px; border:0; border-bottom:1px solid #033; background:#02080a; color:#0ff; cursor:pointer; font-family:Courier New, monospace; font-size:0.78em;';
+                    row.innerHTML = `<span style="color:#0f0;">${escapeHtml(m.id)}</span><br><span style="color:#888;">${escapeHtml(note)}</span>`;
+                    row.addEventListener('click', () => chooseHubModel(m.id));
+                    container.appendChild(row);
                 });
+                container.style.display = 'block';
             }
 
             // Per-provider model fetch (Together / Fireworks / etc.) via HF Router /v1/models.
-            // Augments the datalist with this provider's own catalog.
+            // Augments the visible result picker with this provider's own catalog.
             async function fetchHfProviderModels() {
                 const status = document.getElementById('hfProviderCatalogStatus');
-                const provider = craSession.hfInferenceProvider || 'auto';
-                const token = craSession.hfApiKey;
+                const provider = getSessionHfInferenceProvider() || 'auto';
+                const token = getSessionHfApiKey();
                 if (!token) {
                     if (status) {
                         status.textContent = '⚠ paste an HF token above first';
@@ -24884,15 +24921,19 @@
                     status.style.color = '#0aa';
                 }
                 try {
-                    const url = `/api/cra/hub/providers/${encodeURIComponent(provider)}/models?hf_api_key=${encodeURIComponent(token)}`;
-                    const r = await fetch(url);
+                    const url = `/api/cra/hub/providers/${encodeURIComponent(provider)}/models`;
+                    const r = await fetch(url, { headers: { 'X-HF-Token': token } });
                     const data = await r.json();
                     if (!data || !data.success) {
                         const msg = (data && data.error) ? data.error : 'unknown error';
                         if (status) {
-                            status.textContent = `⚠ ${msg}`;
+                            const detail = data?.details ? ` ${String(data.details).slice(0, 220)}` : '';
+                            status.textContent = `⚠ ${msg}${detail}`;
                             status.style.color = '#f44';
                         }
+                        renderHubResults([
+                            { id: HF_DEFAULT_TEXT_MODEL, note: msg }
+                        ]);
                         return;
                     }
                     const merged = [
@@ -24907,9 +24948,9 @@
                             dedup.push(m);
                         }
                     });
-                    renderHubDatalist(dedup);
+                    renderHubResults(dedup);
                     if (status) {
-                        status.textContent = `✓ ${data.count} models from ${provider} loaded into picker`;
+                        status.textContent = `✓ ${data.count} models from ${provider} loaded into results`;
                         status.style.color = '#0f0';
                     }
                 } catch (e) {
@@ -24917,6 +24958,9 @@
                         status.textContent = `⚠ fetch failed: ${e}`;
                         status.style.color = '#f44';
                     }
+                    renderHubResults([
+                        { id: HF_DEFAULT_TEXT_MODEL, note: `Provider catalog fetch failed: ${e}` }
+                    ]);
                 }
             }
 
