@@ -21,6 +21,14 @@ from urllib import error, parse, request
 
 
 DEFAULT_BASE_URL = "http://127.0.0.1:5000"
+DEFAULT_HF_MODEL = os.getenv("CRA_DEFAULT_HF_MODEL", "Qwen/Qwen2.5-7B-Instruct")
+HF_MODEL_ALIASES = {
+    "qwen": "Qwen/Qwen2.5-7B-Instruct",
+    "qwen2.5": "Qwen/Qwen2.5-7B-Instruct",
+    "qwen2.5-7b": "Qwen/Qwen2.5-7B-Instruct",
+    "llama3.2": "meta-llama/Llama-3.2-3B-Instruct",
+    "llama3.2:latest": "meta-llama/Llama-3.2-3B-Instruct",
+}
 NOTE_TYPES = [
     "note",
     "observation",
@@ -126,7 +134,17 @@ def parse_args() -> argparse.Namespace:
     subparsers.add_parser("health", help="Run CRA health check.")
     subparsers.add_parser("system", help="Show current system state snapshot.")
     subparsers.add_parser("data", help="Show full CRA data package.")
-    subparsers.add_parser("models", help="List available Ollama text/vision models.")
+    models_parser = subparsers.add_parser(
+        "models",
+        help="Search public Hugging Face text-generation models.",
+    )
+    models_parser.add_argument("--query", "-q", default="", help="Optional Hub search text.")
+    models_parser.add_argument("--limit", type=int, default=20, help="Max models to show.")
+    models_parser.add_argument(
+        "--pipeline",
+        default="text-generation",
+        help="Hugging Face pipeline tag (default: text-generation).",
+    )
     subparsers.add_parser("sim-status", help="Show simulation running state.")
     subparsers.add_parser("sim-start", help="Send simulation start signal.")
     subparsers.add_parser("sim-stop", help="Send simulation stop signal.")
@@ -224,9 +242,13 @@ def parse_args() -> argparse.Namespace:
 
     chat_parser = subparsers.add_parser("chat", help="Send a single message to the CRA.")
     chat_parser.add_argument("message", nargs="*", help="Message text. Reads stdin if omitted.")
-    chat_parser.add_argument("--model", default="llama3.2", help="Ollama text model name.")
-    chat_parser.add_argument("--vision-model", help="Optional Ollama vision model name.")
-    chat_parser.add_argument("--api-key", help="Optional per-request API key override.")
+    chat_parser.add_argument("--model", default=DEFAULT_HF_MODEL, help="Hugging Face text model id.")
+    chat_parser.add_argument("--vision-model", help="Optional Hugging Face vision model id.")
+    chat_parser.add_argument("--api-key", help="Optional Hugging Face token override.")
+    chat_parser.add_argument(
+        "--inference-provider",
+        help="Optional Hugging Face Inference Router provider, such as together or hf-inference.",
+    )
     chat_parser.add_argument("--selected-event", help="Optional selected event id.")
     chat_parser.add_argument(
         "--view-state-file",
@@ -353,9 +375,13 @@ def parse_args() -> argparse.Namespace:
         "repl",
         help="Interactive CRA shell over SSH. Type /help for local commands.",
     )
-    repl_parser.add_argument("--model", default="llama3.2", help="Ollama text model name.")
-    repl_parser.add_argument("--vision-model", help="Optional Ollama vision model name.")
-    repl_parser.add_argument("--api-key", help="Optional per-request API key override.")
+    repl_parser.add_argument("--model", default=DEFAULT_HF_MODEL, help="Hugging Face text model id.")
+    repl_parser.add_argument("--vision-model", help="Optional Hugging Face vision model id.")
+    repl_parser.add_argument("--api-key", help="Optional Hugging Face token override.")
+    repl_parser.add_argument(
+        "--inference-provider",
+        help="Optional Hugging Face Inference Router provider, such as together or hf-inference.",
+    )
 
     compile_org_parser = subparsers.add_parser(
         "compile-organism",
@@ -635,9 +661,22 @@ def summarize_system(data: Dict[str, Any]) -> None:
 def summarize_models(data: Dict[str, Any]) -> None:
     text_models = data.get("text_models") or data.get("models") or []
     vision_models = data.get("vision_models") or []
-    print("Text models:")
+    heading = "Hugging Face models" if data.get("pipeline") or data.get("query") is not None else "Text models"
+    print(f"{heading}:")
     for item in text_models:
-        print(f"  - {item}")
+        if isinstance(item, dict):
+            model_id = item.get("id") or item.get("modelId") or "-"
+            details = []
+            if item.get("pipeline_tag"):
+                details.append(str(item["pipeline_tag"]))
+            if item.get("downloads") is not None:
+                details.append(f"downloads={item['downloads']}")
+            if item.get("likes") is not None:
+                details.append(f"likes={item['likes']}")
+            suffix = f" ({', '.join(details)})" if details else ""
+            print(f"  - {model_id}{suffix}")
+        else:
+            print(f"  - {item}")
     if vision_models:
         print("Vision models:")
         for item in vision_models:
@@ -876,6 +915,17 @@ def parse_jsonish_value(raw: str) -> Any:
         return raw
 
 
+def normalize_hf_model_id(model: Optional[str]) -> str:
+    raw = (model or DEFAULT_HF_MODEL).strip()
+    if not raw:
+        return DEFAULT_HF_MODEL
+    return HF_MODEL_ALIASES.get(raw.lower(), raw)
+
+
+def resolve_hf_token(api_key: Optional[str]) -> Optional[str]:
+    return api_key or os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_API_KEY")
+
+
 def do_chat(
     client: CRAClient,
     message: str,
@@ -884,19 +934,25 @@ def do_chat(
     api_key: Optional[str] = None,
     selected_event: Optional[str] = None,
     view_state: Optional[Dict[str, Any]] = None,
+    inference_provider: Optional[str] = None,
 ) -> Dict[str, Any]:
+    resolved_token = resolve_hf_token(api_key)
     payload: Dict[str, Any] = {
         "message": message,
-        "model": model,
+        "model": normalize_hf_model_id(model),
+        "provider": "huggingface",
         "view_state": view_state or {},
     }
     if vision_model:
-        payload["vision_model"] = vision_model
-    if api_key:
-        payload["api_key"] = api_key
+        payload["vision_model"] = normalize_hf_model_id(vision_model)
+    if resolved_token:
+        payload["api_key"] = resolved_token
+        payload["hf_api_key"] = resolved_token
+    if inference_provider:
+        payload["inference_provider"] = inference_provider
     if selected_event:
         payload["selected_event"] = selected_event
-    return client.request_json("POST", "/api/ollama/chat", payload=payload)
+    return client.request_json("POST", "/api/cra/chat", payload=payload)
 
 
 def summarize_chat(data: Dict[str, Any]) -> None:
@@ -1382,7 +1438,7 @@ def run_repl(client: CRAClient, args: argparse.Namespace) -> int:
                 "  /status\n"
                 "  /health\n"
                 "  /system\n"
-                "  /models\n"
+                "  /models [query]\n"
                 "  /events\n"
                 "  /logs [name]\n"
                 "  /sim status|start|stop\n"
@@ -1401,8 +1457,14 @@ def run_repl(client: CRAClient, args: argparse.Namespace) -> int:
                 summarize_health(client.request_json("GET", "/api/cra/health/check"))
             elif line == "/system":
                 summarize_system(client.request_json("GET", "/api/cra/system/state"))
-            elif line == "/models":
-                summarize_models(client.request_json("GET", "/api/ollama/models"))
+            elif line.startswith("/models"):
+                parts = line.split(maxsplit=1)
+                query = parts[1].strip() if len(parts) > 1 else ""
+                summarize_models(client.request_json(
+                    "GET",
+                    "/api/cra/hub/search",
+                    query={"q": query, "limit": 10, "pipeline": "text-generation"},
+                ))
             elif line == "/events":
                 summarize_events(client.request_json("GET", "/api/cra/events/recent"), limit=10)
             elif line.startswith("/logs"):
@@ -1449,6 +1511,7 @@ def run_repl(client: CRAClient, args: argparse.Namespace) -> int:
                     model=args.model,
                     vision_model=args.vision_model,
                     api_key=args.api_key,
+                    inference_provider=args.inference_provider,
                 )
                 summarize_chat(reply)
         except Exception as exc:
@@ -1508,7 +1571,15 @@ def main() -> int:
             return 0
 
         if args.command == "models":
-            data = client.request_json("GET", "/api/ollama/models")
+            data = client.request_json(
+                "GET",
+                "/api/cra/hub/search",
+                query={
+                    "q": args.query,
+                    "limit": args.limit,
+                    "pipeline": args.pipeline,
+                },
+            )
             if args.json:
                 print_json(data)
             else:
@@ -1732,6 +1803,7 @@ def main() -> int:
                 api_key=args.api_key,
                 selected_event=args.selected_event,
                 view_state=read_view_state(args.view_state_file),
+                inference_provider=args.inference_provider,
             )
             if args.json:
                 print_json(data)

@@ -432,9 +432,9 @@ The first run auto-downloads WordNet (~10MB). Subsequent runs use cached data.
 python reality_simulator/language/expand_knowledge_web.py --concepts 50000 --min-weight 0.5
 ```
 
-### Optional: AI Features (Ollama)
+### Optional: AI Features (Hugging Face)
 
-Ollama is only required for the Ollama-backed CRA narration and vision-analysis paths. It is not required for direct organism interaction.
+CRA narration and vision-analysis use Hugging Face Inference. Direct organism interaction does not require a provider token.
 
 Provider-free organism chat:
 ```bash
@@ -443,19 +443,19 @@ python cra_cli.py butterfly-chat "cooperate" --max-organisms 1
 python cra_cli.py organism-chat <organism_id> "cooperate"
 ```
 
-For Ollama-assisted features (CRA chat synthesis, vision analysis):
+For Hugging Face-assisted features:
 
-1. **Install Ollama**: Download from https://ollama.ai/
-2. **Start Ollama**: Run `ollama serve` (or use Ollama Cloud)
-3. **Pull Models**:
+1. Create a Hugging Face token with Inference access.
+2. Export it in your shell or pass it per request:
    ```bash
-   ollama pull llama3        # Language model
-   ollama pull llava        # Vision model
+   export HF_TOKEN=hf_your_token_here
+   python cra_cli.py chat "summarize the current system" --model Qwen/Qwen2.5-7B-Instruct
+   python cra_cli.py repl --model Qwen/Qwen2.5-7B-Instruct
    ```
-
-**Ollama Cloud Setup:**
-- See [OLLAMA_CLOUD_SETUP.md](./OLLAMA_CLOUD_SETUP.md) for cloud API configuration
-- Set `OLLAMA_BASE_URL=https://ollama.com` and `OLLAMA_API_KEY=your_key`
+3. Search public Hub model ids from the CLI:
+   ```bash
+   python cra_cli.py models --query Qwen --limit 10
+   ```
 
 ### Secrets & Environment Variables
 
@@ -468,8 +468,8 @@ copy .env.example .env
 ```
 
 - Important environment variables:
-  - `OLLAMA_API_KEY` — Your Ollama Cloud API key (recommended)
-  - `OLLAMA_BASE_URL` — Ollama base URL (default: https://ollama.com)
+  - `HF_TOKEN` or `HUGGINGFACE_API_KEY` — Hugging Face token for CRA chat and vision requests
+  - `CRA_DEFAULT_HF_MODEL` — Optional default Hugging Face model id for `cra_cli.py chat` and `cra_cli.py repl`
   - `POSTGRES_PASSWORD` — DB password for local `postgres` service
   - `DJINN_DB_USERNAME`, `DJINN_DB_PASSWORD` — Djinn DB credentials
   - `INTERNAL_API_KEY`, `EXTERNAL_API_KEY` — Optional API keys used by the system
