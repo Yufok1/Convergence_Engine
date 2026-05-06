@@ -1,5 +1,6 @@
 Convergence Engine Quick Reference
 ==================================
+Codex was here. Monkey King kept the rhythm. Vast.ai gets the mainline pull. Keep it weird, keep it verified.
 
 Cheat code
 ----------
@@ -40,6 +41,9 @@ Read me first
 This is the short path into the Convergence Engine.
 It is written like a cheat sheet because the goal is to play, test, and learn by touching the system.
 
+Playful wrapper. Serious receipts.
+Commands are the drumline. Run them from the room named above.
+
 Do the main path first.
 Use the optional parts later.
 
@@ -61,7 +65,7 @@ Be funny.
 Be honest.
 Read the room before you touch the machine.
 
-The banger raid order is:
+The banger raid order is four beats:
 
 1. get status
 2. get sitrep
@@ -70,9 +74,29 @@ The banger raid order is:
 
 Use these first when you are unsure:
 
-cd /data/work/Convergence_Engine
+cd /workspace/Convergence_Engine
 python cra_cli.py status
 python cra_cli.py sitrep
+
+If a command fails, read the error before inventing a spell.
+
+Vast.ai pull lane
+-----------------
+GitHub main is the unit.
+Vast.ai boxes should pull main unless you explicitly test another branch.
+
+Fresh Vast.ai box:
+
+cd /workspace
+git clone https://github.com/Yufok1/Convergence_Engine.git
+cd Convergence_Engine
+git checkout main
+git pull origin main
+
+ECU / ARR
+---------
+ECU: Engine Control Unit. Keep main as the steering surface.
+ARR: Audit the room, reacquire main, run one command, read the receipt.
 
 JupyterLab front door
 ---------------------
@@ -122,7 +146,10 @@ Optional public tunnel for the web UI:
 ssh -R 80:localhost:5000 nokey@localhost.run
 
 Clone and setup
---------------
+---------------
+Go to the workspace room:
+
+cd /workspace
 
 If the repo is not there yet:
 
@@ -148,9 +175,14 @@ Windows PowerShell:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 
-Linux, macOS, or Hugging Face terminal:
+Linux, macOS, Hugging Face, or bash:
 
-. /home/user/.venvs/convergence-engine/bin/activate
+python -m venv .venv
+source .venv/bin/activate
+
+Already inside conda or uv:
+
+python -m pip install -r requirements.txt
 
 Install the engine parts:
 
@@ -163,7 +195,7 @@ Vocabulary and language bootstrap
 ---------------------------------
 Run these once after a fresh clone:
 
-cd /data/work/Convergence_Engine
+cd /workspace/Convergence_Engine
 mkdir -p data
 cp config.json data/config.json
 mkdir -p /data/nltk_data
@@ -173,7 +205,7 @@ python -m nltk.downloader -d /data/nltk_data wordnet omw-1.4
 MONKEY KING WAS HERE\//
 >---->--->--->--->-[\/]
                    {/\}
-NEXT:<---<----<---[/<<\]  
+NEXT:<---<----<---[/<<\]
 
 python build_curated_dataset.py
 python merge_nuclear_vocab.py
@@ -191,8 +223,8 @@ Recovery boot order
 -------------------
 Check first:
 
-cd /data/work/Convergence_Engine
-. /home/user/.venvs/convergence-engine/bin/activate
+cd /workspace/Convergence_Engine
+source .venv/bin/activate
 mkdir -p data
 cp config.json data/config.json
 python unified_entry.py --config config.json --check-only --no-viz
@@ -290,7 +322,7 @@ Persist live learned state
 curl -X POST http://localhost:8080/save
 curl -X POST http://localhost:8080/export -H "Content-Type: application/json" -d '{"path":"evolved_cocoon.py"}'
 
-Tiny rescue card
+Tiny rescue riff
 ----------------
 If setup fails:
 
@@ -310,9 +342,25 @@ If you get lost:
 
 python cra_cli.py sitrep
 
-The whole trick
----------------
+Shell sanity
+------------
+Bash uses forward slashes:
+
+source .venv/bin/activate
+
+PowerShell uses backslashes:
+
+.\.venv\Scripts\Activate.ps1
+
+When in doubt:
+
+python --version
+python -m pip --version
+
+The whole groove
+----------------
 Code: techlady
 Build the language food.
 Start the world.
-Play Pokemon AI, baby.
+Check the receipts.
+Then play Pokemon AI, baby.
