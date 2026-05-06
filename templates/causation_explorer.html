@@ -24705,7 +24705,7 @@
                 hubSearchTimer: null,
                 lastHubResults: []
             };
-            const HF_DEFAULT_TEXT_MODEL = 'meta-llama/Llama-3.3-70B-Instruct';
+            const HF_DEFAULT_TEXT_MODEL = 'Qwen/Qwen2.5-7B-Instruct';
             const HF_DEFAULT_VISION_MODELS = [
                 'Qwen/Qwen2.5-VL-7B-Instruct',
                 'Qwen/Qwen2.5-VL-72B-Instruct',
@@ -25136,11 +25136,25 @@
                         updateChatStatus('');
 
                         if (data.error) {
-                            addChatMessage('assistant', `Error: ${data.error}`, true);
+                            const details = [];
+                            if (data.provider) details.push(`provider=${data.provider}`);
+                            if (data.inference_provider) details.push(`inference=${data.inference_provider}`);
+                            if (data.model) details.push(`model=${data.model}`);
+                            if (data.upstream_status) details.push(`upstream=${data.upstream_status}`);
+                            if (data.details) details.push(String(data.details).slice(0, 700));
+                            const suffix = details.length ? `\n${details.join('\n')}` : '';
+                            addChatMessage('assistant', `Error: ${data.error}${suffix}`, true);
                             return;
                         }
                         if (typeof data.response === 'string') {
                             data.response = sanitizeCraDisplayText(data.response);
+                        }
+                        if (data.model_fallback_from && data.model_used) {
+                            addChatMessage(
+                                'system',
+                                `HF model fallback: ${data.model_fallback_from} -> ${data.model_used} (${data.model_fallback_reason || 'selected model failed'})`,
+                                false
+                            );
                         }
 
                         // Parse visual description to extract per-image descriptions

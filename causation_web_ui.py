@@ -5442,7 +5442,7 @@ class HuggingFaceBridge:
     """
 
     DEFAULT_BASE = "https://router.huggingface.co"
-    DEFAULT_MODEL = "meta-llama/Llama-3.3-70B-Instruct"
+    DEFAULT_MODEL = "Qwen/Qwen2.5-7B-Instruct"
     DEFAULT_SYSTEM_PROMPT_CHARS = 48000
     DEFAULT_CHAT_MAX_TOKENS = 2048
     CRA_SYSTEM_ANCHOR = (
@@ -11918,7 +11918,35 @@ Use this context to understand what the graph structure means. Match the visual 
         cra_synthesis_start = time.time()
         logger.info(f"[CRA] [CRA] Calling {provider_label} chat API...")
         # HuggingFaceBridge clamps this so prompt + output stay inside provider context windows.
+        requested_model = model
         response = bridge_to_use.chat(model, messages, context, max_tokens=2048)
+        fallback_model_used = None
+        fallback_from_model = None
+        fallback_reason = None
+        if (
+            response is None
+            and provider in ('huggingface', 'hf')
+            and isinstance(requested_model, str)
+            and requested_model != HuggingFaceBridge.DEFAULT_MODEL
+            and getattr(bridge_to_use, "last_status_code", None) in (400, 404, 410)
+        ):
+            fallback_from_model = requested_model
+            fallback_reason = f"HTTP {getattr(bridge_to_use, 'last_status_code', None)} from HuggingFace router"
+            logger.warning(
+                "[CRA] [CRA] Model %s failed with %s; retrying default CLI model %s",
+                fallback_from_model,
+                fallback_reason,
+                HuggingFaceBridge.DEFAULT_MODEL,
+            )
+            response = bridge_to_use.chat(
+                HuggingFaceBridge.DEFAULT_MODEL,
+                messages,
+                context,
+                max_tokens=2048,
+            )
+            if response is not None:
+                fallback_model_used = HuggingFaceBridge.DEFAULT_MODEL
+                model = fallback_model_used
         cra_synthesis_time = time.time() - cra_synthesis_start
         response = sanitize_model_response(response)
         logger.info(f"[CRA] [CRA] ✓ CRA synthesis completed in {cra_synthesis_time:.2f}s")
@@ -12047,7 +12075,13 @@ Use this context to understand what the graph structure means. Match the visual 
             'anomalies': len(context.get('anomalies', {})),
             'alerts': len(context.get('alerts', [])),
             'predictions': len(context.get('predictive_insights', {}))
-        })
+        } | ({
+            'model_used': fallback_model_used,
+            'model_fallback_from': fallback_from_model,
+            'model_fallback_reason': fallback_reason,
+        } if fallback_model_used else {
+            'model_used': model,
+        }))
     except Exception as e:
         logger.error(f"Error in CRA chat: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
