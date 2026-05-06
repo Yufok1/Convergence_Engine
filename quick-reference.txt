@@ -92,6 +92,9 @@ git clone https://github.com/Yufok1/Convergence_Engine.git
 cd Convergence_Engine
 git checkout main
 git pull origin main
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
 
 ECU / ARR
 ---------
@@ -170,19 +173,21 @@ You should see:
 
 /workspace/Convergence_Engine
 
-Windows PowerShell:
-
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-
-Linux, macOS, Hugging Face, or bash:
+Vast.ai, Linux, macOS, Hugging Face, or bash:
 
 python -m venv .venv
 source .venv/bin/activate
 
-Already inside conda or uv:
+If your prompt looks like `root@...` or `(main) root@...`, use the bash line above.
+
+Already inside conda or uv and skipping `.venv`:
 
 python -m pip install -r requirements.txt
+
+Windows PowerShell only:
+
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 
 Install the engine parts:
 
