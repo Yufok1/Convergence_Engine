@@ -470,6 +470,8 @@ copy .env.example .env
 - Important environment variables:
   - `HF_TOKEN` or `HUGGINGFACE_API_KEY` — Hugging Face token for CRA chat and vision requests
   - `CRA_DEFAULT_HF_MODEL` — Optional default Hugging Face model id for `cra_cli.py chat` and `cra_cli.py repl`
+  - `HF_CHAT_MAX_TOKENS` — Optional Hugging Face CRA response cap, clamped between 128 and 4096 (default: 2048)
+  - `HF_SYSTEM_PROMPT_CHARS` — Optional Hugging Face CRA prompt/context character budget (default: 48000)
   - `POSTGRES_PASSWORD` — DB password for local `postgres` service
   - `DJINN_DB_USERNAME`, `DJINN_DB_PASSWORD` — Djinn DB credentials
   - `INTERNAL_API_KEY`, `EXTERNAL_API_KEY` — Optional API keys used by the system

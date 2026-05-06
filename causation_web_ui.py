@@ -5433,6 +5433,14 @@ class HuggingFaceBridge:
 
     DEFAULT_BASE = "https://router.huggingface.co"
     DEFAULT_MODEL = "meta-llama/Llama-3.3-70B-Instruct"
+    DEFAULT_SYSTEM_PROMPT_CHARS = 48000
+    DEFAULT_CHAT_MAX_TOKENS = 2048
+    CRA_SYSTEM_ANCHOR = (
+        "You are the Convergence Research Assistant (CRA) running inside the "
+        "Convergence Engine / Butterfly System runtime. Use the supplied runtime "
+        "context as evidence, distinguish observed state from interpretation, and "
+        "do not answer as a generic base model."
+    )
 
     def __init__(self, base_url: str = None, timeout: float = None,
                  api_key: str = None, inference_provider: str = None,
@@ -5478,6 +5486,71 @@ class HuggingFaceBridge:
             except Exception:
                 self.last_response_text = None
 
+    def _bounded_int_env(self, name: str, default: int,
+                         minimum: int, maximum: int) -> int:
+        try:
+            value = int(os.getenv(name, str(default)))
+        except (TypeError, ValueError):
+            value = default
+        return max(minimum, min(value, maximum))
+
+    def _resolve_chat_max_tokens(self, requested: Optional[int]) -> int:
+        cap = self._bounded_int_env(
+            "HF_CHAT_MAX_TOKENS",
+            self.DEFAULT_CHAT_MAX_TOKENS,
+            128,
+            4096,
+        )
+        if requested is None:
+            return cap
+        try:
+            requested_value = int(requested)
+        except (TypeError, ValueError):
+            requested_value = cap
+        return max(128, min(requested_value, cap))
+
+    def _trim_text_middle(self, text: str, budget: int, label: str) -> str:
+        if len(text) <= budget:
+            return text
+        marker = f"\n\n[... {label} truncated for HuggingFace context budget ...]\n\n"
+        if budget <= len(marker) + 200:
+            return text[:max(0, budget - len(marker))] + marker
+        head_budget = max(100, int((budget - len(marker)) * 0.65))
+        tail_budget = max(100, budget - len(marker) - head_budget)
+        return text[:head_budget].rstrip() + marker + text[-tail_budget:].lstrip()
+
+    def _budget_system_prompt(self, text: str) -> str:
+        prompt = str(text or "")
+        budget = self._bounded_int_env(
+            "HF_SYSTEM_PROMPT_CHARS",
+            self.DEFAULT_SYSTEM_PROMPT_CHARS,
+            8000,
+            120000,
+        )
+        anchor = self.CRA_SYSTEM_ANCHOR
+        if not prompt:
+            return anchor
+        remaining = max(1000, budget - len(anchor) - 4)
+        role_marker = "# YOUR ROLE: Convergence Research Assistant (CRA)"
+        role_index = prompt.find(role_marker)
+        if role_index >= 0:
+            context_part = prompt[:role_index].strip()
+            role_part = prompt[role_index:].strip()
+            context_budget = min(len(context_part), max(2000, remaining // 3))
+            role_budget = max(1000, remaining - context_budget - 64)
+            context_part = self._trim_text_middle(
+                context_part,
+                context_budget,
+                "runtime context",
+            )
+            role_part = self._trim_text_middle(
+                role_part,
+                role_budget,
+                "CRA operating prompt",
+            )
+            return f"{anchor}\n\n{context_part}\n\n{role_part}".strip()
+        return f"{anchor}\n\n{self._trim_text_middle(prompt, remaining, 'CRA system prompt')}".strip()
+
     def chat(self, model: str, messages: List[Dict[str, str]],
              context: Dict[str, Any] = None,
              max_tokens: int = None) -> Optional[str]:
@@ -5496,13 +5569,17 @@ class HuggingFaceBridge:
         if context and isinstance(context, dict):
             sys_text = context.get("system") or context.get("system_prompt")
             if sys_text:
-                outbound.append({"role": "system", "content": str(sys_text)})
+                outbound.append({
+                    "role": "system",
+                    "content": self._budget_system_prompt(str(sys_text)),
+                })
         if isinstance(messages, list):
             outbound.extend(messages)
+        output_tokens = self._resolve_chat_max_tokens(max_tokens)
         payload = {
             "model": model or self.DEFAULT_MODEL,
             "messages": outbound,
-            "max_tokens": max_tokens or 1024,
+            "max_tokens": output_tokens,
         }
         url = f"{self.base_url}/chat/completions"
         try:
@@ -11830,8 +11907,8 @@ Use this context to understand what the graph structure means. Match the visual 
         logger.info(f"[CRA] [CRA] Model: {model}, Message length: {len(message)} chars, Context size: {len(str(context))} chars")
         cra_synthesis_start = time.time()
         logger.info(f"[CRA] [CRA] Calling {provider_label} chat API...")
-        # Use high token limit (8192) to allow full comprehensive analysis without truncation
-        response = bridge_to_use.chat(model, messages, context, max_tokens=8192)
+        # HuggingFaceBridge clamps this so prompt + output stay inside provider context windows.
+        response = bridge_to_use.chat(model, messages, context, max_tokens=2048)
         cra_synthesis_time = time.time() - cra_synthesis_start
         response = sanitize_model_response(response)
         logger.info(f"[CRA] [CRA] ✓ CRA synthesis completed in {cra_synthesis_time:.2f}s")
