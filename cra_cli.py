@@ -9,12 +9,16 @@ CRA and core monitoring endpoints without opening the browser UI.
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import os
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import zipfile
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib import error, parse, request
@@ -29,6 +33,14 @@ HF_MODEL_ALIASES = {
     "llama3.2": "meta-llama/Llama-3.2-3B-Instruct",
     "llama3.2:latest": "meta-llama/Llama-3.2-3B-Instruct",
 }
+CRA_LOADING_FRAMES = [
+    "C  R  A   <==o~~~~",
+    "C <==o~~ R  A",
+    "C ~~o==> R  A",
+    "C  R <==o~~ A",
+    "C  R ~~o==> A",
+    "C  R  A ~~~~o==>",
+]
 NOTE_TYPES = [
     "note",
     "observation",
@@ -926,6 +938,33 @@ def resolve_hf_token(api_key: Optional[str]) -> Optional[str]:
     return api_key or os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_API_KEY")
 
 
+@contextmanager
+def cra_loading_art(enabled: bool = True):
+    if not enabled or not sys.stderr.isatty():
+        yield
+        return
+
+    stop = threading.Event()
+
+    def animate() -> None:
+        for frame in itertools.cycle(CRA_LOADING_FRAMES):
+            if stop.is_set():
+                break
+            sys.stderr.write(f"\r{frame}  thinking... ")
+            sys.stderr.flush()
+            time.sleep(0.16)
+        sys.stderr.write("\r" + " " * 48 + "\r")
+        sys.stderr.flush()
+
+    thread = threading.Thread(target=animate, daemon=True)
+    thread.start()
+    try:
+        yield
+    finally:
+        stop.set()
+        thread.join(timeout=0.5)
+
+
 def do_chat(
     client: CRAClient,
     message: str,
@@ -1505,14 +1544,15 @@ def run_repl(client: CRAClient, args: argparse.Namespace) -> int:
             elif line == "/swarm":
                 summarize_swarm_stats(client.request_json("GET", "/api/cra/diagnostics/agent_swarm"))
             else:
-                reply = do_chat(
-                    client,
-                    message=line,
-                    model=args.model,
-                    vision_model=args.vision_model,
-                    api_key=args.api_key,
-                    inference_provider=args.inference_provider,
-                )
+                with cra_loading_art():
+                    reply = do_chat(
+                        client,
+                        message=line,
+                        model=args.model,
+                        vision_model=args.vision_model,
+                        api_key=args.api_key,
+                        inference_provider=args.inference_provider,
+                    )
                 summarize_chat(reply)
         except Exception as exc:
             print(f"Error: {exc}", file=sys.stderr)
@@ -1795,16 +1835,17 @@ def main() -> int:
 
         if args.command == "chat":
             message = read_message(args)
-            data = do_chat(
-                client,
-                message=message,
-                model=args.model,
-                vision_model=args.vision_model,
-                api_key=args.api_key,
-                selected_event=args.selected_event,
-                view_state=read_view_state(args.view_state_file),
-                inference_provider=args.inference_provider,
-            )
+            with cra_loading_art(enabled=not args.json):
+                data = do_chat(
+                    client,
+                    message=message,
+                    model=args.model,
+                    vision_model=args.vision_model,
+                    api_key=args.api_key,
+                    selected_event=args.selected_event,
+                    view_state=read_view_state(args.view_state_file),
+                    inference_provider=args.inference_provider,
+                )
             if args.json:
                 print_json(data)
             else:
