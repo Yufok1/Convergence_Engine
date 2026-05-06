@@ -11816,6 +11816,14 @@ Use this context to understand what the graph structure means. Match the visual 
 
         # Build messages for chat
         messages = [{"role": "user", "content": message}]
+        if provider in ('huggingface', 'hf'):
+            try:
+                system_prompt = ollama_bridge._build_system_prompt(context)
+                if system_prompt:
+                    context['system_prompt'] = system_prompt
+                    logger.info(f"[CRA] [CRA] Injected CRA system prompt for HuggingFace ({len(system_prompt)} chars)")
+            except Exception as e:
+                logger.error(f"[CRA] [CRA] Failed to build CRA system prompt for HuggingFace: {e}", exc_info=True)
 
         # Send to research assistant
         logger.info(f"[CRA] [Step 6/6] ===== Sending to CRA model for synthesis ===== ({time.time() - request_start_time:.2f}s elapsed)")
