@@ -251,7 +251,7 @@ mkdir -p /data/nltk_data
 export NLTK_DATA=/data/nltk_data
 python -m nltk.downloader -d /data/nltk_data wordnet omw-1.4
                                   ?::::??       
-                               .- ?:::;;;..::::??
+                               .- ?PROC;;..::::??
                              d  o   o  P        
                             __\   ^   / _
                            /+++'-._.-'++++\
