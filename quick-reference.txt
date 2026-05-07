@@ -202,6 +202,33 @@ python -m venv .venv
   .\.venv\Scripts\Activate.ps1   # Windows PowerShell only
 *
 
+› and how do I navigate to convergence engine?
+
+• You’re probably not on the Vast box path. Try the HF Space path:
+
+  pwd
+  ls -la
+  ls -la /data/work
+  cd /data/work/Convergence_Engine
+*
+  If that still says no such directory, locate it:
+
+  find / -maxdepth 4 -type d -name Convergence_Engine 2>/dev/null
+
+  Then cd into the path it prints, for example:
+*
+  cd /data/work/Convergence_Engine
+
+  If find prints nothing, the repo is not cloned in that environment yet:
+*
+  mkdir -p /data/work
+  git clone https://github.com/Yufok1/Convergence_Engine.git /data/work/Convergence_Engi
+  ne
+  cd /data/work/Convergence_Engine
+*
+  Small note: you made .venv wherever you currently are. That’s okay, but ideally make/
+  activate it after you’re inside Convergence_Engine.
+
 Install the engine parts:
 
 python -m pip install --upgrade pip
@@ -220,7 +247,7 @@ mkdir -p /data/nltk_data
 export NLTK_DATA=/data/nltk_data
 python -m nltk.downloader -d /data/nltk_data wordnet omw-1.4
 
->MONKEY KING WAS HER\E|
+>MONKEY KING WAS HERE|
 >-GO->--->--->--->{ / |
                    /  |
 stuff<=<!Quests!?<  = |
