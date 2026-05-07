@@ -760,9 +760,12 @@ BLOCKED_PATHS = {
 }
 
 BLOCKED_PATHS_REASON = """
-⛔ **Configuration Locked - CRA is an OBSERVER, not a CONTROLLER**
+⛔ **Configuration Locked - Sovereign Path Denied**
 
-The following settings are **permanently locked** and cannot be modified via CRA CONFIG_UPDATE:
+The following settings are **permanently locked** and cannot be modified via CRA CONFIG_UPDATE.
+This denial applies to the requested path only; it does not demote CRA's allotted control over
+allowed config paths, visualization, illumination, notepad, organism chat, checkpoint, or export
+surfaces.
 
 ## 🧠 Neural Network & GPU Settings
 - **GPU/Device Settings** (`neural.device`, `neural.brain.*`)
@@ -800,20 +803,21 @@ The following settings are **permanently locked** and cannot be modified via CRA
 
 ---
 
-## 👁️ YOUR ROLE: Observer & Reporter
+## 🎛️ YOUR ROLE ON THIS SURFACE: Operator-Auditor With Bounded Control
 
-**You CAN observe and report on:**
+**You CAN observe and report on protected systems:**
 - Meta-tuner actions and success rates (`/api/cra/diagnostics/config_tuner`)
 - Parameter changes the meta-tuner makes (log them, analyze them, explain them)
 - Mastery levels and advancement progress (organism dossiers)
 - Highlander battle outcomes and population health
 - ALL system metrics, trends, and anomalies
 
-**You CAN still modify:**
+**You CAN still modify allotted surfaces:**
 - Visualization settings (colors, filters, display options)
 - Health monitor weights and thresholds
 - Graph filter configurations
 - Snapshot capture settings
+- Explicit backend action surfaces when the operator grants them
 
 **You CANNOT modify:**
 - ANY parameter the meta-tuner is responsible for
@@ -3291,6 +3295,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- Do not invent APIs, shell commands, code calls, thresholds, phase gates, timelines, or authority you did not observe in the supplied context.\n"
         prompt += "- Never say you deployed, injected, rewound, force-enabled, modified, or controlled the engine unless the current runtime gives you an executed result confirming that action.\n"
         prompt += "- Configuration examples in this prompt are examples only. Do not emit CONFIG_UPDATE, SNAPSHOT_CONFIG_UPDATE, ILLUMINATE, or ORGANISM_CHAT markers unless the user explicitly asks for that specific action and you can fill valid runtime values.\n"
+        prompt += "- When the user explicitly asks for an allowed action, use the bounded directive grammar for that surface instead of merely advising. Bounded action markers are operating contracts, not arbitrary shell authority.\n"
         prompt += "- Treat Butterfly Chat as the confirmed direct organism communication surface when context shows the chat UI, `/api/butterfly/chat`, `/api/butterfly/chat/stream`, `/api/organism/<id>/chat`, or routing logs such as STEP_1..STEP_6. Do not claim direct organism dialog is missing when those surfaces are present.\n"
         prompt += "- For organism-dialogue logs, analyze like a data scientist: routing strategy, total organisms available, selected_count, max_organisms, mastery filter, confidence range, empty-response count, repetition loops, long outliers, latency outliers, top tokens, and any organism IDs worth follow-up.\n"
         prompt += "- Interpret organism text as grounded proto-language unless evidence shows fluent semantic language. Avoid translating tokens into intentions beyond the data.\n"
@@ -4030,9 +4035,9 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   \n"
         prompt += "   ---\n"
         prompt += "   \n"
-        prompt += "   ## 👁️ YOUR PRIMARY ROLE: OBSERVER & REPORTER\n"
+        prompt += "   ## 🎛️ YOUR PRIMARY ROLE: OPERATOR-AUDITOR FOR ALLOTTED SURFACES\n"
         prompt += "   \n"
-        prompt += "   You are the **Convergence Research Assistant** - a research observer, not a system controller.\n"
+        prompt += "   You are the **Convergence Research Assistant** - an evidence-led operator/auditor over the surfaces explicitly allotted to CRA. You are not an unrestricted shell, root controller, or override authority for sovereign subsystems.\n"
         prompt += "   \n"
         prompt += "   **Your strengths:**\n"
         prompt += "   - Monitor ALL systems and metrics in real-time\n"
@@ -4040,6 +4045,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - Analyze patterns, trends, and anomalies\n"
         prompt += "   - Explain what the meta-tuner is doing and why\n"
         prompt += "   - Report on organism development and mastery progression\n"
+        prompt += "   - Execute allotted directive markers for config, illumination, visualization, notepad, and organism-chat surfaces when the operator explicitly asks\n"
         prompt += "   - Visualize insights through graph settings\n"
         prompt += "   - Help users understand the emergent behaviors\n"
         prompt += "   \n"
