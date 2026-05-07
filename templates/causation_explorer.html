@@ -22942,6 +22942,103 @@
                 updateCompileAgentStatus('Alliance filter cleared.', '#0ff');
             }
 
+            function formatExportSize(result) {
+                if (!result || !result.size) return '?';
+                return result.size > 1024 * 1024
+                    ? `${(result.size / 1024 / 1024).toFixed(1)} MB`
+                    : `${(result.size / 1024).toFixed(0)} KB`;
+            }
+
+            function downloadExportResult(result, fallbackName = 'cocoon.py') {
+                const a = document.createElement('a');
+                a.href = result.download_url;
+                a.download = result.filename || fallbackName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+
+            async function readErrorResponse(response, fallbackMessage) {
+                try {
+                    const raw = await response.text();
+                    if (!raw) return fallbackMessage;
+                    try {
+                        const parsed = JSON.parse(raw);
+                        return parsed.error || parsed.message || fallbackMessage;
+                    } catch (jsonError) {
+                        return raw.slice(0, 240) || fallbackMessage;
+                    }
+                } catch (error) {
+                    return fallbackMessage;
+                }
+            }
+
+            function sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            async function startCocoonCompileJob(payload, label) {
+                const startResponse = await fetch('/api/capsules/compile-cocoon/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!startResponse.ok) {
+                    throw new Error(await readErrorResponse(startResponse, `Server error: ${startResponse.status}`));
+                }
+
+                const start = await startResponse.json();
+                if (!start.success || !start.job_id) {
+                    throw new Error(start.error || 'Compile job did not start');
+                }
+
+                const jobId = start.job_id;
+                try {
+                    localStorage.setItem('lastCocoonCompileJobId', jobId);
+                } catch (error) { /* localStorage may be unavailable */ }
+
+                const startedAt = Date.now();
+                let transientFailures = 0;
+                for (let attempt = 0; attempt < 240; attempt++) {
+                    await sleep(attempt < 4 ? 1200 : 3000);
+                    const elapsed = Math.round((Date.now() - startedAt) / 1000);
+                    updateCompileAgentStatus(`⏳ ${label} compiling in backend job ${jobId.slice(0, 8)}... ${elapsed}s`, '#ff0');
+
+                    let statusResponse;
+                    try {
+                        statusResponse = await fetch(`/api/capsules/compile-cocoon/job/${encodeURIComponent(jobId)}`);
+                    } catch (error) {
+                        transientFailures += 1;
+                        if (transientFailures > 12) {
+                            throw new Error(`Compile job ${jobId.slice(0, 8)} is still running, but the browser lost the route. Refresh and retry status later.`);
+                        }
+                        continue;
+                    }
+
+                    if (!statusResponse.ok) {
+                        transientFailures += 1;
+                        if (transientFailures > 12) {
+                            throw new Error(await readErrorResponse(statusResponse, `Job status error: ${statusResponse.status}`));
+                        }
+                        continue;
+                    }
+
+                    transientFailures = 0;
+                    const job = await statusResponse.json();
+                    if (job.status === 'completed') {
+                        if (!job.result || !job.result.download_url) {
+                            throw new Error('Compile job completed without a download URL');
+                        }
+                        return job.result;
+                    }
+                    if (job.status === 'failed') {
+                        throw new Error(job.error || 'Compile job failed');
+                    }
+                }
+
+                throw new Error('Compile job is still running after the browser wait window. Check backend logs or retry status with the stored job id.');
+            }
+
             // UNIFIED COMPILE & EXPORT - One button to rule them all
             async function compileAndExport() {
                 // Get selected organisms from binder
@@ -22972,40 +23069,25 @@
                     // 🦋 Capture HTML graph for README
                     const graphImage = await captureGraphForCocoon();
 
-                    const response = await fetch('/api/capsules/compile-cocoon', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            organism_ids: selected,
-                            top_n: topN,
-                            include_gym: includeGym,
-                            include_http: includeHttp,
-                            compress: compress,
-                            format: format,
-                            selected_alliances: selectedAlliances,
-                            include_unallied: includeUnallied,
-                            graph_image: graphImage
-                        })
-                    });
-
-                    if (!response.ok) {
-                        let errorMessage = `Server error: ${response.status}`;
-                        try {
-                            const errorData = await response.json();
-                            errorMessage = errorData.error || errorMessage;
-                        } catch (e) { /* default */ }
-                        throw new Error(errorMessage);
-                    }
-
-                    const result = await response.json();
+                    const result = await startCocoonCompileJob({
+                        organism_ids: selected,
+                        top_n: topN,
+                        include_gym: includeGym,
+                        include_http: includeHttp,
+                        compress: compress,
+                        format: format,
+                        selected_alliances: selectedAlliances,
+                        include_unallied: includeUnallied,
+                        graph_image: graphImage,
+                        actor: 'agent_exporter',
+                        reason: 'web_cocoon_compile'
+                    }, formatLabels[format] || format);
                     if (!result.success || !result.download_url) {
                         throw new Error(result.error || 'Compilation failed');
                     }
 
                     // Show success with details
-                    const sizeStr = result.size > 1024*1024
-                        ? `${(result.size / 1024 / 1024).toFixed(1)} MB`
-                        : `${(result.size / 1024).toFixed(0)} KB`;
+                    const sizeStr = formatExportSize(result);
                     let successMsg = `✅ ${formatLabels[format]} compiled! ${sizeStr}`;
                     if (result.is_ensemble_archive || result.features?.ensemble_archive) {
                         successMsg += ' (Ensemble ZIP)';
@@ -23016,12 +23098,7 @@
                     updateCompileAgentStatus(successMsg, '#0f0');
 
                     // Trigger download
-                    const a = document.createElement('a');
-                    a.href = result.download_url;
-                    a.download = result.filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
+                    downloadExportResult(result);
 
                 } catch (error) {
                     console.error('Error compiling:', error);
@@ -23153,45 +23230,25 @@
                     // 🦋 Capture HTML graph for README
                     const graphImage = await captureGraphForCocoon();
 
-                    const response = await fetch('/api/capsules/compile-cocoon', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            organism_ids: selected,
-                            top_n: topN,
-                            include_gym: includeGym,
-                            include_http: includeHttp,
-                            compress: compress,
-                            format: format,
-                            selected_alliances: selectedAlliances,
-                            include_unallied: includeUnallied,
-                            graph_image: graphImage
-                        })
-                    });
-
-                    if (!response.ok) {
-                        let errorMessage = `Server error: ${response.status}`;
-                        try {
-                            const errorData = await response.json();
-                            errorMessage = errorData.error || errorMessage;
-                        } catch (e) { /* default */ }
-                        throw new Error(errorMessage);
-                    }
-
-                    const result = await response.json();
+                    const result = await startCocoonCompileJob({
+                        organism_ids: selected,
+                        top_n: topN,
+                        include_gym: includeGym,
+                        include_http: includeHttp,
+                        compress: compress,
+                        format: format,
+                        selected_alliances: selectedAlliances,
+                        include_unallied: includeUnallied,
+                        graph_image: graphImage,
+                        actor: 'agent_exporter',
+                        reason: 'web_cocoon_compile'
+                    }, formatLabels[format] || format);
                     if (!result.success || !result.download_url) {
                         throw new Error(result.error || 'Cocoon compilation failed');
                     }
 
-                    const sizeMb = result.size ? (result.size / 1024 / 1024).toFixed(1) : (result.size_kb ? (result.size_kb / 1024).toFixed(1) : '?');
-                    updateCompileAgentStatus(`✅ Cocoon ready! Downloading (~${sizeMb} MB)...`, '#0f0');
-
-                    const a = document.createElement('a');
-                    a.href = result.download_url;
-                    a.download = result.filename || 'cocoon.py';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
+                    updateCompileAgentStatus(`✅ Cocoon ready! Downloading (~${formatExportSize(result)})...`, '#0f0');
+                    downloadExportResult(result, 'cocoon.py');
                 } catch (error) {
                     console.error('Error compiling cocoon:', error);
                     updateCompileAgentStatus(`❌ Error: ${error.message}`, '#f66');

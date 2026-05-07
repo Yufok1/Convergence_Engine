@@ -59,6 +59,10 @@ RESEARCH_NOTE_TYPES = {
     "cra",
 }
 
+COCOON_COMPILE_JOBS: Dict[str, Dict[str, Any]] = {}
+COCOON_COMPILE_JOBS_LOCK = threading.RLock()
+COCOON_COMPILE_JOB_TTL_SECONDS = 6 * 60 * 60
+
 _HIDDEN_REASONING_BLOCK_RE = re.compile(
     r"<(?:think|thinking|analysis|reasoning|scratchpad)\b[^>]*>.*?</(?:think|thinking|analysis|reasoning|scratchpad)>",
     re.IGNORECASE | re.DOTALL,
@@ -7739,6 +7743,78 @@ def _guard_action_submission(action: str, payload: Dict[str, Any]) -> Optional[A
     }), 403
 
 
+def _prune_cocoon_compile_jobs(now: Optional[float] = None) -> None:
+    """Keep finished web compile jobs bounded while preserving recent receipts."""
+    now = time.time() if now is None else now
+    cutoff = now - COCOON_COMPILE_JOB_TTL_SECONDS
+    with COCOON_COMPILE_JOBS_LOCK:
+        stale_ids = [
+            job_id
+            for job_id, job in COCOON_COMPILE_JOBS.items()
+            if float(job.get("created_at", 0) or 0) < cutoff
+            and job.get("status") in {"completed", "failed"}
+        ]
+        for job_id in stale_ids:
+            COCOON_COMPILE_JOBS.pop(job_id, None)
+
+
+def _set_cocoon_compile_job(job_id: str, **updates: Any) -> None:
+    with COCOON_COMPILE_JOBS_LOCK:
+        job = COCOON_COMPILE_JOBS.get(job_id)
+        if not job:
+            return
+        job.update(updates)
+        job["updated_at"] = time.time()
+
+
+def _run_cocoon_compile_job(job_id: str, payload: Dict[str, Any]) -> None:
+    """Run the existing cocoon compiler outside the browser request lifecycle."""
+    _set_cocoon_compile_job(job_id, status="running", started_at=time.time(), message="Compiling cocoon")
+    try:
+        with app.app_context():
+            with app.test_client() as client:
+                response = client.post("/api/capsules/compile-cocoon", json=payload)
+                raw_text = response.get_data(as_text=True)
+                try:
+                    result = json.loads(raw_text) if raw_text.strip() else {}
+                except json.JSONDecodeError:
+                    result = {
+                        "error": "Compile route returned non-JSON response",
+                        "raw_preview": raw_text[:500],
+                    }
+
+        if response.status_code >= 400 or not result.get("success"):
+            error_message = result.get("error") or f"Compile failed with HTTP {response.status_code}"
+            _set_cocoon_compile_job(
+                job_id,
+                status="failed",
+                finished_at=time.time(),
+                http_status=response.status_code,
+                error=error_message,
+                result=result,
+                message=error_message,
+            )
+            return
+
+        _set_cocoon_compile_job(
+            job_id,
+            status="completed",
+            finished_at=time.time(),
+            http_status=response.status_code,
+            result=result,
+            message="Cocoon ready",
+        )
+    except Exception as exc:
+        logger.error(f"[COCOON_JOB] Error compiling cocoon job {job_id}: {exc}", exc_info=True)
+        _set_cocoon_compile_job(
+            job_id,
+            status="failed",
+            finished_at=time.time(),
+            error=str(exc),
+            message=str(exc),
+        )
+
+
 @app.route('/health')
 def health():
     """Health check endpoint"""
@@ -9712,6 +9788,60 @@ def compile_learning_capsule():
     except Exception as e:
         logger.error(f"Error compiling learning capsule: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/capsules/compile-cocoon/start', methods=['POST'])
+def start_cocoon_compile_job():
+    """Start a cocoon compile as a background job for tunnel-safe web exports."""
+    try:
+        data = request.get_json() or {}
+        guarded = _guard_action_submission('cocoon_compile', data)
+        if guarded:
+            return guarded
+
+        _prune_cocoon_compile_jobs()
+        job_id = uuid.uuid4().hex
+        now = time.time()
+        with COCOON_COMPILE_JOBS_LOCK:
+            COCOON_COMPILE_JOBS[job_id] = {
+                "job_id": job_id,
+                "status": "queued",
+                "created_at": now,
+                "updated_at": now,
+                "message": "Queued cocoon compile",
+                "result": None,
+                "error": None,
+            }
+
+        worker = threading.Thread(
+            target=_run_cocoon_compile_job,
+            args=(job_id, copy.deepcopy(data)),
+            daemon=True,
+            name=f"cocoon-compile-{job_id[:8]}",
+        )
+        worker.start()
+
+        return jsonify({
+            'success': True,
+            'job_id': job_id,
+            'status': 'queued',
+            'status_url': f'/api/capsules/compile-cocoon/job/{job_id}',
+        }), 202
+    except Exception as e:
+        logger.error(f"Error starting cocoon compile job: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/capsules/compile-cocoon/job/<job_id>', methods=['GET'])
+def get_cocoon_compile_job(job_id):
+    """Return background cocoon compile status and final download metadata."""
+    _prune_cocoon_compile_jobs()
+    with COCOON_COMPILE_JOBS_LOCK:
+        job = copy.deepcopy(COCOON_COMPILE_JOBS.get(job_id))
+    if not job:
+        return jsonify({'success': False, 'error': 'Cocoon compile job not found'}), 404
+    job['success'] = job.get('status') != 'failed'
+    return jsonify(job)
 
 
 @app.route('/api/capsules/compile-cocoon', methods=['POST'])
