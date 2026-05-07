@@ -8034,6 +8034,88 @@ def capsule_organism(organism_id):
         return jsonify({'error': str(e)}), 500
 
 
+def _safe_mapping_items(mapping, retries=3):
+    """Snapshot mapping items while the simulation may be mutating them."""
+    if not mapping:
+        return []
+    for attempt in range(retries):
+        try:
+            return list(mapping.items())
+        except RuntimeError:
+            if attempt == retries - 1:
+                raise
+            time.sleep(0.01)
+        except AttributeError:
+            return []
+    return []
+
+
+def _safe_iterable_list(value, retries=3):
+    """Snapshot mutable iterables without letting concurrent mutation break API reads."""
+    if not value:
+        return []
+    for attempt in range(retries):
+        try:
+            return list(value)
+        except RuntimeError:
+            if attempt == retries - 1:
+                raise
+            time.sleep(0.01)
+        except TypeError:
+            return []
+    return []
+
+
+def _route_json_payload(route_result, default=None):
+    """Normalize Flask route return values into JSON payloads for internal callers."""
+    if default is None:
+        default = {}
+    response = route_result[0] if isinstance(route_result, tuple) else route_result
+    if hasattr(response, 'get_json'):
+        try:
+            payload = response.get_json(silent=True)
+        except TypeError:
+            payload = response.get_json()
+        return payload if payload is not None else default
+    if isinstance(response, dict):
+        return response
+    return default
+
+
+def _recent_events_payload(limit=100, since_timestamp=0.0):
+    """Return a bounded event sample without calling the route or materializing all events."""
+    target_explorer = app.config.get('explorer') or explorer
+    if target_explorer is None:
+        return {'events': [], 'event_count': 0, 'latest_timestamp': since_timestamp}
+
+    events = []
+    for _, event in _safe_mapping_items(getattr(target_explorer, 'events', {})):
+        try:
+            if event.timestamp > since_timestamp:
+                events.append(event)
+        except Exception:
+            continue
+
+    events.sort(key=lambda e: getattr(e, 'timestamp', 0), reverse=True)
+    bounded = list(reversed(events[:limit]))
+    payload_events = []
+    for event in bounded:
+        try:
+            payload_events.append(event.to_dict())
+        except Exception:
+            continue
+
+    latest = max([e.get('timestamp', since_timestamp) for e in payload_events], default=since_timestamp)
+    return {
+        'events': payload_events,
+        'event_count': len(payload_events),
+        'total_matching_events': len(events),
+        'latest_timestamp': latest,
+        'bounded': True,
+        'limit': limit
+    }
+
+
 @app.route('/api/organisms', methods=['GET'])
 def list_organisms():
     """
@@ -8081,12 +8163,22 @@ def list_organisms():
         # Get node_word_associations map
         node_word_associations = {}
         if context_memory and hasattr(context_memory, 'node_word_associations'):
-            node_word_associations = context_memory.node_word_associations
+            node_word_associations = dict(_safe_mapping_items(context_memory.node_word_associations))
 
-        # Get network connections dict for counting per-organism connections
-        network_connections = {}
+        # Snapshot network connections once and precompute per-organism counts.
+        # The live network mutates constantly; nested per-organism scans can
+        # time out under load and can also trip "dictionary changed size".
+        connection_counts = {}
         if network and hasattr(network, 'connections'):
-            network_connections = network.connections
+            for edge, _ in _safe_mapping_items(network.connections):
+                try:
+                    a, b = edge
+                except Exception:
+                    continue
+                for key in {a, str(a)}:
+                    connection_counts[key] = connection_counts.get(key, 0) + 1
+                for key in {b, str(b)}:
+                    connection_counts[key] = connection_counts.get(key, 0) + 1
 
         def analyze_action_history(action_history):
             """Analyze action history to determine behavioral traits."""
@@ -8389,7 +8481,7 @@ def list_organisms():
             if hasattr(unified_system, 'get_current_organisms'):
                 live_organisms = unified_system.get_current_organisms() or {}
                 logger.info(f"Found {len(live_organisms)} live organisms from simulation")
-                for org_id, organism in live_organisms.items():
+                for org_id, organism in _safe_mapping_items(live_organisms):
                     if org_id not in organism_ids:
                         # Get word count and mastery level for this organism
                         # PRIMARY: Check atomic_language.atoms (the organism's actual learned vocabulary)
@@ -8454,11 +8546,10 @@ def list_organisms():
                         behavior = analyze_action_history(action_history)
 
                         # Count connections from network
-                        connection_count = 0
-                        if network_connections:
-                            for (a, b) in network_connections.keys():
-                                if a == org_id or b == org_id:
-                                    connection_count += 1
+                        connection_count = max(
+                            connection_counts.get(org_id, 0),
+                            connection_counts.get(str(org_id), 0)
+                        )
 
                         # Battle stats
                         battle_wins = getattr(organism, 'battle_wins', 0)
@@ -8605,7 +8696,7 @@ def list_organisms():
         if capsule_manager:
             capsule_index = capsule_manager.capsule_index
             logger.info(f"Found {len(capsule_index)} capsules in storage")
-            for capsule_id, info in capsule_index.items():
+            for capsule_id, info in _safe_mapping_items(capsule_index):
                 org_id = info.get('organism_id')
                 if org_id and org_id not in organism_ids:
                     # Get word count for this organism from context_memory
@@ -8731,13 +8822,14 @@ def list_organisms():
         # Fill in alliance names and roles from alliance system
         alliance_system = getattr(unified_system, 'alliance_warfare', None) if unified_system else None
         if alliance_system and hasattr(alliance_system, 'alliances'):
+            alliance_map = dict(_safe_mapping_items(alliance_system.alliances))
             for org_data in organisms_data:
                 org_alliance_id = org_data.get('alliance_id')
-                if org_alliance_id and org_alliance_id in alliance_system.alliances:
-                    alliance = alliance_system.alliances[org_alliance_id]
+                if org_alliance_id and org_alliance_id in alliance_map:
+                    alliance = alliance_map[org_alliance_id]
                     org_data['alliance_name'] = getattr(alliance, 'name', None)
                     # Get role from alliance members dict
-                    members = getattr(alliance, 'members', {})
+                    members = dict(_safe_mapping_items(getattr(alliance, 'members', {})))
                     org_id = org_data.get('id')
                     if org_id in members:
                         role = members[org_id]
@@ -8786,7 +8878,7 @@ def list_alliances():
         # Get live organisms for member stats lookup
         live_organisms = {}
         if unified_system and hasattr(unified_system, 'get_current_organisms'):
-            live_organisms = unified_system.get_current_organisms() or {}
+            live_organisms = dict(_safe_mapping_items(unified_system.get_current_organisms() or {}))
 
         # Get network connections
         network = app.config.get('network')
@@ -8796,7 +8888,7 @@ def list_alliances():
 
         # Process PlanetaryAlliance objects (from alliance_warfare.py)
         if hasattr(alliance_system, 'alliances') and alliance_system.alliances:
-            for alliance_id, alliance in alliance_system.alliances.items():
+            for alliance_id, alliance in _safe_mapping_items(alliance_system.alliances):
                 try:
                     # Get member data with roles
                     members_data = []
@@ -8809,9 +8901,9 @@ def list_alliances():
                     members_raw = getattr(alliance, 'members', {})
                     logger.debug(f"Alliance {alliance_id}: members_raw type={type(members_raw)}, live_organisms keys sample={list(live_organisms.keys())[:3]}")
                     if isinstance(members_raw, dict):
-                        member_items = members_raw.items()
+                        member_items = _safe_mapping_items(members_raw)
                     elif isinstance(members_raw, set):
-                        member_items = [(m, 'member') for m in members_raw]
+                        member_items = [(m, 'member') for m in _safe_iterable_list(members_raw)]
                     else:
                         member_items = []
 
@@ -8862,20 +8954,20 @@ def list_alliances():
                     # Collective stats from Alliance dataclass
                     collective_fitness = getattr(alliance, 'collective_fitness', total_fitness)
                     strength = getattr(alliance, 'strength', 1.0)
-                    shared_concepts = list(getattr(alliance, 'shared_concepts', set()))
+                    shared_concepts = _safe_iterable_list(getattr(alliance, 'shared_concepts', set()))
                     betrayal_count = getattr(alliance, 'betrayal_count', 0)
 
                     # Territory (from PlanetaryAlliance)
                     controlled_territories = []
                     if hasattr(alliance, 'controlled_territories'):
-                        for territory in alliance.controlled_territories:
+                        for territory in _safe_iterable_list(alliance.controlled_territories):
                             if hasattr(territory, 'value'):
                                 controlled_territories.append(territory.value)
                             else:
                                 controlled_territories.append(str(territory))
 
                     # Betrayers (from PlanetaryAlliance)
-                    betrayers = list(getattr(alliance, 'betrayers', set()))
+                    betrayers = _safe_iterable_list(getattr(alliance, 'betrayers', set()))
 
                     # Get warchief if exists
                     warchief_id = getattr(alliance, 'warchief_id', None)
@@ -8961,7 +9053,7 @@ def list_alliances():
                     })
 
                     # Get alliance history if available
-                    alliance_histories = getattr(alliance_system, 'alliance_histories', {})
+                    alliance_histories = dict(_safe_mapping_items(getattr(alliance_system, 'alliance_histories', {})))
                     if alliance_id in alliance_histories:
                         history = alliance_histories[alliance_id]
                         alliances_data[-1]['history_summary'] = {
@@ -8985,12 +9077,12 @@ def list_alliances():
                                 'achievements': getattr(leg, 'achievements', [])[:5],
                                 'legacy': getattr(leg, 'legacy', '')
                             }
-                            for k, leg in list(legends.items())[:10]
+                            for k, leg in _safe_mapping_items(legends)[:10]
                         ]
                         # Get wisdom rules
-                        alliances_data[-1]['wisdom_rules'] = getattr(history, 'wisdom_rules', [])[:10]
+                        alliances_data[-1]['wisdom_rules'] = _safe_iterable_list(getattr(history, 'wisdom_rules', []))[:10]
                         # Get recent events
-                        events = getattr(history, 'events', [])[-10:]
+                        events = _safe_iterable_list(getattr(history, 'events', []))[-10:]
                         alliances_data[-1]['recent_events'] = [
                             {
                                 'type': getattr(e, 'event_type', 'unknown').value if hasattr(getattr(e, 'event_type', None), 'value') else str(getattr(e, 'event_type', 'unknown')),
@@ -10767,7 +10859,7 @@ def get_new_events():
         # DATA ACCESS: Filter explorer.events{} for events after timestamp
         # ⚠️ This only filters already-loaded events from log files, not new events from backend
         new_events = [
-            e.to_dict() for e in explorer.events.values()
+            e.to_dict() for _, e in _safe_mapping_items(explorer.events)
             if e.timestamp > since_timestamp
         ]
         # Sort by timestamp
@@ -14516,11 +14608,13 @@ def cra_get_data():
         except Exception as e:
             config_data = {'error': f'Could not read config.json: {e}'}
 
-        # Get causation graph stats
-        graph_stats = get_stats().get_json()
+        # Get causation graph stats. Internal route calls may return
+        # (Response, status); normalize before using as a dict.
+        graph_stats = _route_json_payload(get_stats(), {'total_events': 0, 'total_links': 0})
 
-        # Get recent events
-        recent_events = get_new_events().get_json()
+        # Get a bounded sample so CRA data access does not materialize the
+        # entire event archive during long runs.
+        recent_events = _recent_events_payload(limit=100)
 
         # Compile comprehensive data package
         data = {
@@ -14629,16 +14723,20 @@ def cra_get_system_state():
         except Exception as e:
             logger.warning(f"Could not load Butterfly System metrics: {e}")
 
-        # Get graph data
-        graph_data = get_graph().get_json()
+        # Use graph stats here instead of /api/graph. The graph route can be
+        # expensive and is intentionally filtered for rendering, while this
+        # endpoint is a lightweight system-state read.
+        graph_data = _route_json_payload(get_stats(), {'total_events': 0, 'total_links': 0})
+        total_nodes = graph_data.get('total_nodes', graph_data.get('total_events', 0))
+        total_links = graph_data.get('total_links', 0)
 
         # Calculate resource correlation
         correlation = {
             'butterfly_cpu_vs_total': butterfly_metrics.get('lattice_cpu', 0) / max(cpu_percent, 1) if cpu_percent > 0 else 0,
             'butterfly_ram_vs_total': butterfly_metrics.get('lattice_ram', 0) / max(memory.used / (1024*1024), 1) if memory.used > 0 else 0,
             'resource_efficiency': {
-                'nodes_per_cpu_percent': graph_data.get('total_nodes', 0) / max(cpu_percent, 1) if cpu_percent > 0 else 0,
-                'links_per_mb_ram': graph_data.get('total_links', 0) / max(memory.used / (1024*1024), 1) if memory.used > 0 else 0
+                'nodes_per_cpu_percent': total_nodes / max(cpu_percent, 1) if cpu_percent > 0 else 0,
+                'links_per_mb_ram': total_links / max(memory.used / (1024*1024), 1) if memory.used > 0 else 0
             }
         }
 
@@ -14675,8 +14773,8 @@ def cra_get_system_state():
             'butterfly_system': {
                 'lattice_cpu_percent': butterfly_metrics.get('lattice_cpu', 0),
                 'lattice_ram_mb': butterfly_metrics.get('lattice_ram', 0),
-                'total_nodes': graph_data.get('total_nodes', 0),
-                'total_links': graph_data.get('total_links', 0)
+                'total_nodes': total_nodes,
+                'total_links': total_links
             },
             'correlation': correlation,
             'warnings': []
