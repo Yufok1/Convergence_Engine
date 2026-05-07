@@ -189,6 +189,10 @@ Windows PowerShell only:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 
+Optional public tunnel for the web UI:
+
+ssh -R 80:localhost:5000 nokey@localhost.run
+
 *if... You’re in Linux /usr/bin/sh, not Bash or PowerShell.
 
   Use this:
@@ -279,6 +283,10 @@ python unified_entry.py --config config.json --check-only --no-viz
 Then start the world:
 
 python unified_entry.py --config config.json --no-viz --debug
+
+Optional public tunnel for the web UI:
+
+ssh -R 80:localhost:5000 nokey@localhost.run
 
 Open the web view:
 
@@ -400,6 +408,10 @@ python causation_web_ui.py
 If you get lost:
 
 python cra_cli.py sitrep
+
+Optional public tunnel for the web UI:
+
+ssh -R 80:localhost:5000 nokey@localhost.run
 
 Shell sanity
 ------------
