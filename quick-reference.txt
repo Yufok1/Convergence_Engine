@@ -250,13 +250,24 @@ cp config.json data/config.json
 mkdir -p /data/nltk_data
 export NLTK_DATA=/data/nltk_data
 python -m nltk.downloader -d /data/nltk_data wordnet omw-1.4
-
->MONKEY KING WAS HERE|
->-GO->--->--->--->{ / |
-                   /  |
-stuff<=<!Quests!?<  = |
+                                  ?::::??       
+                               .- ?:::;;;..::::??
+                             d  o   o  P        
+                            __\   ^   / _
+                           /+++'-._.-'++++\
+                          |+++.-`(_)`-.+++|
+                          |++/::/:::\::\++|
+                          \+/...\/.../.|+/
+                           \||||/\\\\ ///
+                            /_ /+/__|\//\
+                           |""/+|"""|\/ \
+                       ___/____//___|__/\\___
+>MONKEY KING WAS HERE||=____=+|||_|_|_\//.\\\
+>-GO->--->--->--->{ /.|\ _  \_|/    ///.\ /_/
+                   /\_|/            \ \_/
+stuff<=<!Quests!?<  = | BOOM
                  /    |
-NEXT:<---<--<-<-<     |
+NEXT:<---<--<-<-<     | Pancaked
 
 python build_curated_dataset.py
 python merge_nuclear_vocab.py
