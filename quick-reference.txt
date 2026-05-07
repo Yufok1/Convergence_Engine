@@ -207,10 +207,12 @@ mkdir -p /data/nltk_data
 export NLTK_DATA=/data/nltk_data
 python -m nltk.downloader -d /data/nltk_data wordnet omw-1.4
 
-MONKEY KING WAS HERE\//
->---->--->--->--->-[\/]
-                   {/\}
-NEXT:<---<----<---[/<<\]
+>MONKEY KING WAS HER\E|
+>-GO->--->--->--->{ / |
+                   /  |
+stuff<=<!Quests!?<  = |
+                 /    |
+NEXT:<---<--<-<-<     |
 
 python build_curated_dataset.py
 python merge_nuclear_vocab.py
