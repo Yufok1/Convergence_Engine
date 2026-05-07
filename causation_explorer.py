@@ -1721,26 +1721,41 @@ class CausationExplorer:
     
     def get_causation_stats(self) -> Dict[str, Any]:
         """Get statistics about the causation graph"""
+        from heapq import nlargest
+        from itertools import islice
+
+        edge_count = self.causation_graph.number_of_edges()
+        edge_scan_limit = 100000
+        sampled_edges = edge_count > edge_scan_limit
+        edge_iter = (
+            islice(self.causation_graph.edges(data=True), edge_scan_limit)
+            if sampled_edges else self.causation_graph.edges(data=True)
+        )
+
+        strongest_edges = nlargest(
+            10,
+            edge_iter,
+            key=lambda edge: edge[2].get('strength', 0.0)
+        )
+
         return {
             'total_events': len(self.events),
-            'total_links': self.causation_graph.number_of_edges(),
+            'total_links': edge_count,
             'components': list(self.events_by_component.keys()),
             'event_types': list(self.events_by_type.keys()),
             'metrics_tracked': list(self.metric_history.keys()),
             'graph_density': nx.density(self.causation_graph),
-            'strongest_links': sorted(
-                [
-                    {
-                        'from': self.events[u].to_dict() if u in self.events else {},
-                        'to': self.events[v].to_dict() if v in self.events else {},
-                        'strength': data.get('strength', 0.0),
-                        'explanation': data.get('explanation', '')
-                    }
-                    for u, v, data in self.causation_graph.edges(data=True)
-                ],
-                key=lambda x: x['strength'],
-                reverse=True
-            )[:10]
+            'strongest_links_sampled': sampled_edges,
+            'strongest_links_scan_limit': edge_scan_limit if sampled_edges else edge_count,
+            'strongest_links': [
+                {
+                    'from': self.events[u].to_dict() if u in self.events else {},
+                    'to': self.events[v].to_dict() if v in self.events else {},
+                    'strength': data.get('strength', 0.0),
+                    'explanation': data.get('explanation', '')
+                }
+                for u, v, data in strongest_edges
+            ]
         }
 
     # ═══════════════════════════════════════════════════════════════════════════

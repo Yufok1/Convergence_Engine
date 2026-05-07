@@ -316,18 +316,48 @@ except ImportError:
 # Real-time event queue for CRA
 cra_event_queue = queue.Queue(maxsize=1000)  # Buffer up to 1000 events
 
-# Graph data cache for performance optimization (Phase 1) - LRU cache with size limits
-from functools import lru_cache
+# Graph data cache for performance optimization (Phase 1) - bounded response cache
 import hashlib
 import threading
 
-@lru_cache(maxsize=5)  # Keep only 5 recent graph snapshots
-def get_cached_graph(cache_key: str):
-    """LRU cache for graph data to prevent unbounded memory growth"""
-    # This will be called by the graph generation function
-    pass
+GRAPH_RESPONSE_CACHE_MAX = 5
+GRAPH_EDGE_MATERIALIZE_LIMIT = 100000
+_graph_response_cache = {}
+_graph_response_order = []
 
-# Fallback cache for metadata (not cached by LRU since it's small)
+# Lock for thread-safe graph_cache access
+graph_cache_lock = threading.Lock()
+
+
+def get_cached_graph(cache_key: str):
+    """Return a bounded cached graph response by content key."""
+    if not cache_key:
+        return None
+    with graph_cache_lock:
+        cached = _graph_response_cache.get(cache_key)
+        if cached is None:
+            return None
+        if cache_key in _graph_response_order:
+            _graph_response_order.remove(cache_key)
+        _graph_response_order.append(cache_key)
+        return copy.deepcopy(cached)
+
+
+def set_cached_graph(cache_key: str, graph_data: Dict[str, Any]) -> None:
+    """Store a graph response while bounding memory growth."""
+    if not cache_key or not isinstance(graph_data, dict):
+        return
+    with graph_cache_lock:
+        _graph_response_cache[cache_key] = copy.deepcopy(graph_data)
+        if cache_key in _graph_response_order:
+            _graph_response_order.remove(cache_key)
+        _graph_response_order.append(cache_key)
+        while len(_graph_response_order) > GRAPH_RESPONSE_CACHE_MAX:
+            old_key = _graph_response_order.pop(0)
+            _graph_response_cache.pop(old_key, None)
+
+
+# Fallback cache for metadata and the last successful response.
 graph_cache = {
     'last_update': 0,
     'cache_duration': 5.0,  # Cache for 5 seconds (increased to prevent timeout loops)
@@ -335,11 +365,206 @@ graph_cache = {
     'link_count': 0,
     'shared_state_mtime': 0,  # Track shared state file modification time
     'loading': False,  # Track if a load is in progress
-    'load_start_time': 0  # Track when load started
+    'load_start_time': 0,  # Track when load started
+    'nodes': [],
+    'links': [],
+    'cached_response': None,
+    'remaining_nodes': [],
+    'remaining_links': [],
+    'chunk_index': 0,
+    'chunk_size': 5000
 }
 
-# Lock for thread-safe graph_cache access
-graph_cache_lock = threading.Lock()
+GRAPH_COMPONENT_MAP = {
+    'reality_sim': {'reality', 'sim'},
+    'explorer': {'explorer'},
+    'djinn_kernel': {'djinn', 'kernel', 'utm'},
+    'breath': {'breath'},
+    'system': {'system'},
+    'neural': {'neural'},
+    'ml_analysis': {'ml', 'analysis'},
+    'language': {'language', 'vocabulary', 'communication'},
+    'butterfly_chat': {'butterfly_chat', 'chat'},
+    'config_tuner': {'config_tuner', 'tuner'},
+    'health_monitor': {'health_monitor', 'health', 'monitor'},
+    'highlander': {'highlander'},
+    'battle_arena': {'battle_arena', 'battle', 'arena'},
+    'alliance': {'alliance'},
+    'alliance_warfare': {'alliance_warfare'},
+    'confederation': {'confederation', 'empire', 'hegemony'},
+    'combat': {'combat'},
+    'germination': {'germination', 'germination_pool'},
+}
+
+LANGUAGE_EVENT_TYPES = {
+    'vocabulary_growth', 'organism_communication', 'word_assignment',
+    'butterfly_chat_message', 'butterfly_chat_response'
+}
+
+
+def _normalize_graph_component(component: Optional[str], event_type: Optional[str] = None) -> str:
+    original_component = (component or 'unknown').lower().strip()
+    event_type = (event_type or '').lower().strip()
+
+    if event_type in LANGUAGE_EVENT_TYPES:
+        return 'butterfly_chat' if 'butterfly_chat' in event_type else 'language'
+
+    for comp_name, keywords in GRAPH_COMPONENT_MAP.items():
+        if any(keyword in original_component for keyword in keywords):
+            return comp_name
+    return original_component or 'unknown'
+
+
+def _event_to_graph_node(event_id: str, event: Any) -> Dict[str, Any]:
+    component = _normalize_graph_component(
+        getattr(event, 'component', 'unknown'),
+        getattr(event, 'event_type', '')
+    )
+    node_data = {
+        'id': event_id,
+        'component': component,
+        'type': getattr(event, 'event_type', ''),
+        'timestamp': getattr(event, 'timestamp', 0),
+        '_original_component': getattr(event, 'component', 'unknown')
+    }
+    event_data = getattr(event, 'data', None)
+    if event_data and isinstance(event_data, dict):
+        simple_data = {
+            k: v for k, v in event_data.items()
+            if not isinstance(v, (dict, list)) and len(str(v)) < 200
+        }
+        if simple_data:
+            node_data['data'] = simple_data
+    elif event_data and not isinstance(event_data, (dict, list)) and len(str(event_data)) < 200:
+        node_data['data'] = event_data
+    return node_data
+
+
+def _link_to_graph_data(u: str, v: str, data: Dict[str, Any],
+                        node_word_associations: Optional[Dict[str, set]] = None) -> Dict[str, Any]:
+    link_data = {
+        'source': u,
+        'target': v,
+        'type': data.get('causation_type', 'unknown') if isinstance(data, dict) else 'unknown',
+        'strength': data.get('strength', 0.0) if isinstance(data, dict) else 0.0,
+        'explanation': data.get('explanation', '') if isinstance(data, dict) else ''
+    }
+
+    if node_word_associations:
+        source_words = node_word_associations.get(str(u), set())
+        target_words = node_word_associations.get(str(v), set())
+        shared_words = source_words & target_words
+        if shared_words:
+            link_data['is_linguistic'] = True
+            link_data['linguistic_edge'] = True
+            link_data['shared_words'] = list(shared_words)[:10]
+            link_data['shared_word_count'] = len(shared_words)
+            if link_data['type'] == 'direct':
+                link_data['type'] = 'language'
+
+    return link_data
+
+
+def _last_graph_response(reason: str, error: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    with graph_cache_lock:
+        response = graph_cache.get('cached_response')
+        if not isinstance(response, dict):
+            return None
+        response = copy.deepcopy(response)
+    response['cached'] = True
+    response['warning'] = reason
+    if error:
+        response['error'] = error
+    return response
+
+
+def _store_last_graph_response(response_data: Dict[str, Any]) -> None:
+    with graph_cache_lock:
+        graph_cache['last_update'] = time.time()
+        graph_cache['event_count'] = response_data.get('event_count', len(response_data.get('nodes', [])))
+        graph_cache['link_count'] = response_data.get('link_count', len(response_data.get('links', [])))
+        graph_cache['nodes'] = copy.deepcopy(response_data.get('nodes', []))
+        graph_cache['links'] = copy.deepcopy(response_data.get('links', []))
+        graph_cache['cached_response'] = copy.deepcopy(response_data)
+        graph_cache['loading'] = False
+
+
+def _empty_graph_response(message: str, loading: bool = False) -> Dict[str, Any]:
+    return {
+        'nodes': [],
+        'links': [],
+        'cached': False,
+        'loading': loading,
+        'event_count': 0,
+        'link_count': 0,
+        'warning': message
+    }
+
+
+def _load_recent_shared_state(target_explorer: Any, force_reload: bool = False) -> None:
+    """Best-effort shared-state refresh for live graph surfaces."""
+    if not target_explorer or not hasattr(target_explorer, '_load_from_shared_state'):
+        return
+    shared_state_path = Path('data/.shared_simulation_state.json')
+    if not shared_state_path.exists():
+        return
+    try:
+        file_mtime = os.path.getmtime(shared_state_path)
+        current_time_check = time.time()
+        if force_reload or file_mtime > graph_cache.get('shared_state_mtime', 0):
+            target_explorer._load_from_shared_state(force_reload=(force_reload or (current_time_check - file_mtime) < 10))
+            with graph_cache_lock:
+                graph_cache['shared_state_mtime'] = file_mtime
+    except Exception as load_error:
+        logger.warning(f"Shared state refresh failed: {load_error}")
+
+
+def _collect_links_for_nodes(target_explorer: Any, node_ids: set, limit: int,
+                             node_word_associations: Optional[Dict[str, set]] = None) -> List[Dict[str, Any]]:
+    """Collect a bounded live edge view for selected nodes without materializing all edges."""
+    if not target_explorer or not node_ids or limit <= 0:
+        return []
+
+    graph = getattr(target_explorer, 'causation_graph', None)
+    if graph is None:
+        return []
+
+    selected = set(node_ids)
+    links = []
+    seen = set()
+    candidate_limit = max(limit * 4, limit)
+
+    def add_edge(u, v, data):
+        if u not in selected or v not in selected:
+            return
+        key = (str(u), str(v))
+        if key in seen:
+            return
+        seen.add(key)
+        links.append(_link_to_graph_data(u, v, data, node_word_associations))
+
+    with target_explorer.graph_lock:
+        for node_id in list(selected):
+            if node_id not in graph:
+                continue
+            for u, v, data in graph.out_edges(node_id, data=True):
+                add_edge(u, v, data)
+                if len(links) >= candidate_limit:
+                    break
+            if len(links) >= candidate_limit:
+                break
+            if hasattr(graph, 'in_edges'):
+                for u, v, data in graph.in_edges(node_id, data=True):
+                    add_edge(u, v, data)
+                    if len(links) >= candidate_limit:
+                        break
+            if len(links) >= candidate_limit:
+                break
+
+    if len(links) > limit:
+        links.sort(key=lambda x: x.get('strength', 0), reverse=True)
+        links = links[:limit]
+    return links
 
 # ============================================================================
 # CONFIGURATION MANAGEMENT (Hot reload + guardrails)
@@ -10233,10 +10458,11 @@ def get_timeline():
 @app.route('/api/stats')
 def get_stats():
     """Get causation graph statistics"""
-    if explorer is None:
+    target_explorer = app.config.get('explorer') or explorer
+    if target_explorer is None:
         return jsonify({'error': 'Causation Explorer not initialized', 'total_events': 0, 'total_links': 0}), 200
     try:
-        stats = explorer.get_causation_stats()
+        stats = target_explorer.get_causation_stats()
         return jsonify(stats)
     except Exception as e:
         logger.error(f"Error getting stats: {e}", exc_info=True)
@@ -10266,25 +10492,43 @@ def get_live_status():
     - Add shared state file loading
     - Poll for updates from running backend
     """
-    # Check if CausationExplorer has recent events (within last 5 seconds)
-    if explorer is None or not explorer.events:
+    target_explorer = app.config.get('explorer') or explorer
+    if target_explorer is None:
         return jsonify({'live': False, 'last_event_time': None, 'event_count': 0})
 
     try:
+        shared_state_path = Path('data/.shared_simulation_state.json')
+        shared_state_age = None
+        shared_state_recent = False
+        if shared_state_path.exists():
+            shared_state_age = time.time() - os.path.getmtime(shared_state_path)
+            shared_state_recent = shared_state_age < 15
+            if shared_state_recent:
+                _load_recent_shared_state(target_explorer, force_reload=False)
+
+        if not target_explorer.events:
+            return jsonify({
+                'live': shared_state_recent,
+                'last_event_time': None,
+                'event_count': 0,
+                'shared_state_age_seconds': shared_state_age
+            })
+
         # DATA ACCESS: Get most recent event timestamp from explorer.events{}
         # This is loaded from log files on startup, NOT from running backend
-        recent_events = sorted(explorer.events.values(), key=lambda e: e.timestamp, reverse=True)
+        recent_events = sorted(target_explorer.events.values(), key=lambda e: e.timestamp, reverse=True)
         if recent_events:
             last_event_time = recent_events[0].timestamp
             current_time = time.time()
             # Consider live if last event was within last 10 seconds
             # ⚠️ This just checks timestamps of already-loaded events, not actual backend connection
-            is_live = (current_time - last_event_time) < 10
+            is_live = ((current_time - last_event_time) < 10) or shared_state_recent
             return jsonify({
                 'live': is_live,
                 'last_event_time': last_event_time,
-                'event_count': len(explorer.events),  # Total events loaded from logs/Akashic
-                'events_since_start': len(recent_events)
+                'event_count': len(target_explorer.events),  # Total events loaded from logs/Akashic/live shared state
+                'events_since_start': len(recent_events),
+                'shared_state_age_seconds': shared_state_age
             })
         return jsonify({'live': False, 'last_event_time': None, 'event_count': 0})
     except Exception as e:
@@ -10463,30 +10707,32 @@ def get_graph():
             if shared_state_path.exists():
                 cache_key += f"shared:{shared_state_path.stat().st_mtime}:"
             cache_key += f"events:{len(target_explorer.events) if target_explorer else 0}"
-            cache_key += f"edges:{len(target_explorer.causation_graph.edges()) if target_explorer and target_explorer.causation_graph else 0}"
+            edge_count = (
+                target_explorer.causation_graph.number_of_edges()
+                if target_explorer and target_explorer.causation_graph else 0
+            )
+            cache_key += f"edges:{edge_count}"
 
             # Check LRU cache
             cached_result = get_cached_graph(cache_key)
             if cached_result is not None:
                 logger.debug("Returning LRU cached graph data")
+                cached_result['cached'] = True
                 return jsonify(cached_result)
         except Exception as e:
             logger.debug(f"Cache key generation failed: {e}")
             cache_key = f"time:{int(current_time)}"  # Fallback cache key
 
         # 🚀 TIMEOUT PROTECTION: If a load is in progress and taking too long, return cached data
-        if graph_cache['loading']:
-            load_duration = current_time - graph_cache['load_start_time']
+        if graph_cache.get('loading'):
+            load_duration = current_time - graph_cache.get('load_start_time', current_time)
             if load_duration > 10.0:  # If load has been running >10 seconds, something's wrong
-                logger.warning(f"Previous load still in progress ({load_duration:.1f}s), returning cached data")
-                return jsonify({
-                    'nodes': graph_cache['nodes'],
-                    'links': graph_cache['links'],
-                    'cached': True,
-                    'event_count': graph_cache['event_count'],
-                    'link_count': graph_cache['link_count'],
-                    'warning': 'Load in progress, returning cached data'
-                })
+                cached_response = _last_graph_response('Load in progress, returning previous graph response')
+                if cached_response:
+                    logger.warning(f"Previous load still in progress ({load_duration:.1f}s), returning cached data")
+                    return jsonify(cached_response)
+                logger.warning(f"Previous load still in progress ({load_duration:.1f}s), no prior graph cache available")
+                return jsonify(_empty_graph_response('Graph load in progress; no cached graph is ready yet', loading=True)), 200
 
         # Mark load as starting
         with graph_cache_lock:
@@ -10564,10 +10810,24 @@ def get_graph():
         snapshot_start = time.time()
         with target_explorer.graph_lock:
             events_snapshot = dict(target_explorer.events)  # Create snapshot inside lock
-            edges_snapshot = list(target_explorer.causation_graph.edges(data=True))  # Create snapshot inside lock
+            total_link_count = (
+                target_explorer.causation_graph.number_of_edges()
+                if target_explorer.causation_graph else 0
+            )
+            if target_explorer.causation_graph and total_link_count <= GRAPH_EDGE_MATERIALIZE_LIMIT:
+                edges_snapshot = list(target_explorer.causation_graph.edges(data=True))
+                full_edges_materialized = True
+            else:
+                edges_snapshot = []
+                full_edges_materialized = False
         snapshot_duration = time.time() - snapshot_start
         if snapshot_duration > 1.0:
             logger.warning(f"Graph snapshot took {snapshot_duration:.1f}s (large graph)")
+        total_event_count = len(events_snapshot)
+        if not full_edges_materialized:
+            logger.warning(
+                f"Graph has {total_link_count} links; skipping full edge materialization and building a bounded live view"
+            )
 
         # Process snapshots outside lock
         if events_snapshot:
@@ -10643,7 +10903,7 @@ def get_graph():
             # Log component distribution for debugging
             if component_counts:
                 logger.info(f"Graph nodes by component: {component_counts}")
-                logger.info(f"Total nodes: {len(nodes)} (from {len(events_snapshot)} total), Total links: {len(links)}")
+                logger.info(f"Total nodes: {len(nodes)} (from {len(events_snapshot)} total), Raw links: {total_link_count}")
 
         # DATA ACCESS: Read all causation links from explorer.causation_graph (snapshot)
         # This is a NetworkX DiGraph built when events are added
@@ -10664,30 +10924,7 @@ def get_graph():
 
         if edges_snapshot:
             for u, v, data in edges_snapshot:
-                link_data = {
-                    'source': u,
-                    'target': v,
-                    'type': data.get('causation_type', 'unknown'),
-                    'strength': data.get('strength', 0.0),
-                    'explanation': data.get('explanation', '')
-                }
-
-                # Detect linguistic edges: check if source/target organisms share words
-                if node_word_associations:
-                    source_words = node_word_associations.get(str(u), set())
-                    target_words = node_word_associations.get(str(v), set())
-                    shared_words = source_words & target_words
-
-                    if shared_words:
-                        link_data['is_linguistic'] = True
-                        link_data['linguistic_edge'] = True
-                        link_data['shared_words'] = list(shared_words)[:10]  # Limit to 10 words
-                        link_data['shared_word_count'] = len(shared_words)
-                        # Override type to 'language' if it's a linguistic edge
-                        if link_data['type'] == 'direct':
-                            link_data['type'] = 'language'
-
-                links.append(link_data)
+                links.append(_link_to_graph_data(u, v, data, node_word_associations))
 
         # Add diagnostic info if no data
         diagnostic_info = {}
@@ -10708,9 +10945,9 @@ def get_graph():
             diagnostic_info['message'] = 'No events found. Make sure the simulation is running and generating data.'
             logger.warning(f"Graph request returned 0 nodes. Diagnostics: {diagnostic_info}")
         else:
-            logger.info(f"Graph request returned {len(nodes)} nodes and {len(links)} links")
+            logger.info(f"Graph request returned {len(nodes)} nodes and {total_link_count} raw links")
 
-        logger.info(f"Serializing graph response: {len(nodes)} nodes, {len(links)} links")
+        logger.info(f"Serializing graph response: {len(nodes)} nodes, {len(links)} prepared links ({total_link_count} raw)")
         try:
             # 🚀 OPTIMIZED FILTERING FOR MAXIMUM REPRESENTATION
             # Frontend supports up to 20k nodes and 50k links with viewport culling
@@ -10735,8 +10972,9 @@ def get_graph():
                 EMERGENCY_NODE_LIMIT = 8000
                 EMERGENCY_LINK_LIMIT = 15000
 
-            if len(nodes) > EMERGENCY_NODE_LIMIT or len(links) > EMERGENCY_LINK_LIMIT:
-                logger.warning(f"SMART FILTERING: Graph has {len(nodes)} nodes, {len(links)} links -> targeting {EMERGENCY_NODE_LIMIT} nodes")
+            raw_link_count_for_filter = total_link_count if not full_edges_materialized else len(links)
+            if len(nodes) > EMERGENCY_NODE_LIMIT or raw_link_count_for_filter > EMERGENCY_LINK_LIMIT:
+                logger.warning(f"SMART FILTERING: Graph has {len(nodes)} nodes, {raw_link_count_for_filter} links -> targeting {EMERGENCY_NODE_LIMIT} nodes")
 
                 # 🎯 STRATEGY: Multi-dimensional balanced sampling for MAX representation
                 # 1. Component diversity (highlander, language, neural, etc.)
@@ -10838,9 +11076,21 @@ def get_graph():
                 # Rebuild node ID set for link filtering
                 remaining_node_ids = {node['id'] for node in nodes}
 
-                # Filter links to remaining nodes, keeping strongest
-                relevant_links = [link for link in links
-                                 if link['source'] in remaining_node_ids and link['target'] in remaining_node_ids]
+                # Filter links to remaining nodes, keeping strongest. For massive graphs,
+                # collect a bounded adjacency view instead of scanning every edge.
+                if full_edges_materialized:
+                    relevant_links = [link for link in links
+                                     if link['source'] in remaining_node_ids and link['target'] in remaining_node_ids]
+                else:
+                    relevant_links = _collect_links_for_nodes(
+                        target_explorer,
+                        remaining_node_ids,
+                        EMERGENCY_LINK_LIMIT,
+                        node_word_associations
+                    )
+                    logger.warning(
+                        f"Collected bounded live links: {len(relevant_links)}/{total_link_count} raw links"
+                    )
 
                 if len(relevant_links) > EMERGENCY_LINK_LIMIT:
                     # Sort by strength and take top N
@@ -10872,8 +11122,10 @@ def get_graph():
                     'links': first_chunk_links,
                     'diagnostic': diagnostic_info if diagnostic_info else None,
                     'cached': False,
-                    'event_count': len(nodes),
-                    'link_count': len(links),
+                    'event_count': total_event_count,
+                    'link_count': total_link_count,
+                    'visible_event_count': len(nodes),
+                    'visible_link_count': len(links),
                     'chunked': True,
                     'chunk_index': 0,
                     'total_chunks': (len(nodes) + chunk_size - 1) // chunk_size,
@@ -10887,7 +11139,7 @@ def get_graph():
                 graph_cache['chunk_size'] = chunk_size
             else:
                 # 🚀 ADAPTIVE RENDERING: Filter links intelligently for large graphs
-                original_link_count = len(links)
+                original_link_count = total_link_count
 
                 if len(links) > 100000:  # Extremely large graph - use chunked loading
                     logger.info(f"📊 Extremely large graph detected ({len(nodes)} nodes, {len(links)} links) - enabling chunked loading")
@@ -10898,8 +11150,10 @@ def get_graph():
                         'links': links[:chunk_size*2],  # More links per chunk
                         'diagnostic': diagnostic_info if diagnostic_info else None,
                         'cached': False,
-                        'event_count': len(nodes),
-                        'link_count': len(links),
+                        'event_count': total_event_count,
+                        'link_count': total_link_count,
+                        'visible_event_count': len(nodes),
+                        'visible_link_count': len(links),
                         'chunked': True,
                         'chunk_index': 0,
                         'total_chunks': (max(len(nodes), len(links)) + chunk_size - 1) // chunk_size,
@@ -10948,65 +11202,48 @@ def get_graph():
                     'links': links,
                     'diagnostic': diagnostic_info if diagnostic_info else None,
                     'cached': False,
-                    'event_count': len(nodes),
+                    'event_count': total_event_count,
+                    'link_count': total_link_count,
+                    'visible_event_count': len(nodes),
                     'original_link_count': original_link_count,
                     'filtered_link_count': len(links),
                     'chunked': False
                 }
 
-            # 🚀 OPTIMIZATION: Store result in LRU cache
-            cache_result = {
-                'nodes': nodes,
-                'links': links,
-                'diagnostic': diagnostic_info if diagnostic_info else None,
-                'cached': False,
-                'event_count': len(nodes),
-                'link_count': len(links),
-                'chunked': False
-            }
-
-            # Store in LRU cache (will automatically evict old entries)
+            # Store in bounded graph caches.
             try:
-                get_cached_graph.cache[cache_key] = cache_result
+                set_cached_graph(cache_key, response_data)
             except Exception as e:
                 logger.debug(f"Failed to cache result: {e}")
-
-            # Update metadata cache
-            with graph_cache_lock:
-                graph_cache['last_update'] = time.time()
-                graph_cache['event_count'] = len(nodes)
-                graph_cache['link_count'] = len(links)
-                graph_cache['loading'] = False  # Mark load as complete
+            _store_last_graph_response(response_data)
 
             logger.info("Graph data serialized and cached, returning response")
             return jsonify(response_data)
         except Exception as serialize_error:
             logger.error(f"Error serializing graph response: {serialize_error}", exc_info=True)
-            graph_cache['loading'] = False  # Reset loading flag
-            # Return cached data if available, otherwise error
-            if graph_cache['nodes']:
+            with graph_cache_lock:
+                graph_cache['loading'] = False
+            cached_response = _last_graph_response(
+                'Returning previous graph response after serialization error',
+                f'Serialization error: {str(serialize_error)}'
+            )
+            if cached_response:
                 logger.info("Returning cached data due to serialization error")
-                return jsonify({
-                    'nodes': graph_cache['nodes'],
-                    'links': graph_cache['links'],
-                    'cached': True,
-                    'error': f'Serialization error: {str(serialize_error)}'
-                })
+                return jsonify(cached_response)
             return jsonify({'nodes': [], 'links': [], 'error': f'Serialization error: {str(serialize_error)}'}), 500
     except Exception as e:
         logger.error(f"Error getting graph: {e}", exc_info=True)
-        graph_cache['loading'] = False  # Reset loading flag
+        with graph_cache_lock:
+            graph_cache['loading'] = False
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
-        # Return cached data if available, otherwise error
-        if graph_cache['nodes']:
+        cached_response = _last_graph_response(
+            'Returning previous graph response after graph error',
+            str(e)
+        )
+        if cached_response:
             logger.info("Returning cached data due to error")
-            return jsonify({
-                'nodes': graph_cache['nodes'],
-                'links': graph_cache['links'],
-                'cached': True,
-                'error': str(e)
-            })
+            return jsonify(cached_response)
         return jsonify({'nodes': [], 'links': [], 'error': str(e)}), 500
 
 
@@ -11015,7 +11252,8 @@ def get_graph_chunk():
     """
     Get next chunk of graph data (for progressive loading of large graphs)
     """
-    if explorer is None:
+    target_explorer = app.config.get('explorer') or explorer
+    if target_explorer is None:
         return jsonify({'nodes': [], 'links': [], 'error': 'Causation Explorer not initialized'}), 200
 
     try:
@@ -11084,7 +11322,8 @@ def get_incremental_updates():
     - node_count: Total number of nodes in system (for reference)
     - link_count: Total number of links in system (for reference)
     """
-    if explorer is None:
+    target_explorer = app.config.get('explorer') or explorer
+    if target_explorer is None:
         return jsonify({
             'new_nodes': [],
             'new_links': [],
@@ -11096,89 +11335,80 @@ def get_incremental_updates():
 
     try:
         since_timestamp = float(request.args.get('since', 0))
+        max_links = request.args.get('max_links', 5000, type=int)
+        max_links = max(100, min(max_links, 20000))
+
+        _load_recent_shared_state(target_explorer, force_reload=False)
 
         new_nodes = []
         new_links = []
 
-        # Get events and links with thread safety
-        with explorer.graph_lock:
-            events_snapshot = dict(explorer.events)
-            edges_snapshot = list(explorer.causation_graph.edges(data=True))
+        # Snapshot events only. Edges are collected around new nodes below so
+        # live updates never materialize a multi-million edge graph.
+        with target_explorer.graph_lock:
+            events_snapshot = dict(target_explorer.events)
             total_node_count = len(events_snapshot)
-            total_link_count = len(edges_snapshot)
+            total_link_count = (
+                target_explorer.causation_graph.number_of_edges()
+                if target_explorer.causation_graph else 0
+            )
 
         # Find new events since timestamp
         latest_timestamp = since_timestamp
+        new_event_ids = set()
         for event_id, event in events_snapshot.items():
             if event.timestamp > since_timestamp:
                 latest_timestamp = max(latest_timestamp, event.timestamp)
+                new_event_ids.add(event_id)
+                new_nodes.append(_event_to_graph_node(event_id, event))
 
-                # Normalize component names (same logic as get_graph)
-                component = (event.component or 'unknown').lower().strip()
-                if 'reality' in component or 'sim' in component:
-                    component = 'reality_sim'
-                elif 'explorer' in component:
-                    component = 'explorer'
-                elif 'djinn' in component or 'kernel' in component or 'utm' in component:
-                    component = 'djinn_kernel'
-                elif 'breath' in component:
-                    component = 'breath'
-                elif 'system' in component:
-                    component = 'system'
-
-                # Build node data (same format as get_graph)
-                node_data = {
-                    'id': event_id,
-                    'component': component,
-                    'type': event.event_type,
-                    'timestamp': event.timestamp
-                }
-
-                # Include simple data only (no nested dicts/lists >200 chars)
-                if event.data and isinstance(event.data, dict):
-                    simple_data = {k: v for k, v in event.data.items()
-                                 if not isinstance(v, (dict, list)) and len(str(v)) < 200}
-                    if simple_data:
-                        node_data['data'] = simple_data
-                elif event.data and not isinstance(event.data, (dict, list)) and len(str(event.data)) < 200:
-                    node_data['data'] = event.data
-
-                new_nodes.append(node_data)
-
-        # Find new links - links connect events, so if either source or target event
-        # is new (timestamp > since), we consider it new.
-        existing_node_ids = {event_id for event_id, event in events_snapshot.items()
-                            if event.timestamp <= since_timestamp}
-
-        for u, v, data in edges_snapshot:
-            # Link is "new" if either endpoint event is new
-            source_new = u not in existing_node_ids
-            target_new = v not in existing_node_ids
-
-            if source_new or target_new:
-                # Check if link creation timestamp exists in data
-                link_created_at = data.get('created_at', None)
-                if link_created_at is None or link_created_at > since_timestamp:
-                    new_links.append({
-                        'source': u,
-                        'target': v,
-                        'type': data.get('causation_type', 'unknown'),
-                        'strength': data.get('strength', 0.0),
-                        'explanation': data.get('explanation', '')
-                    })
+        # Find new links without scanning the whole graph. A link is live-relevant
+        # when either endpoint is a new event or its own creation timestamp is new.
+        seen_edges = set()
+        truncated = False
+        graph = getattr(target_explorer, 'causation_graph', None)
+        if graph is not None and new_event_ids:
+            with target_explorer.graph_lock:
+                for event_id in list(new_event_ids):
+                    if event_id not in graph:
+                        continue
+                    edge_iters = [graph.out_edges(event_id, data=True)]
+                    if hasattr(graph, 'in_edges'):
+                        edge_iters.append(graph.in_edges(event_id, data=True))
+                    for edge_iter in edge_iters:
+                        for u, v, data in edge_iter:
+                            key = (str(u), str(v))
+                            if key in seen_edges:
+                                continue
+                            seen_edges.add(key)
+                            link_created_at = data.get('created_at', None) if isinstance(data, dict) else None
+                            if u in new_event_ids or v in new_event_ids or link_created_at is None or link_created_at > since_timestamp:
+                                new_links.append(_link_to_graph_data(u, v, data))
+                                if len(new_links) >= max_links:
+                                    truncated = True
+                                    break
+                        if truncated:
+                            break
+                    if truncated:
+                        break
 
         # Get latest timestamp from all events if no new events found
         if latest_timestamp == since_timestamp and events_snapshot:
             latest_timestamp = max(event.timestamp for event in events_snapshot.values())
 
-        logger.info(f"Incremental update: {len(new_nodes)} new nodes, {len(new_links)} new links since {since_timestamp}")
+        logger.info(
+            f"Incremental update: {len(new_nodes)} new nodes, {len(new_links)} new links since {since_timestamp}"
+            + (" (truncated)" if truncated else "")
+        )
 
         return jsonify({
             'new_nodes': new_nodes,
             'new_links': new_links,
             'latest_timestamp': latest_timestamp,
             'node_count': total_node_count,
-            'link_count': total_link_count
+            'link_count': total_link_count,
+            'truncated': truncated,
+            'max_links': max_links
         })
 
     except Exception as e:
@@ -13553,7 +13783,6 @@ def get_simulation_status():
     """Get simulation control-signal status without writing receipts."""
     try:
         control_file = project_root / 'data' / '.simulation_control.json'
-        control_file.parent.mkdir(parents=True, exist_ok=True)
 
         # Status checks must be read-only. A missing control file means no
         # explicit run signal has been written yet via the web UI.
@@ -13561,26 +13790,51 @@ def get_simulation_status():
         # logs/shared_state continuously. This control file only governs the
         # web UI's graph viewer — not the organisms.
         if not control_file.exists():
+            shared_state_path = project_root / 'data' / '.shared_simulation_state.json'
+            shared_state_age = None
+            shared_state_recent = False
+            if shared_state_path.exists():
+                shared_state_age = time.time() - os.path.getmtime(shared_state_path)
+                shared_state_recent = shared_state_age < 15
             return jsonify({
-                'running': False,
-                'paused': True,
-                'status': 'viewer_not_started',
+                'running': shared_state_recent,
+                'paused': not shared_state_recent,
+                'status': 'backend_live_viewer_not_started' if shared_state_recent else 'viewer_not_started',
                 'missing_control_file': True,
-                'note': 'Simulation runs independently. This status reflects the graph viewer, not the organisms.'
+                'shared_state_age_seconds': shared_state_age,
+                'note': 'Simulation runs independently. This status reflects the graph viewer control signal plus live shared-state freshness.'
             })
 
-        with open(control_file, 'r') as f:
-            control = json.load(f)
-            running = bool(control.get('running', False))
-            paused = bool(control.get('paused', True))
+        try:
+            with open(control_file, 'r') as f:
+                control = json.load(f)
+        except Exception as read_error:
+            shared_state_path = project_root / 'data' / '.shared_simulation_state.json'
+            shared_state_age = None
+            shared_state_recent = False
+            if shared_state_path.exists():
+                shared_state_age = time.time() - os.path.getmtime(shared_state_path)
+                shared_state_recent = shared_state_age < 15
+            logger.warning(f"Simulation control status unreadable: {read_error}")
             return jsonify({
-                'running': running,
-                'paused': paused,
-                'status': 'running' if running and not paused else 'stopped'
-            })
+                'running': shared_state_recent,
+                'paused': not shared_state_recent,
+                'status': 'backend_live_control_unreadable' if shared_state_recent else 'viewer_control_unreadable',
+                'control_error': str(read_error),
+                'shared_state_age_seconds': shared_state_age,
+                'note': 'Status read failed open for the viewer; live graph reads use shared state/events.'
+            }), 200
+
+        running = bool(control.get('running', False))
+        paused = bool(control.get('paused', True))
+        return jsonify({
+            'running': running,
+            'paused': paused,
+            'status': 'running' if running and not paused else 'stopped'
+        })
     except Exception as e:
         logger.error(f"Error getting simulation status: {e}", exc_info=True)
-        return jsonify({'running': False, 'paused': True, 'error': str(e)}), 500
+        return jsonify({'running': False, 'paused': True, 'status': 'status_read_failed', 'error': str(e)}), 200
 
 
 @app.route('/api/simulation/start', methods=['POST'])

@@ -5934,9 +5934,12 @@
                     </button>
                 </div>
             </div>
-            <div style="background: #111; border: 1px solid #0ff; padding: 10px; text-align: center; margin-top: 10px;">
+            <div id="replayControlPanel" style="background: #111; border: 1px solid #0ff; padding: 10px; text-align: center; margin-top: 10px;">
                 <div id="replayStatus" style="color: #0aa; margin-bottom: 5px;">📼 Snapshot Replay: Stopped</div>
-                <div style="display: flex; gap: 5px; justify-content: center; align-items: center; flex-wrap: wrap;">
+                <div id="replayUnavailableNotice" style="display: none; color: #888; font-size: 0.82em; margin-bottom: 5px;">
+                    Replay appears when snapshot frames exist.
+                </div>
+                <div id="replayButtonRow" style="display: none; gap: 5px; justify-content: center; align-items: center; flex-wrap: wrap;">
                     <button id="replayPlayButton" onclick="startReplay()"
                         title="Play stored snapshot replay only; does not control organisms"
                         style="padding: 5px 10px; background: #0f0; border: 1px solid #0ff; color: #000; cursor: pointer;">▶️ Play Replay</button>
@@ -5956,7 +5959,7 @@
                         </select>
                     </label>
                 </div>
-                <div style="margin-top: 5px;">
+                <div id="replayProgressRow" style="display: none; margin-top: 5px;">
                     <div style="color: #888; font-size: 0.78em; margin-bottom: 5px;">Snapshot replay reads in-memory/IndexedDB/localStorage frames only; no start, stop, checkpoint, or receipt.</div>
                     <input type="range" id="replayProgressBar" min="0" max="0" value="0"
                         oninput="seekReplay(parseInt(this.value))"
@@ -9168,6 +9171,9 @@
                     if (currentCount > 0 && totalSnapshotsCaptured < 5) {
                         console.warn(`[SNAPSHOT] Count element not found! Count should be ${currentCount}`);
                     }
+                }
+                if (typeof updateReplayAvailability === 'function') {
+                    updateReplayAvailability(currentCount > 0 || (replayState.replaySnapshots && replayState.replaySnapshots.length > 0));
                 }
             }
 
@@ -15176,18 +15182,9 @@
             }
 
             function startLiveMode() {
-                // If simulation is stopped, keep checkbox checked but show waiting message
-                if (!simulationRunning) {
-                    console.log('Live mode enabled but waiting for simulation to start');
-                    const statusDiv = document.getElementById('liveStatus');
-                    statusDiv.innerHTML = '<span style="color: #ff0;">● Live Mode (Waiting for simulation to start...)</span>';
-                    statusDiv.style.color = '#ff0';
-                    // Don't uncheck the checkbox - user wants live mode, just waiting for sim
-                    // Don't start polling yet - will start when simulation starts
-                    return;
-                }
-
-                // Check live status every 2 seconds
+                // Check live status every 2 seconds. This is a read-only live surface:
+                // it can follow an already-running backend even when the web control
+                // file did not start that backend.
                 if (liveModeInterval) {
                     clearInterval(liveModeInterval);
                     const index = allIntervals.indexOf(liveModeInterval);
@@ -15210,21 +15207,19 @@
             }
 
             function checkLiveStatus() {
-                // Don't check if simulation is stopped
-                if (!simulationRunning) {
-                    return Promise.resolve({ live: false });
-                }
-
                 return fetch('/api/live/status')
                     .then(response => response.json())
                     .then(data => {
                         const statusDiv = document.getElementById('liveStatus');
 
-                        if (data.live && simulationRunning) {
+                        if (data.live) {
+                            if (!simulationRunning) {
+                                updateSimulationStatus(true);
+                            }
                             statusDiv.innerHTML = `<span style="color: #0f0;">● LIVE</span> <span style="color: #0aa; font-size: 0.85em;">(${data.event_count} events)</span>`;
 
-                            // Check for new events if live mode is enabled and simulation is running
-                            if (liveMode && simulationRunning) {
+                            // Check for new events if live mode is enabled.
+                            if (liveMode) {
                                 fetchNewEvents();
                             }
                         } else {
@@ -15241,9 +15236,9 @@
             }
 
             function fetchNewEvents() {
-                // Don't fetch if simulation is stopped or already pending
-                if (!simulationRunning) {
-                    console.log('fetchNewEvents skipped: simulation is stopped');
+                // Don't fetch if live mode is off or already pending.
+                if (!liveMode) {
+                    console.log('fetchNewEvents skipped: live mode is off');
                     return;
                 }
 
@@ -15260,9 +15255,9 @@
                     .then(data => {
                         pendingIncrementalUpdate = false;
 
-                        // Double-check simulation status before updating
-                        if (!simulationRunning) {
-                            console.log('fetchNewEvents update skipped: simulation is stopped');
+                        // Double-check live mode before updating.
+                        if (!liveMode) {
+                            console.log('fetchNewEvents update skipped: live mode is off');
                             return;
                         }
 
@@ -15273,15 +15268,18 @@
                             lastIncrementalTimestamp = data.latest_timestamp || lastIncrementalTimestamp;
 
                             // Update graph incrementally (doesn't restart simulation)
-                            if (simulationRunning && simulation) {
+                            if (simulation) {
                                 updateGraphIncremental(accumulatedUpdates);
                                 // Clear accumulated updates after processing
                                 accumulatedUpdates = { new_nodes: [], new_links: [] };
-                            } else if (simulationRunning) {
+                            } else {
                                 // Simulation doesn't exist yet, do full load
-                                loadGraph();
+                                loadGraph(true);
                             }
                             updateStats();
+                        }
+                        if (data.truncated) {
+                            console.warn(`[Incremental] Update truncated at ${data.max_links} links; bounded graph view remains active`);
                         }
                     })
                     .catch(err => {
@@ -27390,6 +27388,10 @@
                 }
                 }
                 updateSnapshotCount(); // Update display after clearing
+                if (typeof updateReplayAvailability === 'function') {
+                    replayState.replaySnapshots = [];
+                    updateReplayAvailability(false);
+                }
             }
 
             // CRA provider status on page load.
@@ -27406,6 +27408,10 @@
                     .then(data => {
                         if (data.running === true || data.status === 'running') {
                             updateSimulationStatus(true);
+                            loadGraph(true);
+                            if (document.getElementById('liveModeToggle')?.checked) {
+                                startLiveMode();
+                            }
                             console.log(`[SNAPSHOT] Simulation status read-only check: running - keeping ${snapshotHistory.length} snapshots`);
                         } else {
                             updateSimulationStatus(false);
@@ -27536,6 +27542,7 @@
                             .filter(s => s && s.timestamp && s.image && s.image !== 'PLACEHOLDER_NULL_IMAGE')
                             .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
                         console.log(`[REPLAY] Loaded ${replayState.replaySnapshots.length} snapshots from current session (in-memory)`);
+                        updateReplayAvailability(replayState.replaySnapshots.length > 0);
                         return replayState.replaySnapshots.length > 0;
                     }
 
@@ -27572,6 +27579,7 @@
                         if (validSnapshots.length > 0) {
                             replayState.replaySnapshots = validSnapshots;
                             console.log(`[REPLAY] Loaded ${validSnapshots.length} snapshots from IndexedDB (current session)`);
+                            updateReplayAvailability(true);
                             return true;
                         }
                     }
@@ -27589,6 +27597,7 @@
                             if (recentSnapshots.length > 0) {
                                 replayState.replaySnapshots = recentSnapshots;
                                 console.log(`[REPLAY] Loaded ${recentSnapshots.length} recent snapshots from localStorage (last 5 minutes)`);
+                                updateReplayAvailability(true);
                                 return true;
                             }
                         }
@@ -27598,7 +27607,27 @@
                 }
                 replayState.replaySnapshots = [];
                 console.log('[REPLAY] No snapshots available for replay');
+                updateReplayAvailability(false);
                 return false;
+            }
+
+            function updateReplayAvailability(forceAvailable = null) {
+                const available = forceAvailable !== null
+                    ? forceAvailable
+                    : (replayState.replaySnapshots && replayState.replaySnapshots.length > 0);
+                const buttonRow = document.getElementById('replayButtonRow');
+                const progressRow = document.getElementById('replayProgressRow');
+                const notice = document.getElementById('replayUnavailableNotice');
+                const statusDiv = document.getElementById('replayStatus');
+
+                if (buttonRow) buttonRow.style.display = available ? 'flex' : 'none';
+                if (progressRow) progressRow.style.display = available ? 'block' : 'none';
+                if (notice) notice.style.display = available ? 'none' : 'block';
+                if (!available && statusDiv) {
+                    statusDiv.textContent = '📼 Snapshot Replay: No Frames';
+                    statusDiv.style.color = '#666';
+                }
+                return available;
             }
 
             function displaySnapshotImage(snapshot) {
@@ -27826,25 +27855,49 @@
                 const playBtn = document.getElementById('replayPlayButton');
                 const pauseBtn = document.getElementById('replayPauseButton');
                 const stopBtn = document.getElementById('replayStopButton');
+                const available = updateReplayAvailability();
+
+                if (!available) {
+                    if (playBtn) playBtn.disabled = true;
+                    if (pauseBtn) pauseBtn.disabled = true;
+                    if (stopBtn) stopBtn.disabled = true;
+                    return;
+                }
 
                 if (playing) {
-                    statusDiv.textContent = '▶️ Snapshot Replay: Playing';
-                    statusDiv.style.color = '#0f0';
-                    playBtn.disabled = true;
-                    playBtn.style.opacity = '0.5';
-                    pauseBtn.disabled = false;
-                    pauseBtn.style.opacity = '1';
-                    stopBtn.disabled = false;
-                    stopBtn.style.opacity = '1';
+                    if (statusDiv) {
+                        statusDiv.textContent = '▶️ Snapshot Replay: Playing';
+                        statusDiv.style.color = '#0f0';
+                    }
+                    if (playBtn) {
+                        playBtn.disabled = true;
+                        playBtn.style.opacity = '0.5';
+                    }
+                    if (pauseBtn) {
+                        pauseBtn.disabled = false;
+                        pauseBtn.style.opacity = '1';
+                    }
+                    if (stopBtn) {
+                        stopBtn.disabled = false;
+                        stopBtn.style.opacity = '1';
+                    }
                 } else {
-                    statusDiv.textContent = '⏸️ Snapshot Replay: Stopped';
-                    statusDiv.style.color = '#0aa';
-                    playBtn.disabled = false;
-                    playBtn.style.opacity = '1';
-                    pauseBtn.disabled = true;
-                    pauseBtn.style.opacity = '0.5';
-                    stopBtn.disabled = true;
-                    stopBtn.style.opacity = '0.5';
+                    if (statusDiv) {
+                        statusDiv.textContent = '⏸️ Snapshot Replay: Stopped';
+                        statusDiv.style.color = '#0aa';
+                    }
+                    if (playBtn) {
+                        playBtn.disabled = false;
+                        playBtn.style.opacity = '1';
+                    }
+                    if (pauseBtn) {
+                        pauseBtn.disabled = true;
+                        pauseBtn.style.opacity = '0.5';
+                    }
+                    if (stopBtn) {
+                        stopBtn.disabled = true;
+                        stopBtn.style.opacity = '0.5';
+                    }
                 }
             }
 
@@ -27872,7 +27925,7 @@
 
             // Initialize replay progress on page load
             setTimeout(() => {
-                loadReplaySnapshots();
+                loadReplaySnapshots().then((available) => updateReplayAvailability(available));
                 updateReplayProgress();
             }, 1000);
 
