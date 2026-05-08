@@ -5628,6 +5628,205 @@
             color: var(--chat-role-color);
         }
 
+        @keyframes shenronThreadFlow {
+            0% {
+                background-position: 0 0, 0 0, 0 0;
+                transform: translate3d(-2%, 0, 0);
+            }
+            50% {
+                background-position: 180px 240px, -120px 180px, 80px -160px;
+                transform: translate3d(2%, -1%, 0);
+            }
+            100% {
+                background-position: 360px 480px, -240px 360px, 160px -320px;
+                transform: translate3d(-2%, 0, 0);
+            }
+        }
+
+        @keyframes shenronSummonPulse {
+            0%, 100% {
+                box-shadow: 0 0 5px rgba(0, 255, 102, 0.7), inset 0 0 6px rgba(255, 215, 0, 0.2);
+                transform: translateY(0);
+            }
+            50% {
+                box-shadow: 0 0 14px rgba(0, 255, 102, 1), 0 0 22px rgba(255, 215, 0, 0.35), inset 0 0 12px rgba(255, 215, 0, 0.35);
+                transform: translateY(-1px);
+            }
+        }
+
+        @keyframes shenronHeadGlide {
+            0% {
+                left: -42px;
+                top: 18px;
+                transform: rotate(-6deg);
+            }
+            28% {
+                left: calc(100% - 56px);
+                top: 22%;
+                transform: rotate(7deg);
+            }
+            52% {
+                left: 18%;
+                top: calc(100% - 38px);
+                transform: rotate(-9deg);
+            }
+            78% {
+                left: calc(100% - 70px);
+                top: 60%;
+                transform: rotate(5deg);
+            }
+            100% {
+                left: -42px;
+                top: 18px;
+                transform: rotate(-6deg);
+            }
+        }
+
+        @keyframes shenronLetterBreath {
+            0%, 100% {
+                color: #eafff0;
+                text-shadow: 0 0 4px rgba(25, 255, 119, 0.22), 0 0 10px rgba(255, 215, 0, 0.08);
+            }
+            45% {
+                color: #fff7bf;
+                text-shadow: 0 0 7px rgba(25, 255, 119, 0.52), 0 0 16px rgba(255, 215, 0, 0.26);
+            }
+            70% {
+                color: #d9ffec;
+                text-shadow: 0 0 5px rgba(0, 212, 255, 0.32), 0 0 14px rgba(25, 255, 119, 0.2);
+            }
+        }
+
+        .chat-message.assistant.shenron-cra-message {
+            border-left-color: #19ff77;
+            background: #06110b;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .shenron-response {
+            position: relative;
+            overflow: hidden;
+            border-radius: 6px;
+            padding: 10px 12px 12px 12px;
+            background:
+                linear-gradient(135deg, rgba(0, 255, 102, 0.08), rgba(255, 215, 0, 0.05) 45%, rgba(0, 212, 255, 0.04)),
+                rgba(0, 0, 0, 0.35);
+            box-shadow: inset 0 0 24px rgba(0, 255, 102, 0.08);
+        }
+
+        .shenron-response::before {
+            content: "";
+            position: absolute;
+            inset: -20%;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.42;
+            background:
+                radial-gradient(ellipse at 16% 12%, rgba(255, 215, 0, 0.42) 0 8px, transparent 10px),
+                repeating-linear-gradient(118deg, transparent 0 24px, rgba(0, 255, 102, 0.18) 25px 31px, rgba(255, 215, 0, 0.16) 32px 36px, transparent 37px 66px),
+                repeating-radial-gradient(ellipse at 55% 45%, rgba(25, 255, 119, 0.18) 0 2px, transparent 3px 18px);
+            background-size: 260px 220px, 360px 260px, 180px 160px;
+            animation: shenronThreadFlow 18s linear infinite;
+        }
+
+        .shenron-response::after {
+            content: "";
+            position: absolute;
+            z-index: 1;
+            width: 58px;
+            height: 30px;
+            border-radius: 50% 58% 44% 60%;
+            background:
+                radial-gradient(circle at 72% 42%, #fff 0 2px, transparent 3px),
+                linear-gradient(135deg, #1bff79, #04783f);
+            filter: drop-shadow(0 0 12px rgba(0, 255, 102, 0.9));
+            opacity: 0.55;
+            pointer-events: none;
+            animation: shenronHeadGlide 14s ease-in-out infinite;
+        }
+
+        .shenron-summon-key,
+        .shenron-response-text {
+            position: relative;
+            z-index: 2;
+        }
+
+        .shenron-summon-key {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(25, 255, 119, 0.22);
+        }
+
+        .shenron-summon-label {
+            color: #9dffb8;
+            font-family: var(--font-mono);
+            font-size: 0.72em;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-right: 4px;
+        }
+
+        .shenron-summon-glyph {
+            min-width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255, 215, 0, 0.64);
+            border-radius: 50%;
+            color: #ffd700;
+            background: rgba(0, 30, 12, 0.72);
+            font-family: 'Cinzel', 'Trajan Pro', 'Times New Roman', serif;
+            font-weight: 800;
+            text-shadow: 0 0 8px rgba(0, 255, 102, 0.95);
+            animation: shenronSummonPulse 2.4s ease-in-out infinite;
+        }
+
+        .shenron-summon-glyph:nth-child(2n) {
+            animation-delay: 0.18s;
+        }
+
+        .shenron-summon-glyph:nth-child(3n) {
+            animation-delay: 0.36s;
+        }
+
+        .shenron-response-text {
+            color: #e6fff0;
+        }
+
+        .shenron-response-text p,
+        .shenron-response-text li {
+            text-shadow: 0 0 8px rgba(0, 255, 102, 0.12);
+        }
+
+        .shenron-letter {
+            position: relative;
+            z-index: 2;
+            animation: shenronLetterBreath 5.6s ease-in-out infinite;
+        }
+
+        .shenron-letter-1 { animation-delay: 0.08s; }
+        .shenron-letter-2 { animation-delay: 0.16s; }
+        .shenron-letter-3 { animation-delay: 0.24s; }
+        .shenron-letter-4 { animation-delay: 0.32s; }
+        .shenron-letter-5 { animation-delay: 0.40s; }
+        .shenron-letter-6 { animation-delay: 0.48s; }
+
+        .shenron-breath-gap {
+            display: inline-block;
+            min-width: 0.28em;
+        }
+
+        .shenron-beat-gap {
+            color: #9fffe0;
+            text-shadow: 0 0 6px rgba(255, 215, 0, 0.18);
+        }
+
         .chat-message-body {
             line-height: 1.64;
             color: #e8fff7;
@@ -26435,6 +26634,68 @@
                 return collapseDuplicatedResponse(cleaned);
             }
 
+            function getShenronSummonKey(text) {
+                const chars = String(text || '').match(/[a-z0-9]/gi) || [];
+                return chars.slice(0, 7).join('').toUpperCase();
+            }
+
+            function renderShenronGlyphText(text, state) {
+                return String(text || '').split('').map(ch => {
+                    if (/[a-z0-9]/i.test(ch)) {
+                        const phase = state.count % 7;
+                        state.count += 1;
+                        return `<span class="shenron-letter shenron-letter-${phase}">${escapeHtml(ch)}</span>`;
+                    }
+                    if (/\s/.test(ch)) {
+                        return `<span class="shenron-breath-gap">${escapeHtml(ch)}</span>`;
+                    }
+                    return `<span class="shenron-beat-gap">${escapeHtml(ch)}</span>`;
+                }).join('');
+            }
+
+            function weaveShenronLetters(renderedMessageHtml) {
+                const template = document.createElement('template');
+                template.innerHTML = renderedMessageHtml;
+                const walker = document.createTreeWalker(
+                    template.content,
+                    NodeFilter.SHOW_TEXT,
+                    {
+                        acceptNode(node) {
+                            return /[a-z0-9]/i.test(node.nodeValue || '') ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+                        }
+                    }
+                );
+                const nodes = [];
+                while (walker.nextNode()) {
+                    nodes.push(walker.currentNode);
+                }
+                const state = { count: 0 };
+                nodes.forEach(node => {
+                    const span = document.createElement('span');
+                    span.className = 'shenron-text-weave';
+                    span.innerHTML = renderShenronGlyphText(node.nodeValue, state);
+                    node.replaceWith(span);
+                });
+                return template.innerHTML;
+            }
+
+            function renderShenronCraResponse(rawText, renderedMessageHtml) {
+                const summonKey = getShenronSummonKey(rawText);
+                const summonGlyphs = summonKey
+                    ? summonKey.split('').map(ch => `<span class="shenron-summon-glyph">${escapeHtml(ch)}</span>`).join('')
+                    : '<span class="shenron-summon-glyph">?</span>';
+                const summonLabel = summonKey ? `SUMMON ${escapeHtml(summonKey)}` : 'SUMMON WAITING';
+                return `
+                    <div class="shenron-response" data-summon="${escapeHtml(summonKey)}">
+                        <div class="shenron-summon-key" aria-label="Shenron summon key ${escapeHtml(summonKey)}">
+                            <span class="shenron-summon-label">${summonLabel}</span>
+                            ${summonGlyphs}
+                        </div>
+                        <div class="shenron-response-text">${weaveShenronLetters(renderedMessageHtml)}</div>
+                    </div>
+                `;
+            }
+
             function renderMarkdown(text) {
                 if (!text) return '';
 
@@ -26617,7 +26878,11 @@
                     const color = isError ? '#ff445c' : safeRole === 'user' ? '#38ff7a' : safeRole === 'assistant' ? '#00e5ff' : safeRole === 'system' ? '#ff62d9' : '#ffd54a';
 
                     // Render markdown for assistant and vision messages, plain text for user
-                    const messageContent = (safeRole === 'assistant' || safeRole === 'vision') ? renderMarkdown(message) : escapeHtml(message);
+                    let messageContent = (safeRole === 'assistant' || safeRole === 'vision') ? renderMarkdown(message) : escapeHtml(message);
+                    if (safeRole === 'assistant' && !isError) {
+                        messageDiv.classList.add('shenron-cra-message');
+                        messageContent = renderShenronCraResponse(message, messageContent);
+                    }
 
                     messageDiv.innerHTML = `<div class="chat-message-header"><strong style="color: ${color}; font-size: 1.05em;">${roleLabel}:</strong></div><div class="chat-message-body">${messageContent}</div>`;
                     fragment.appendChild(messageDiv);
