@@ -165,7 +165,7 @@
     },
     "fitness_precision": 1e-07,
     "genotype_length": 48,
-    "max_generations": 1500,
+    "max_generations": 0,
     "mutation_rate": {
       "initial": 0.04
     },
@@ -262,7 +262,7 @@
       "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
       "germination_rate": 0.1,
       "max_battle_rounds": 15,
-      "max_population": 25,
+      "max_population": 0,
       "min_population": 15,
       "mutation_rate": 0.0,
       "population_size": 200,
@@ -272,9 +272,9 @@
     },
     "germination_rate": 0.15,
     "max_battle_rounds": 30,
-    "max_capsules": 100,
-    "max_genetic_samples": 100,
-    "max_population": 50,
+    "max_capsules": 0,
+    "max_genetic_samples": 0,
+    "max_population": 0,
     "min_population": 10,
     "mutation_rate": 0.0,
     "population_size": 200,
@@ -346,8 +346,8 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 48000,
-    "max_organisms": 5000,
+    "max_connections": 0,
+    "max_organisms": 0,
     "resource_flow_precision": 0.0001,
     "resource_pool": 1000,
     "stability_precision": 1e-07
@@ -682,7 +682,7 @@
   },
   "simulation": {
     "log_level": "INFO",
-    "max_runtime": 14400.0,
+    "max_runtime": 0.0,
     "measurement_precision": 4,
     "performance_sampling_rate": 200,
     "save_interval": 60.0,

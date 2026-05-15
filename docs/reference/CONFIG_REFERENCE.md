@@ -6,6 +6,8 @@ This document mirrors `config.json` so you can keep the file itself machine-vali
 
 > **Editing tip:** Because the config is pure JSON, keep comments out of the file. Instead, jot notes in this guide or create git commit messages that highlight why a tweak was made.
 
+> **Unbounded convention:** For cap fields, `0` means no app-level cap. The host machine, disk, memory, Hugging Face lifecycle, and operating system remain physical limits, but the engine will not self-stop or self-prune because of that cap.
+
 ---
 
 ## Available Config Files
@@ -182,7 +184,7 @@ Genetic algorithm and mutation settings.
 | `adaptation_sensitivity` | float | 0.002 | Responsiveness of adaptation heuristics |
 | `fitness_precision` | float | 1e-07 | Decimal precision for fitness comparisons |
 | `genotype_length` | int | 48 | Length of binary genome per organism |
-| `max_generations` | int | 1500 | Hard stop for evolution runs |
+| `max_generations` | int | 0 | Hard stop for evolution runs; `0` = unbounded |
 | `mutation_rate.initial` | float | 0.045 | Initial mutation rate |
 | `mutation_rate_precision` | float | 0.001 | Tuning precision for mutation rate |
 | `population_size` | int | 200 | Base population per generation |
@@ -272,12 +274,12 @@ Tournament survival system with Alliance Warfare. Controls the core population d
 | `competition_intensity` | float | 0.4 | Fraction of population that battles (0-1) | 0.15 |
 | `chaos_factor` | float | 0.0 | Battle randomness (0=deterministic, >0.15=upsets) | 0.10 |
 | `population_size` | int | 600 | Initial population to spawn | 5 |
-| `max_population` | int | 1200 | Ceiling before resource collapse | 800 |
+| `max_population` | int | 0 | Ceiling before resource collapse; `0` = unbounded | 800 |
 | `min_population` | int | 20 | Floor that triggers emergency germination | 3 |
 | `mutation_rate` | float | 0.0 | Mutation rate for offspring | 0.05 |
 | `germination_rate` | float | 1.0 | Rate of spawning new organisms (higher = faster boom) | 0.8 |
-| `max_capsules` | int | 300 | Champion checkpoint capacity | 100 |
-| `max_genetic_samples` | int | 300 | Genetic sample vault capacity | 200 |
+| `max_capsules` | int | 0 | Champion checkpoint capacity; `0` = unbounded | 100 |
+| `max_genetic_samples` | int | 0 | Genetic sample vault capacity; `0` = unbounded | 200 |
 | `max_battle_rounds` | int | 50 | Maximum rounds per battle | 30 |
 | `rounds_per_cycle` | int | 2 | Battle rounds per breath cycle | 3 |
 | `survival_threshold` | float | 0.4 | Minimum fitness to survive culling | 0.25 |
@@ -336,7 +338,7 @@ Override settings for EXTREME difficulty. Activates during extinction events.
 |-----|------|---------|-------------|
 | `competition_intensity` | float | 0.6 | Maximum pressure |
 | `survival_threshold` | float | 0.5 | Very high survival bar |
-| `max_population` | int | 500 | Small arena |
+| `max_population` | int | 0 | Small arena; `0` = unbounded |
 | `min_population` | int | 3 | Near extinction allowed |
 | `germination_rate` | float | 0.5 | Reduced respawns |
 | `mutation_rate` | float | 0.12 | Higher mutation for diversity |
@@ -436,8 +438,8 @@ Graph limits for organism interaction network. Controls resource economics.
 
 | Key | Type | Default | Description | Genesis Value |
 |-----|------|---------|-------------|---------------|
-| `max_organisms` | int | 2000 | Hard cap on organism count | 1000 |
-| `max_connections` | int | 50000 | Hard cap on edge count | 50000 |
+| `max_organisms` | int | 0 | Hard cap on organism count; `0` = unbounded | 1000 |
+| `max_connections` | int | 0 | Hard cap on per-organism connections; `0` = unbounded | 50000 |
 | `resource_pool` | int | 5000 | Total shared ecosystem resources | 1500 |
 | `connection_strength_resolution` | float | 5e-06 | Decimal precision for edge weights | 5e-06 |
 | `resource_flow_precision` | float | 0.0001 | Decimal precision for resource flow | 0.001 |
@@ -862,7 +864,7 @@ Global runtime settings.
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `log_level` | string | "INFO" | Logging verbosity |
-| `max_runtime` | float | 3600.0 | Seconds before auto-stop |
+| `max_runtime` | float | 0.0 | Seconds before auto-stop; `0` = no app-level runtime stop |
 | `save_interval` | float | 60.0 | Seconds between saves |
 | `target_fps` | int | 3 | Target simulation FPS |
 | `time_resolution_ms` | float | 1.0 | Base time slice |

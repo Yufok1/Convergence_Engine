@@ -939,12 +939,15 @@ class RealitySimulator:
                 new_edge_rate=1.0,  # Default, will be modified by feedback controller
                 config=self.config  # Pass config for language teacher
             )
-            # Allow much denser connection topology for high-capacity runs
+            # Allow much denser connection topology for high-capacity runs.
+            # Preserve 0/negative as the documented unbounded setting.
             try:
-                network.max_connections_per_organism = max(
-                    getattr(network, "max_connections_per_organism", 15),  # Increased from 5 to 15
-                    12
-                )
+                configured_max_connections = self.config['network'].get('max_connections', 15)
+                if configured_max_connections > 0:
+                    network.max_connections_per_organism = max(
+                        getattr(network, "max_connections_per_organism", 15),
+                        12
+                    )
             except Exception:
                 pass
             if hasattr(network, "set_new_edge_rate"):
@@ -1562,8 +1565,9 @@ class RealitySimulator:
             evolution = self.components.get('evolution')
             if evolution and evolution.population:
                 # Add some evolved organisms to network periodically
-                max_organisms = self.config['network'].get('max_organisms', 100)  # Default 100, configurable
-                if len(network.organisms) < max_organisms:  # Keep network growing up to configured limit
+                max_organisms = self.config['network'].get('max_organisms', 100)  # 0 or lower = unbounded
+                organism_cap_enabled = isinstance(max_organisms, (int, float)) and max_organisms > 0
+                if (not organism_cap_enabled) or len(network.organisms) < int(max_organisms):
                     new_orgs = evolution.population[-5:]  # Most recent
                     for org in new_orgs:
                         if org.species_id not in network.organisms:

@@ -1275,7 +1275,7 @@ class SymbioticNetwork:
         org_b = self.organisms[org_b_id]
 
         # Check connection limits (unless bypassing for language connections)
-        if not allow_bypass_limits:
+        if not allow_bypass_limits and self.max_connections_per_organism > 0:
             current_connections_a = len([(a, b) for (a, b), _ in self.connections.items()
                                        if a == org_a_id or b == org_a_id])
             current_connections_b = len([(a, b) for (a, b), _ in self.connections.items()
@@ -1864,7 +1864,7 @@ class SymbioticNetwork:
         non_neighbors = [oid for oid in self.organisms.keys() 
                         if oid != org_id and oid not in neighbors]
         
-        if non_neighbors and len(neighbors) < self.max_connections_per_organism:
+        if non_neighbors and (self.max_connections_per_organism <= 0 or len(neighbors) < self.max_connections_per_organism):
             target_id = np.random.choice(non_neighbors)
             if not self.network_graph.has_edge(org_id, target_id):
                 self.add_connection(org_id, target_id)

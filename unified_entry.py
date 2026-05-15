@@ -2472,6 +2472,7 @@ class UnifiedSystem:
                 max_genetic_samples=config.get('max_genetic_samples', 100),
                 min_population=config.get('min_population', 5),  # Default matches config.json
                 max_population=config.get('max_population', 100),  # Default matches config.json
+                max_champion_capsules=config.get('max_capsules', 10),
                 germination_rate=config.get('germination_rate', 0.1),
                 mutation_base_rate=config.get('mutation_rate', 0.0),  # Default matches config.json
                 context_memory=network_context_memory,  # For full vocabulary inheritance

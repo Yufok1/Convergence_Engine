@@ -209,6 +209,7 @@ class GerminationPool:
         max_genetic_samples: int = 100,
         min_population: int = 5,
         max_population: int = 50,
+        max_champion_capsules: int = 10,
         germination_rate: float = 0.1,
         mutation_base_rate: float = 0.05,
         crossover_bias: float = 0.3,
@@ -221,6 +222,7 @@ class GerminationPool:
         self.max_genetic_samples = max_genetic_samples
         self.min_population = min_population
         self.max_population = max_population
+        self.max_champion_capsules = max_champion_capsules
         self.germination_rate = germination_rate
         self.mutation_base_rate = mutation_base_rate
         self.crossover_bias = crossover_bias
@@ -424,6 +426,9 @@ class GerminationPool:
         
     def _prune_pool(self):
         """Remove lowest-fitness samples when over capacity"""
+        if self.max_genetic_samples <= 0:
+            return
+
         if len(self.genetic_pool) <= self.max_genetic_samples:
             return
             
@@ -1786,9 +1791,9 @@ class GerminationPool:
         """Add a champion capsule for phoenix resurrection"""
         self.champion_capsules.append(capsule)
         
-        # Keep only top 10 champions
-        if len(self.champion_capsules) > 10:
-            self.champion_capsules = self.champion_capsules[-10:]
+        # Keep only the configured champion history. 0 or lower = unbounded.
+        if self.max_champion_capsules > 0 and len(self.champion_capsules) > self.max_champion_capsules:
+            self.champion_capsules = self.champion_capsules[-self.max_champion_capsules:]
             
     def get_pool_stats(self) -> Dict[str, Any]:
         """Get statistics about the germination pool"""

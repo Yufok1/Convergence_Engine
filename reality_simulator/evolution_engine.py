@@ -927,7 +927,7 @@ class EvolutionEngine:
         }
 
         for gen in range(num_generations):
-            if gen >= self.max_generations:
+            if self.max_generations > 0 and gen >= self.max_generations:
                 break
 
             stats = self.evolve_generation()
@@ -1141,9 +1141,11 @@ def create_evolution_engine(population_size: int = 25,
                           fitness_targets: Optional[Dict[str, float]] = None,
                           config: Optional[Dict[str, Any]] = None) -> EvolutionEngine:
     """Create a ready-to-use evolution engine"""
+    evolution_config = (config or {}).get('evolution', {})
     return EvolutionEngine(
         population_size=population_size,
         genotype_length=genotype_length,
+        max_generations=evolution_config.get('max_generations', 1000),
         fitness_targets=fitness_targets,
         config=config
     )
