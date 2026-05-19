@@ -19,6 +19,14 @@
       "mastery_min_experiences": [25, 100, 300, 600],
       "always_allow_tokens": [".", ",", "!", "?", "and", "the", "a", "is", "to", "of", "in"]
     },
+    "connectors": {
+      "enabled": true,
+      "seed_at_birth": true,
+      "initial_strength": 0.25,
+      "initial_association_strength": 0.2,
+      "_help": "Weak connective tissue handles for learned conditional, causal, temporal, contrastive, modal, and reference semantics.",
+      "words": []
+    },
     "semantic": {
       "enabled": false,
       "knowledge_web_bootstrap": false,

@@ -22,6 +22,7 @@ This enables questions like:
 
 import time
 import logging
+import math
 from typing import Dict, List, Optional, Set, Tuple, Any, Callable
 from dataclasses import dataclass, field
 from collections import defaultdict, Counter, deque
@@ -744,6 +745,43 @@ class AtomicLanguageSystem:
     
     ACTION_HEADS = ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate']
     
+    # Connective tissue: low-strength relation/operator handles.
+    # These are not full meanings at birth; they are attachment points that
+    # experience can strengthen into conditional, contrastive, temporal,
+    # causal, and social grammar.
+    CONNECTIVE_TISSUE = {
+        'additive': ['and', 'also', 'plus', 'with', 'together'],
+        'choice': ['or', 'either', 'neither', 'nor', 'maybe'],
+        'negation': ['not', 'no', 'never', 'none', 'without'],
+        'conditional': ['if', 'unless', 'whether', 'whenever'],
+        'consequence': ['then', 'so', 'therefore', 'thus', 'hence'],
+        'causal': ['because', 'since', 'cause', 'why'],
+        'contrast': ['but', 'though', 'although', 'however', 'yet', 'still', 'except', 'instead'],
+        'temporal': ['now', 'before', 'after', 'while', 'when', 'until', 'during', 'again', 'soon', 'later', 'always', 'sometimes'],
+        'reference': ['here', 'there', 'this', 'that', 'these', 'those', 'where'],
+        'quantity': ['more', 'less', 'all', 'some', 'any', 'many', 'few', 'enough', 'same', 'different'],
+        'control': ['go', 'stop', 'wait', 'continue', 'start', 'end'],
+        'modal': ['can', 'could', 'should', 'would', 'must', 'may', 'might', 'will'],
+        'identity': ['self', 'other', 'me', 'you', 'we', 'they']
+    }
+    CONNECTOR_WORDS = []
+    for _connector_group_words in CONNECTIVE_TISSUE.values():
+        CONNECTOR_WORDS.extend(_connector_group_words)
+    CONNECTOR_WORDS = tuple(dict.fromkeys(CONNECTOR_WORDS))
+    CONNECTOR_ASSOCIATIONS = [
+        ('if', 'then'), ('unless', 'not'), ('whether', 'or'),
+        ('because', 'so'), ('because', 'therefore'), ('cause', 'because'),
+        ('but', 'however'), ('though', 'although'), ('yet', 'still'),
+        ('and', 'also'), ('and', 'with'), ('or', 'either'),
+        ('neither', 'nor'), ('not', 'without'), ('no', 'none'),
+        ('when', 'then'), ('before', 'after'), ('while', 'during'),
+        ('more', 'less'), ('same', 'different'), ('all', 'some'),
+        ('can', 'could'), ('should', 'must'), ('would', 'will'),
+        ('here', 'there'), ('this', 'that'), ('these', 'those'),
+        ('start', 'end'), ('go', 'stop'), ('wait', 'continue'),
+        ('self', 'other'), ('we', 'they'), ('me', 'you')
+    ]
+
     # ═══════════════════════════════════════════════════════════════════════════
     # FOUNDATIONAL ORIENTATION SYSTEM
     # Inspired by the Voyager Golden Record (1977) - what humanity chose to
@@ -827,6 +865,9 @@ class AtomicLanguageSystem:
             'what', 'who', 'where', 'when', 'why', 'how', 'which',
             'can', 'will', 'should', 'must', 'may', 'might'
         ],
+
+        # CONNECTORS - Relation/operator handles for learned grammar
+        'connectors': list(CONNECTOR_WORDS),
         
         # UNIVERSALS - What humanity most wanted to convey (Golden Record)
         'universals': [
@@ -1027,7 +1068,17 @@ class AtomicLanguageSystem:
         self._mastery_advancement_ratio: float = grounded_config.get('mastery_advancement_ratio', 0.5)
         self._mastery_depth_ratio: float = grounded_config.get('mastery_depth_ratio', 0.3)
         self._mastery_min_experiences: List[int] = grounded_config.get('mastery_min_experiences', [25, 100, 300, 600])
+        self._mastery_gating_enabled: bool = bool(grounded_config.get('mastery_gating', True))
+        self._unbounded_vocabulary: bool = bool(grounded_config.get('unbounded_vocabulary', False))
         self._total_experiences: int = 0
+        self._last_mastery_check_log_signature = None
+
+        connector_config = lang_config.get('connectors', {})
+        self._connectors_enabled: bool = connector_config.get('enabled', True)
+        self._connector_seed_at_birth: bool = connector_config.get('seed_at_birth', True)
+        self._connector_initial_strength: float = float(connector_config.get('initial_strength', 0.25))
+        self._connector_association_strength: float = float(connector_config.get('initial_association_strength', 0.2))
+        self._connector_extra_words: List[str] = connector_config.get('words', []) or []
         
         # ═══════════════════════════════════════════════════════════════════════════
         # HEALING PROTOCOL - Resonance Tracking
@@ -1044,12 +1095,80 @@ class AtomicLanguageSystem:
 
         logger.debug(f"[ATOMIC_LANG] Initialized for organism {organism_id} with {len(self.atoms)} innate concepts (mastery level {self._mastery_level})")
     
+
+    def _configured_connector_words(self) -> List[str]:
+        """Return connector handles from built-ins plus optional config additions."""
+        words = list(self.CONNECTOR_WORDS)
+        for word in self._connector_extra_words:
+            if not isinstance(word, str):
+                continue
+            normalized = word.strip().lower()
+            if normalized:
+                words.append(normalized)
+        return list(dict.fromkeys(words))
+
+    def _available_connector_words(self) -> List[str]:
+        """Return seeded connector handles that are part of the current vocabulary surface."""
+        if not self._connectors_enabled:
+            return []
+        return [word for word in self._configured_connector_words() if word in self.atoms]
+
+    def _mastery_gate_vocabulary(self, available_vocab: Optional[List[str]] = None) -> List[str]:
+        """
+        Return the vocabulary used to judge advancement at the current level.
+
+        Level 0 exposes connector handles, but advancement still measures the
+        six action heads. Connectors are expansion systems, not extra blockers.
+        """
+        if self._mastery_level == 0:
+            return [word for word in self.ACTION_HEADS if word in self.atoms]
+        return list(available_vocab) if available_vocab is not None else self.get_available_vocabulary()
+
+    def _initialize_connector_handles(self, current_time: float):
+        """Seed weak connector handles so organisms can learn grammar through use."""
+        if not self._connectors_enabled or not self._connector_seed_at_birth:
+            return
+
+        initial_strength = float(np.clip(self._connector_initial_strength, 0.05, 0.8))
+        initial_magnetism = max(0.25, min(0.65, initial_strength + 0.2))
+
+        for word in self._configured_connector_words():
+            if word in self.atoms:
+                atom = self.atoms[word]
+                atom.strength = max(atom.strength, initial_strength)
+                atom.base_magnetism = max(atom.base_magnetism, initial_magnetism)
+                atom.curiosity_magnetism = max(atom.curiosity_magnetism, initial_magnetism)
+                continue
+
+            atom = LinguisticAtom(
+                concept_id=word,
+                strength=initial_strength,
+                source='connective_tissue',
+                semantic_frame='connector',
+                abstraction_level=1,
+                acquisition_time=current_time,
+                vp_vitality_affinity=0.5,
+                vp_pleasure_affinity=0.5,
+                base_magnetism=initial_magnetism,
+                curiosity_magnetism=initial_magnetism
+            )
+            atom._event_emitter = self.event_emitter
+            atom._organism_id = self.organism_id
+            self.atoms[word] = atom
+            self._concept_order.append(word)
+
+        association_strength = float(np.clip(self._connector_association_strength, 0.05, 0.6))
+        for source, target in self.CONNECTOR_ASSOCIATIONS:
+            if source in self.atoms and target in self.atoms:
+                self.atoms[source].form_association(target, association_strength, 'connective_tissue', emit_event=False)
+                self.atoms[target].form_association(source, association_strength * 0.8, 'connective_tissue', emit_event=False)
+
     def _initialize_innate_concepts(self):
         """
         Initialize organism with innate (inherited) concepts from nuclear vocab.
 
         GROUNDED MODE BEHAVIOR:
-        - Level 0: ONLY action heads (6 words) - no innate loading
+        - Level 0: action heads plus connector handles - no wider innate loading
         - Level 1: Action heads + minimal core (26 words target)
         - Level 2-3: Progressive innate loading
         - Level 4: Full innate loading (current behavior)
@@ -1067,9 +1186,10 @@ class AtomicLanguageSystem:
         # GROUNDED MODE: Mastery-gated initialization
         # ═══════════════════════════════════════════════════════════════
         if self._mastery_level == 0:
-            # Level 0: ONLY action heads - load them explicitly, skip all other innate vocab
-            logger.debug(f"[ATOMIC_LANG] Organism {self.organism_id}: Level 0 - loading ACTION_HEADS only")
+            # Level 0: action heads plus weak connector handles, no wider innate vocab.
+            logger.debug(f"[ATOMIC_LANG] Organism {self.organism_id}: Level 0 - loading ACTION_HEADS + connector handles")
             self._initialize_action_heads_only(current_time)
+            self._initialize_connector_handles(current_time)
             self._seed_action_head_curiosity()  # Make them interesting
             self.total_concepts_acquired = len(self.atoms)
             return
@@ -1367,6 +1487,12 @@ class AtomicLanguageSystem:
         added_count = 0
         added_by_frame = {}  # Track what frames we added for logging
         
+        def earned_vocab_count() -> int:
+            return sum(
+                1 for atom in self.atoms.values()
+                if getattr(atom, 'semantic_frame', '') != 'connector'
+            )
+
         if new_level >= 1:
             # Level 1+: Add core state/relationship words
             # BEHAVIOR-DRIVEN: Sort by affinity to organism's playstyle
@@ -1379,7 +1505,7 @@ class AtomicLanguageSystem:
             sorted_words = self._sort_words_by_behavior_affinity(candidate_words, concepts)
             
             for word in sorted_words:
-                if len(self.atoms) >= 26:
+                if earned_vocab_count() >= 26:
                     break
                 info = concepts[word]
                 frame = info.get('frame', 'universal')
@@ -1396,7 +1522,7 @@ class AtomicLanguageSystem:
             sorted_words = self._sort_words_by_behavior_affinity(candidate_words, concepts)
             
             for word in sorted_words:
-                if len(self.atoms) >= 76:
+                if earned_vocab_count() >= 76:
                     break
                 info = concepts[word]
                 frame = info.get('frame', 'universal')
@@ -1413,7 +1539,7 @@ class AtomicLanguageSystem:
             sorted_words = self._sort_words_by_behavior_affinity(candidate_words, concepts)
             
             for word in sorted_words:
-                if len(self.atoms) >= 276:
+                if earned_vocab_count() >= 276:
                     break
                 info = concepts[word]
                 frame = info.get('frame', 'universal')
@@ -1538,11 +1664,84 @@ class AtomicLanguageSystem:
         """Record that organism had a learning experience."""
         self._total_experiences += 1
     
+
+    def get_mastery_status(self) -> Dict[str, Any]:
+        """
+        Return the mastery-facing vocabulary contract for UI/API surfaces.
+
+        Connector handles are seeded level-0 expansion systems, so they count as
+        available/earned vocabulary. The rank-0 advancement gate still measures
+        the six action heads so the grammar handles do not block graduation.
+        """
+        vocab = self.get_available_vocabulary()
+        vocab_count = len(vocab)
+        gate_vocab = self._mastery_gate_vocabulary(vocab)
+        gate_vocab_count = len(gate_vocab)
+        metric_vocab = gate_vocab if gate_vocab else vocab
+        metric_vocab_count = len(metric_vocab)
+        used_words = sum(
+            1 for word in metric_vocab
+            if word in self.atoms and getattr(self.atoms[word], 'recent_activation_count', 0) > 2
+        )
+        deep_words = sum(
+            1 for word in metric_vocab
+            if word in self.atoms and len(getattr(self.atoms[word], 'associations', {})) >= 2
+        )
+        breadth_ratio = used_words / metric_vocab_count if metric_vocab_count else 0.0
+        depth_ratio = deep_words / metric_vocab_count if metric_vocab_count else 0.0
+        exp_target = (
+            self._mastery_min_experiences[self._mastery_level]
+            if self._mastery_level < len(self._mastery_min_experiences)
+            else 1000
+        )
+        cap = self._current_vocab_cap()
+        reported_cap = max(cap, vocab_count) if cap is not None and self._mastery_level == 0 else cap
+        connector_count = sum(
+            1 for atom in self.atoms.values()
+            if getattr(atom, 'semantic_frame', '') == 'connector'
+        )
+        advancement_ready = (
+            self._mastery_level < 4
+            and breadth_ratio >= self._mastery_advancement_ratio
+            and depth_ratio >= self._mastery_depth_ratio
+            and self._total_experiences >= exp_target
+        )
+
+        return {
+            'mastery_level': self._mastery_level,
+            'mastery_vocab_limit': reported_cap,
+            'mastery_available_words': vocab_count,
+            'mastery_gate_words': gate_vocab_count,
+            'earned_words': vocab_count,
+            'total_vocabulary_atoms': len(self.atoms),
+            'connector_word_count': connector_count,
+            'mastery_used_words': used_words,
+            'mastery_deep_words': deep_words,
+            'mastery_breadth': breadth_ratio,
+            'mastery_depth': depth_ratio,
+            'mastery_experiences': self._total_experiences,
+            'mastery_breadth_target': self._mastery_advancement_ratio,
+            'mastery_depth_target': self._mastery_depth_ratio,
+            'mastery_exp_target': exp_target,
+            'mastery_breadth_words_target': math.ceil(metric_vocab_count * self._mastery_advancement_ratio) if metric_vocab_count else 0,
+            'mastery_depth_words_target': math.ceil(metric_vocab_count * self._mastery_depth_ratio) if metric_vocab_count else 0,
+            'mastery_advancement_ready': advancement_ready,
+        }
+
+    def _current_vocab_cap(self) -> Optional[int]:
+        """Return the active mastery vocabulary cap, or None when vocabulary is open-ended."""
+        if self._unbounded_vocabulary or not self._mastery_gating_enabled:
+            return None
+        if not self._mastery_vocab_sizes:
+            return None
+        level_index = min(self._mastery_level, len(self._mastery_vocab_sizes) - 1)
+        return self._mastery_vocab_sizes[level_index]
+
     def get_available_vocabulary(self) -> List[str]:
         """
         Get vocabulary available at current mastery level.
         
-        Level 0: 6 action heads only
+        Level 0: 6 action heads plus seeded connector handles
         Level 1: +20 core state/relationship words
         Level 2: +50 extended concepts  
         Level 3: +200 pool words
@@ -1551,12 +1750,14 @@ class AtomicLanguageSystem:
         Returns:
             List of concept_ids available for generation
         """
-        if self._mastery_level >= 4:
-            # Level 4: All vocabulary unlocked
+        if self._unbounded_vocabulary or not self._mastery_gating_enabled or self._mastery_level >= 4:
+            # Open vocabulary or semantic graduation: all acquired vocabulary is available.
             return list(self.atoms.keys())
         
         # Get target vocab size for current level
-        target_size = self._mastery_vocab_sizes[self._mastery_level]
+        target_size = self._current_vocab_cap()
+        if target_size is None:
+            return list(self.atoms.keys())
         
         # Priority ordering for vocabulary selection:
         # 1. Action heads (always first)
@@ -1571,8 +1772,12 @@ class AtomicLanguageSystem:
             if head in self.atoms:
                 available.append(head)
         
+        for word in self._available_connector_words():
+            if word not in available:
+                available.append(word)
+
         if self._mastery_level == 0:
-            return available[:target_size]
+            return available
         
         # Level 1+: Add core words (expanded frame set to match innate_vocab.json)
         # Core tier includes: relationship, state, action, causal, perception, quality, cognitive, etc.
@@ -1623,8 +1828,8 @@ class AtomicLanguageSystem:
         Returns:
             True if word is in organism's earned vocabulary, False otherwise
         """
-        # Level 4+: Full vocabulary access (semantic graduation)
-        if self._mastery_level >= 4:
+        # Open vocabulary / Level 4+: Full vocabulary access (semantic graduation)
+        if self._unbounded_vocabulary or not self._mastery_gating_enabled or self._mastery_level >= 4:
             return True
         
         # Check if word is in current available vocabulary
@@ -1641,8 +1846,8 @@ class AtomicLanguageSystem:
         Returns:
             True if organism has room for new words, False if at cap
         """
-        max_vocab = self._mastery_vocab_sizes[min(self._mastery_level, len(self._mastery_vocab_sizes) - 1)]
-        return len(self.atoms) < max_vocab
+        max_vocab = self._current_vocab_cap()
+        return True if max_vocab is None else len(self.atoms) < max_vocab
     
     def check_mastery_advancement(self) -> bool:
         """
@@ -1659,44 +1864,35 @@ class AtomicLanguageSystem:
         if self._mastery_level >= 4:
             return False  # Already at max
         
-        vocab = self.get_available_vocabulary()
-        if not vocab:
+        status = self.get_mastery_status()
+        if status['mastery_available_words'] <= 0:
             return False
-        
-        # BREADTH: At least 50% of words used (lowered from 70%)
-        # Count words with usage - threshold of 3 uses (was 5)
-        used_words = sum(
-            1 for w in vocab 
-            if w in self.atoms and getattr(self.atoms[w], 'recent_activation_count', 0) > 2
-        )
-        breadth_ratio = used_words / len(vocab)
-        
-        # DEPTH: At least 30% have 2+ associations (lowered from 3)
-        deep_words = sum(
-            1 for w in vocab
-            if w in self.atoms and len(getattr(self.atoms[w], 'associations', {})) >= 2
-        )
-        depth_ratio = deep_words / len(vocab)
-        
-        # EXPERIENCE: Minimum interactions at current level
-        min_exp = self._mastery_min_experiences[self._mastery_level] if self._mastery_level < len(self._mastery_min_experiences) else 1000
-        
-        should_advance = (
-            breadth_ratio >= self._mastery_advancement_ratio and
-            depth_ratio >= self._mastery_depth_ratio and
-            self._total_experiences >= min_exp
-        )
-        
-        # Debug logging to help diagnose why organisms aren't advancing
-        # TEMPORARILY at INFO level to diagnose mastery advancement issues
+        breadth_ratio = status['mastery_breadth']
+        depth_ratio = status['mastery_depth']
+        used_words = status['mastery_used_words']
+        deep_words = status['mastery_deep_words']
+        min_exp = status['mastery_exp_target']
+        should_advance = status['mastery_advancement_ready']
+
+        # Debug logging to help diagnose why organisms aren't advancing.
+        # Throttle by experience bucket so per-action advancement checks do not flood logs.
         if self._total_experiences > 10 and not should_advance:
-            logger.info(
-                f"[MASTERY_CHECK] {self.organism_id[:8]} Level {self._mastery_level}: "
-                f"breadth={breadth_ratio:.2f}/{self._mastery_advancement_ratio} "
-                f"depth={depth_ratio:.2f}/{self._mastery_depth_ratio} "
-                f"exp={self._total_experiences}/{min_exp} "
-                f"vocab={len(vocab)} used={used_words} deep={deep_words}"
+            log_signature = (
+                self._mastery_level,
+                self._total_experiences // 25,
+                used_words,
+                deep_words,
+                status['mastery_available_words'],
             )
+            if log_signature != self._last_mastery_check_log_signature:
+                self._last_mastery_check_log_signature = log_signature
+                logger.info(
+                    f"[MASTERY_CHECK] {self.organism_id[:8]} Level {self._mastery_level}: "
+                    f"breadth={breadth_ratio:.2f}/{self._mastery_advancement_ratio} "
+                    f"depth={depth_ratio:.2f}/{self._mastery_depth_ratio} "
+                    f"exp={self._total_experiences}/{min_exp} "
+                    f"vocab={status['mastery_available_words']} used={used_words} deep={deep_words}"
+                )
         
         if should_advance:
             logger.info(f"[ATOMIC_LANG] Organism {self.organism_id} ready to advance! breadth={breadth_ratio:.2f}, depth={depth_ratio:.2f}, exp={self._total_experiences}")
@@ -1743,10 +1939,14 @@ class AtomicLanguageSystem:
             'actions': ('action', 0, (0.5, 0.5)),
             'qualities': ('quality', 0, (0.5, 0.5)),
             'questions': ('question', 0, (0.6, 0.6)),
+            'connectors': ('connector', 1, (0.5, 0.5)),
             'universals': ('universal', 0, (0.5, 0.7)),
         }
         
         for category, words in self.ORIENTATION.items():
+            if category == 'connectors' and not self._connectors_enabled:
+                continue
+
             frame_info = frame_map.get(category, ('unknown', 0, (0.5, 0.5)))
             frame, level, vp = frame_info
             
@@ -1761,6 +1961,8 @@ class AtomicLanguageSystem:
                         base_mag = 0.9  # Action heads get high magnetism
                     elif category == 'alphabet':
                         base_mag = 0.3  # Letters are neutral anchors
+                    elif category == 'connectors':
+                        base_mag = 0.45  # Handles should invite use without dominating
                     else:
                         base_mag = 0.5  # Default
                     
